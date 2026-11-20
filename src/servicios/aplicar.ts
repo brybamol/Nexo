@@ -1,0 +1,260 @@
+// Convierte un plan validado en efectos (motor) y los persiste. Tarea 2.3.
+import { eq } from 'drizzle-orm';
+import { capturas, type Db } from '@/db/esquema';
+import { persistirEfectos } from '@/db/instantanea';
+import { formatearFecha } from '@/dominio/formato';
+import { minusculaInicial } from '@/dominio/texto';
+import {
+  ErrorDominio,
+  type Plan,
+  type PlanDecision,
+  type PlanTrabajoNuevo,
+  type Trabajo,
+} from '@/dominio/tipos';
+import { efectosActualizacion } from '@/motor/actualizacion';
+import { efectosDecisionNueva } from '@/motor/decision';
+import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
+import { porId, siguienteIdTrabajo, type Instantanea } from '@/motor/instantanea';
+import { efectosBloqueo } from '@/motor/propagacion';
+import { iniciarSeguimientoUrgente, registrarRespuesta } from '@/motor/seguimiento';
+
+export interface ResultadoAplicacion {
+  resumen: string;
+  trabajosCreados: string[];
+  trabajosActualizados: string[];
+  decisionId: string | null;
+  avisosA: string[];
+}
+
+const unicos = (xs: string[]) => [...new Set(xs)];
+
+/** El hecho que originó las acciones: quién lo dijo y con qué palabras. */
+async function hechoDeCaptura(db: Db, inst: Instantanea, autorId: string, capturaId: number): Promise<string> {
+  const autor = inst.personas.find((p) => p.id === autorId)?.nombre ?? autorId;
+  const [fila] = await db.select({ texto: capturas.texto }).from(capturas).where(eq(capturas.id, capturaId));
+  return fila ? `${autor} escribió: «${fila.texto}»` : `Captura de ${autor}`;
+}
+
+function efectosTrabajoNuevo(inst: Instantanea, plan: PlanTrabajoNuevo, autorId: string, capturaId: number, hecho: string): Efecto[] {
+  const personas = porId(inst.personas);
+  const trabajos = porId(inst.trabajos);
+  const autor = personas.get(autorId)?.nombre ?? autorId;
+  const responsable = personas.get(plan.responsableId)?.nombre ?? plan.responsableId;
+  const proyecto = inst.proyectos.find((p) => p.id === plan.proyectoId)?.nombre ?? plan.proyectoId;
+  const repuesto = plan.repuestoFaltanteId ? inst.repuestos.find((r) => r.id === plan.repuestoFaltanteId) ?? null : null;
+  const id = siguienteIdTrabajo(inst);
+
+  // Cantidad del repuesto a conseguir: lo que necesitan los trabajos que bloquea (mínimo 1).
+  const cantidad = repuesto
+    ? Math.max(
+        1,
+        inst.necesidades
+          .filter((n) => n.repuestoId === repuesto.id && !n.atendida && plan.bloquea.includes(n.trabajoId))
+          .reduce((s, n) => s + n.cantidad, 0),
+      )
+    : null;
+
+  const trabajo: Trabajo = {
+    id,
+    proyectoId: plan.proyectoId,
+    titulo: plan.titulo,
+    responsableId: plan.responsableId,
+    solicitadoPorId: autorId,
+    plazo: plan.plazo,
+    estado: 'abierto',
+    urgente: plan.urgente,
+    conCostoProbable: plan.conCostoProbable,
+    bloqueadoPorId: null,
+    motivoBloqueo: null,
+    fechaSolucion: null,
+    repuestoId: repuesto?.id ?? null,
+    cantidadRepuesto: cantidad,
+    etiqueta: null,
+    relacionados: plan.relacionados,
+    origen: 'captura',
+    capturaId,
+    decisionId: null,
+    creadoEn: inst.ahora,
+    resueltoEn: null,
+  };
+
+  const efectos: Efecto[] = [{ tipo: 'crear_trabajo', trabajo, necesidades: [], actorId: autorId }];
+  const extras: string[] = [];
+  if (plan.urgente) extras.push('Urgente.');
+  if (plan.conCostoProbable) extras.push('Con costo probable.');
+  if (plan.bloquea.length > 0) extras.push(`Bloquea ${plan.bloquea.join(', ')}.`);
+  if (plan.relacionados.length > 0) extras.push(`Relacionado con ${plan.relacionados.join(', ')}.`);
+  const detalle = `${id} «${plan.titulo}» en ${proyecto}, responsable ${responsable}, plazo ${formatearFecha(plan.plazo)}.`;
+
+  efectos.push({
+    tipo: 'accion',
+    accion: {
+      en: inst.ahora,
+      tipo: 'crear_trabajo',
+      motivo: `${autor} lo reportó: ${detalle}${extras.length > 0 ? ` ${extras.join(' ')}` : ''}`,
+      hechoOrigen: hecho,
+      trabajoIds: [id, ...plan.bloquea],
+      decisionId: null,
+      destinatarioId: null,
+      capturaId,
+    },
+    aviso: null,
+  });
+
+  // Aviso de asignación (para un trabajo urgente cuenta como la solicitud de estado: §4.2 regla 2).
+  if (plan.responsableId !== autorId) {
+    const cuerpo = `${autor} pidió ${detalle}${extras.length > 0 ? ` ${extras.join(' ')}` : ''}`;
+    efectos.push({
+      tipo: 'accion',
+      accion: {
+        en: inst.ahora,
+        tipo: 'aviso',
+        motivo: `Nuevo trabajo asignado a ${responsable}: ${id} «${plan.titulo}».`,
+        hechoOrigen: hecho,
+        trabajoIds: [id],
+        decisionId: null,
+        destinatarioId: plan.responsableId,
+        capturaId,
+      },
+      aviso: { personaId: plan.responsableId, en: inst.ahora, titulo: `Nuevo trabajo: ${plan.titulo}`, cuerpo, trabajoIds: [id] },
+    });
+  }
+
+  // Bloqueos: la propagación (R4, R5) es de motor/propagacion.ts; aquí se garantiza el hecho mínimo.
+  for (const bloqueadoId of plan.bloquea) {
+    const actual = aplicarEnMemoria(inst, efectos);
+    efectos.push(
+      ...efectosBloqueo(actual, {
+        trabajoBloqueadoId: bloqueadoId,
+        bloqueanteId: id,
+        motivo: repuesto ? `Falta ${minusculaInicial(repuesto.nombre)}` : plan.titulo,
+        repuestoFaltanteId: repuesto?.id ?? null,
+        autorId,
+        descripcion: hecho,
+      }),
+    );
+    const t = aplicarEnMemoria(inst, efectos).trabajos.find((x) => x.id === bloqueadoId);
+    if (t && (t.estado !== 'bloqueado' || t.bloqueadoPorId !== id)) {
+      const original = trabajos.get(bloqueadoId);
+      efectos.push({
+        tipo: 'actualizar_trabajo',
+        trabajoId: bloqueadoId,
+        cambios: {
+          estado: 'bloqueado',
+          bloqueadoPorId: id,
+          motivoBloqueo: repuesto ? `Falta ${minusculaInicial(repuesto.nombre)}` : plan.titulo,
+          ...(original?.fechaSolucion ? { fechaSolucion: null } : {}),
+        },
+        actorId: autorId,
+      });
+    }
+  }
+  if (repuesto) {
+    const r = aplicarEnMemoria(inst, efectos).repuestos.find((x) => x.id === repuesto.id);
+    if (r && !r.faltanteReportadoEn) {
+      efectos.push({
+        tipo: 'actualizar_repuesto',
+        repuestoId: repuesto.id,
+        cambios: { faltanteReportadoEn: inst.ahora, faltanteReportadoPor: autorId },
+        actorId: autorId,
+      });
+    }
+  }
+
+  // Un trabajo urgente creado por captura abre su seguimiento al crearse (§4.2 regla 2; motor/seguimiento.ts).
+  if (plan.urgente) efectos.push(...iniciarSeguimientoUrgente(aplicarEnMemoria(inst, efectos), id));
+  return efectos;
+}
+
+function efectosDecision(inst: Instantanea, plan: PlanDecision, autorId: string, capturaId: number): Efecto[] {
+  const efectos = efectosDecisionNueva(inst, plan.propuesta, autorId, plan.proyectoId, capturaId);
+  if (!efectos.some((e) => e.tipo === 'crear_decision')) {
+    throw new ErrorDominio('Entendí que es una decisión de compra, pero todavía no puedo prepararla. No creé nada.');
+  }
+  // Una decisión relacionada con un trabajo responde a su seguimiento (§4.2 regla 3).
+  if (plan.trabajoRelacionadoId) efectos.push(...registrarRespuesta(aplicarEnMemoria(inst, efectos), plan.trabajoRelacionadoId, autorId));
+  return efectos;
+}
+
+function resumir(inst: Instantanea, plan: Plan, efectos: Efecto[], creados: string[], actualizados: string[], decisionId: string | null): string {
+  const personas = porId(inst.personas);
+  const titulo = (id: string) => inst.trabajos.find((t) => t.id === id)?.titulo ?? '';
+  switch (plan.tipo) {
+    case 'trabajo_nuevo': {
+      const responsable = personas.get(plan.responsableId)?.nombre ?? plan.responsableId;
+      const bloqueados = efectos.flatMap((e) =>
+        e.tipo === 'actualizar_trabajo' && e.cambios.estado === 'bloqueado' ? [e.trabajoId] : [],
+      );
+      const partes = [
+        `Creé ${creados.join(', ')} «${plan.titulo}» para ${responsable}, plazo ${formatearFecha(plan.plazo)}${plan.urgente ? ', urgente' : ''}.`,
+      ];
+      if (bloqueados.length > 0) partes.push(`${unicos(bloqueados).join(', ')} queda bloqueado.`);
+      return partes.join(' ');
+    }
+    case 'actualizacion': {
+      const x = inst.trabajos.find((t) => t.id === plan.trabajoId);
+      const bloqueante = x?.estado === 'bloqueado' && x.bloqueadoPorId ? inst.trabajos.find((t) => t.id === x.bloqueadoPorId) : undefined;
+      const cambioEstado = efectos.some((e) => e.tipo === 'actualizar_trabajo' && e.trabajoId === plan.trabajoId && e.cambios.estado);
+      const sigue =
+        plan.nuevoEstado && plan.nuevoEstado !== 'resuelto' && bloqueante && bloqueante.estado !== 'resuelto' && !cambioEstado
+          ? ` ${plan.trabajoId} sigue bloqueado por ${bloqueante.id} «${bloqueante.titulo}»: no cambié su estado.`
+          : '';
+      const hecho = actualizados.length > 0 ? `Actualicé ${actualizados.join(', ')}${titulo(plan.trabajoId) ? ` («${titulo(plan.trabajoId)}»)` : ''}.` : '';
+      return `${hecho}${sigue}`.trim() || `Registré tu respuesta sobre ${plan.trabajoId}.`;
+    }
+    case 'decision':
+      return decisionId ? `Preparé la decisión ${decisionId}: ${plan.resumen}` : plan.resumen;
+    case 'duplicado':
+      return `Ya existe ${plan.trabajoId} «${titulo(plan.trabajoId)}». No creé nada.`;
+    case 'no_es_trabajo':
+      return plan.motivo;
+    case 'pregunta':
+      return plan.pregunta;
+  }
+}
+
+/** Llamar dentro de la transacción del servicio, con la instantánea recién cargada en ella. */
+export async function aplicarPlan(
+  db: Db,
+  inst: Instantanea,
+  plan: Plan,
+  autorId: string,
+  capturaId: number,
+): Promise<ResultadoAplicacion> {
+  let efectos: Efecto[];
+  switch (plan.tipo) {
+    case 'trabajo_nuevo':
+      efectos = efectosTrabajoNuevo(inst, plan, autorId, capturaId, await hechoDeCaptura(db, inst, autorId, capturaId));
+      break;
+    case 'actualizacion':
+      efectos = efectosActualizacion(inst, plan, autorId);
+      break;
+    case 'decision':
+      efectos = efectosDecision(inst, plan, autorId, capturaId);
+      break;
+    default:
+      efectos = []; // duplicado, no_es_trabajo y pregunta no cambian nada
+  }
+
+  // Toda acción producida por esta captura queda ligada a ella (R10).
+  efectos = efectos.map((e) =>
+    e.tipo === 'accion' && e.accion.capturaId === null ? { ...e, accion: { ...e.accion, capturaId } } : e,
+  );
+
+  await persistirEfectos(db, efectos);
+
+  const trabajosCreados = unicos(efectos.flatMap((e) => (e.tipo === 'crear_trabajo' ? [e.trabajo.id] : [])));
+  const trabajosActualizados = unicos(
+    efectos.flatMap((e) => (e.tipo === 'actualizar_trabajo' || e.tipo === 'agregar_nota' ? [e.trabajoId] : [])),
+  ).filter((id) => !trabajosCreados.includes(id));
+  const decisionId = efectos.find((e) => e.tipo === 'crear_decision')?.decision.id ?? null;
+  const avisosA = unicos(efectos.flatMap((e) => (e.tipo === 'accion' && e.aviso && e.accion.destinatarioId ? [e.accion.destinatarioId] : [])));
+
+  return {
+    resumen: resumir(inst, plan, efectos, trabajosCreados, trabajosActualizados, decisionId),
+    trabajosCreados,
+    trabajosActualizados,
+    decisionId,
+    avisosA,
+  };
+}

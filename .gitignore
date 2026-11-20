@@ -1,0 +1,30 @@
+# dependencias
+/node_modules
+
+# next.js
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# datos locales de PGlite
+/.data/
+# carpeta literal que se creaba con NEXO_DATA_DIR=%LOCALAPPDATA%/...
+/%LOCALAPPDATA%/
+
+# pruebas
+/coverage
+
+# variables de entorno (solo se versiona el ejemplo)
+.env*
+!.env.example
+
+# varios
+.DS_Store
+*.pem
+npm-debug.log*
+.pnpm-debug.log*
+.vercel
+
+# material de trabajo de impeccable
+.impeccable/review/
