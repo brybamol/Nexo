@@ -1,174 +1,174 @@
-# Nexo — Plan del MVP para el hackathon (v1)
+# Nexo — Plan del MVP para el hackathon (v2)
 
 *Fecha: 20-11-2026 · Estado: borrador para aprobar · Duración: 2 días y medio (5 bloques de medio día)*
 
-Base: el documento "Plan de arranque: startup de coordinación inteligente" y la exploración (`01-exploracion.md`).
-Esta versión sustituye a la v0, que estaba pensada para equipos de software y GitHub.
+Base: la exploración (`01-exploracion.md`) y el documento "Plan de arranque: startup de coordinación inteligente".
+Cambio respecto a la v1: Nexo pasa de ser un agente en WhatsApp a ser **la plataforma central de coordinación de la empresa**. WhatsApp queda como canal secundario, fuera del MVP.
 
 ---
 
 ## 1. Qué construimos
 
-**Nexo es un coordinador con IA que vive en WhatsApp.** Lee los mensajes de trabajo de una empresa de distribución o servicios de campo, detecta tareas y bloqueos, les da seguimiento y le dice a cada persona lo que necesita saber, sin que un supervisor tenga que pasar el mensaje.
+**Nexo es la plataforma donde viven los trabajos y proyectos de la empresa, y que hace ella misma la coordinación.** Asigna, da seguimiento, detecta bloqueos, escala y prepara las decisiones. Las personas hacen el trabajo y deciden; nadie hace de mensajero.
 
-**Cliente de la demo:** una distribuidora ficticia de Costa Rica con 80 empleados, tres áreas (oficina, bodega y campo) y coordinación por WhatsApp y una hoja de cálculo de pedidos.
+### La prueba que separa a Nexo de un gestor de proyectos
+
+> Si un jefe todavía tiene que abrir la herramienta, leer el estado y perseguir a alguien, es un gestor de proyectos.
+> Si la plataforma persigue, avisa y escala, y el jefe solo decide, es lo que describe Sequoia.
+
+Todo el alcance del MVP se decide con esta prueba. Una función que solo muestra información no entra.
+
+| | Gestor de proyectos (Asana, Monday, ClickUp, Notion) | Nexo |
+|---|---|---|
+| Cómo entra el trabajo | Alguien rellena una tarjeta | Alguien escribe una frase y Nexo arma el trabajo |
+| Quién da seguimiento | Un jefe mira el tablero y pregunta | Nexo pregunta al responsable cuando toca |
+| Qué pasa con un atraso | Se ve en rojo si alguien mira | Nexo escala con el contexto completo |
+| Dependencias entre áreas | Las descubre una reunión | Nexo las detecta y avisa a los afectados |
+| Decisiones | Llegan al jefe sin preparar | Llegan con contexto, opciones y coste |
 
 ### Las cinco funciones del MVP
 
-Salen de la lista "MVP" del Plan de arranque, recortadas a lo que cabe en 2 días y medio.
-
 | # | Función | Qué ve el jurado |
 |---|---|---|
-| F1 | **Detección de tareas y bloqueos** | Un técnico escribe "falta repuesto" y Nexo crea la tarea, con responsable y plazo |
-| F2 | **Seguimiento y escalamiento** | Nexo avisa a bodega, pregunta si se resolvió y, si se atrasa, escala al responsable con el contexto |
-| F3 | **Brief por rol** | Cada supervisor recibe en WhatsApp sus pendientes, bloqueos y qué cambió desde ayer |
-| F4 | **Preguntas del gerente** | "¿Cómo vamos con los pedidos de la semana?", respondido en segundos con los datos de origen |
-| F5 | **Panel y aprobaciones** | Vista web de lo abierto, atrasado y resuelto; registro de cada acción; lo que tiene costo espera aprobación humana |
+| F1 | **Captura en una frase** | Alguien escribe "no puedo terminar la instalación, falta el repuesto" y Nexo crea el trabajo con proyecto, responsable, plazo y dependencias. Solo pregunta lo que falta |
+| F2 | **Coordinación automática** | Nexo pide el estado al responsable cuando vence el plazo, detecta qué otros trabajos quedan bloqueados y escala si nadie responde |
+| F3 | **Mi día** | Cada persona abre Nexo y ve lo que debe, lo que espera de otros y qué cambió desde ayer. Nadie se lo tuvo que contar |
+| F4 | **Decisiones** | Lo que tiene costo llega al gerente como una decisión preparada: contexto, opciones y a quién afecta. Aprueba o rechaza con un clic, y cada acción de Nexo queda registrada |
+| F5 | **Preguntar** | "¿Cómo vamos con los proyectos de la semana?", respondido con los trabajos de origen |
+
+La **vista de proyectos** (lo abierto, atrasado y resuelto) existe, pero es una ventana al modelo, no el producto.
 
 ### Fuera del MVP
-- Correo y calendario como fuentes (quedan WhatsApp y una hoja de cálculo).
-- Integración con ERP o contabilidad.
-- Lectura de grupos reales de WhatsApp de una empresa (ver sección 3).
-- Cuentas de usuario, varias empresas a la vez y app móvil.
-- Todo lo de negocio del Plan de arranque (precios, legal, ventas): va en la presentación, no en el código.
+- WhatsApp, correo y otros canales de entrada o aviso (ver sección 8).
+- Integración con ERP, hojas de cálculo o calendarios.
+- Cuentas de usuario y permisos: la demo usa un selector "ver como" con las personas de la empresa ficticia.
+- Varias empresas a la vez y app móvil.
+- Diagramas de Gantt, informes y gráficos de gestión.
+- Todo lo de negocio del Plan de arranque (precios, legal, ventas): va en la presentación.
 
-### La métrica de la demo
-Dos cifras del Plan de arranque, visibles en el panel:
-- **Horas de coordinación ahorradas por semana** (la línea base del documento: 10 supervisores que pierden 1 hora diaria).
-- **Tareas cerradas sin intervención del gerente**, sobre el total detectado (meta del documento: 50 %).
+### Las cifras de la demo
+Visibles en la plataforma, calculadas con los datos de la demo:
+- **Trabajos cerrados sin intervención del gerente**, sobre el total (meta del Plan de arranque: 50 %).
+- **Seguimientos que hizo Nexo en lugar de una persona.**
+- **Horas de coordinación ahorradas por semana**, con la línea base del Plan de arranque (10 supervisores que pierden 1 hora diaria).
 
 ---
 
 ## 2. Guion de la demo (4 minutos)
 
-Es el "día con Nexo" del Plan de arranque, comprimido. Se escribe antes que el código y manda sobre el alcance.
+Se escribe antes que el código y manda sobre el alcance. La empresa es una distribuidora ficticia de Costa Rica con tres áreas: oficina, bodega y campo.
 
 | Minuto | Qué pasa | Función |
 |---|---|---|
 | 0:00 | El problema en una frase: en esta empresa todo pasa por el gerente y se entera tarde | — |
-| 0:30 | 7:00 a. m.: la supervisora de bodega recibe su brief en WhatsApp, en un teléfono real | F3 |
-| 1:00 | Un técnico escribe "no puedo terminar en el cliente, falta el repuesto". Nexo crea la tarea y avisa a bodega | F1 |
-| 1:45 | Se adelanta el reloj: nadie respondió. Nexo escala a la supervisora con el contexto completo | F2 |
-| 2:30 | Bodega propone comprar el repuesto de urgencia. Como tiene costo, Nexo pide aprobación al gerente | F5 |
-| 3:00 | El gerente pregunta "¿cómo vamos con los pedidos de la semana?" y recibe la respuesta con cifras | F4 |
-| 3:30 | Panel: abierto, atrasado, resuelto, registro de acciones y las dos cifras | F5 |
+| 0:20 | Un técnico escribe una frase: no puede terminar una instalación porque falta un repuesto. Nexo crea el trabajo, lo cuelga del proyecto correcto y nombra responsable a la supervisora de bodega | F1 |
+| 1:00 | La supervisora abre "Mi día": el trabajo ya está ahí, con el contexto. Nadie le reenvió nada | F3 |
+| 1:30 | Se adelanta el reloj: sin respuesta. Nexo le pide el estado, detecta que el mismo repuesto bloquea dos trabajos de otro proyecto y avisa a sus responsables | F2 |
+| 2:15 | La supervisora propone una compra urgente. Como tiene costo, Nexo la convierte en una decisión preparada para el gerente | F4 |
+| 2:45 | El gerente aprueba con un clic. Nexo avisa a todos y desbloquea los tres trabajos | F4 |
+| 3:10 | El gerente pregunta cómo van los proyectos de la semana y recibe la respuesta con sus fuentes | F5 |
+| 3:35 | Vista de proyectos, registro de acciones y las tres cifras. Cierre: el gerente tomó una decisión y no persiguió a nadie | — |
 
 ---
 
-## 3. WhatsApp: qué se puede hacer en 2 días y medio
-
-La vía oficial para leer grupos no sirve para el hackathon, así que la demo combina tres vías.
-
-**Por qué no la vía oficial de grupos.** La API de grupos de WhatsApp exige una cuenta de empresa verificada por Meta y solo funciona con grupos creados desde la propia API. Foros de desarrolladores hablan además de un tope de 8 participantes y de que no se pueden adoptar grupos existentes; ese dato no está confirmado en la documentación de Meta. Los bots no oficiales que se meten en grupos arriesgan el bloqueo del número.
-
-| Vía | Para qué | Límites conocidos |
-|---|---|---|
-| **A. Historial exportado** | Cargar un grupo de trabajo completo con la función "Exportar chat" de WhatsApp (archivo de texto) | No es en vivo |
-| **B. Conversación en vivo 1 a 1** con el entorno de pruebas de Twilio | Mensajes reales en teléfonos reales durante la demo | Solo para pruebas. Cada teléfono se une con un código y la sesión caduca a los 3 días. Cuenta de prueba: 50 mensajes al día. Nexo solo puede escribir libremente en las 24 horas siguientes al último mensaje de la persona |
-| **C. Simulador de chat en el panel** | Respaldo si falla la red o Twilio, y para mostrar el "grupo" en pantalla | No es WhatsApp real |
-
-**Consecuencia para el producto real:** el camino a grupos pasa por la verificación de Meta. Se anota como primera tarea después del hackathon y como riesgo en la presentación (el Plan de arranque ya lo recoge como "dependencia de WhatsApp/Meta").
-
-**Lo que debe hacer una persona del equipo:** crear la cuenta de Twilio y unir los teléfonos de la demo al entorno de pruebas. Claude no crea cuentas ni maneja sus credenciales.
-
----
-
-## 4. Cómo funciona
+## 3. Cómo funciona
 
 | Pieza (ensayo de Sequoia) | En Nexo | Etapa |
 |---|---|---|
-| Fuentes | Mensajes de WhatsApp (vías A, B y C) y una hoja de cálculo de pedidos | 2 |
-| Modelo vivo de la empresa | Base de datos con personas y roles, mensajes, tareas, bloqueos, pedidos, acciones y aprobaciones | 2 |
-| Capa de coordinación | Claude lee cada mensaje, decide si hay tarea o bloqueo, a quién avisar y cuándo escalar | 3 |
-| Interfaces | WhatsApp para el equipo y panel web para gerencia | 3 y 4 |
+| Modelo de la empresa | Base de datos con personas y áreas, proyectos, trabajos, dependencias y el historial de todo lo que pasó | 1 y 2 |
+| Capa de inteligencia | Claude convierte frases en trabajos, decide a quién avisar y cuándo escalar, prepara decisiones y responde preguntas | 2 y 3 |
+| Interfaces | La plataforma web: Captura, Mi día, Decisiones, Proyectos y Preguntar | 4 |
+| Roles del ensayo | Cada trabajo tiene **un único responsable** de su resultado; el gerente solo aparece en las decisiones | 2 |
 
-**Tres reglas del producto** (responden a los riesgos del Plan de arranque y de la exploración):
-1. **Nada con costo se ejecuta sin aprobación humana.**
-2. **Cada acción queda registrada** con el mensaje que la originó.
-3. **Si no hay dato, Nexo dice "no lo sé"** en lugar de inventar.
+**Cuatro reglas del producto**
+1. **Nadie rellena formularios.** El trabajo entra con una frase; Nexo completa el resto y pregunta solo lo que no puede deducir.
+2. **Un responsable por trabajo.** Sin responsable, Nexo no lo deja abierto: propone uno o lo pregunta.
+3. **Nada con costo se ejecuta sin aprobación humana**, y cada acción de Nexo queda registrada con su motivo.
+4. **Si no hay dato, Nexo dice "no lo sé"** en lugar de inventar.
 
 ---
 
-## 5. Pila técnica (la que ya se usa en TREISS)
+## 4. Pila técnica (la que ya se usa en TREISS)
 
 | Capa | Elección | Motivo |
 |---|---|---|
-| Panel web | Next.js + TypeScript + Tailwind + componentes Radix/shadcn + TanStack Query + Recharts, con `pnpm` | Es la pila de `treiss_frontend` |
-| Servidor | Rutas de API dentro del mismo proyecto Next.js, incluida la que recibe los mensajes de Twilio | Un solo despliegue. FastAPI, la pila de `treiss_backend`, exigiría montar un servidor aparte |
+| Plataforma web | Next.js + TypeScript + Tailwind + componentes Radix/shadcn + TanStack Query, con `pnpm` | Es la pila de `treiss_frontend` |
+| Servidor | Rutas de API dentro del mismo proyecto Next.js | Un solo despliegue. FastAPI, la pila de `treiss_backend`, exigiría montar un servidor aparte |
 | Base de datos | PostgreSQL gestionado, contratado desde el marketplace de Vercel | Mismo motor que TREISS |
-| IA | API de Claude: `claude-opus-5-5` para brief y preguntas, `claude-haiku-5-5` para clasificar cada mensaje | Calidad donde se ve, rapidez y bajo coste por mensaje |
-| WhatsApp | Entorno de pruebas de Twilio | No requiere aprobación de Meta |
-| Tareas programadas | Tareas programadas de Vercel, más un botón "adelantar el reloj" para la demo | El brief de las 7:00 y los escalamientos no pueden esperar horas en una demo |
+| IA | API de Claude: `claude-opus-5-5` para preparar decisiones y responder preguntas, `claude-haiku-5-5` para convertir frases en trabajos | Calidad donde se ve, rapidez en la captura |
+| Tareas programadas | Tareas programadas de Vercel, más un botón "adelantar el reloj" para la demo | Los seguimientos y escalamientos no pueden esperar horas en una demo |
 | Despliegue y código | Vercel y GitHub `brybamol/Nexo` | El conector de Vercel y `gh` ya funcionan |
+
+Ya no hace falta Twilio ni ninguna cuenta externa nueva, que era el mayor riesgo técnico de la v1.
 
 **Decisión abierta:** si el equipo prefiere Python para el servidor, se usa FastAPI. Cuesta medio bloque de despliegue en la etapa 1.
 
 ---
 
-## 6. Etapas
+## 5. Etapas
 
 Cada etapa termina con algo que se puede enseñar. Si una se atrasa, se recorta su alcance, no la siguiente.
 
 | Etapa | Cuándo | Entregable | Se da por cerrada cuando |
 |---|---|---|---|
-| **0. Definición** | Antes de empezar (2–3 h) | Guion aprobado, empresa ficticia y casos de control | El equipo aprueba el guion y Twilio responde en un teléfono |
-| **1. Esqueleto desplegado** | Día 1, mañana | App en producción que recibe un WhatsApp y lo guarda | Un mensaje enviado desde un teléfono aparece en el panel |
-| **2. Modelo vivo e ingesta** | Día 1, tarde | Historial exportado, hoja de pedidos y mensajes en vivo dentro del modelo | Una consulta devuelve los mensajes y pedidos de un área |
-| **3. Capa de coordinación** | Día 2, mañana | F1, F2, F3 y F4 funcionando por WhatsApp | Los 15 casos de control dan el resultado esperado |
-| **4. Panel y aprobaciones** | Día 2, tarde | F5 completo y simulador de chat | Se recorre el guion entero sin tocar código |
+| **0. Definición** | Antes de empezar (2–3 h) | Guion aprobado, empresa ficticia y casos de control | El equipo aprueba el guion |
+| **1. Esqueleto desplegado** | Día 1, mañana | Plataforma en producción con el modelo y los datos de ejemplo | En la URL pública se ven los proyectos y trabajos de la empresa ficticia |
+| **2. Captura** | Día 1, tarde | F1 completo y vista de proyectos | 12 de las 15 frases de control crean el trabajo correcto |
+| **3. Coordinación** | Día 2, mañana | F2 y la preparación de decisiones | Los 5 escenarios de control se resuelven solos al adelantar el reloj |
+| **4. Vistas por persona** | Día 2, tarde | F3, F4 y F5 | Se recorre el guion entero sin tocar código |
 | **5. Demo** | Día 3, mañana | Presentación, vídeo de respaldo y versión congelada | Dos ensayos seguidos sin fallos y dentro del tiempo |
 
 ### Etapa 0 — Definición (antes del hackathon)
-- Aprobar el guion de la sección 2.
-- Diseñar la distribuidora ficticia: 12 personas con rol y área, 3 grupos de trabajo, 20 pedidos de la semana.
-- Escribir el historial de chat de ejemplo en el formato de "Exportar chat", con 3 bloqueos plantados y 1 decisión con costo.
-- Escribir 15 casos de control: mensaje de entrada y resultado esperado (tarea o no, responsable, urgencia).
-- Crear la cuenta de Twilio y probar que un teléfono recibe respuesta.
+- Aprobar el guion de la sección 2 y la prueba de la sección 1.
+- Diseñar la empresa ficticia: 12 personas con rol y área, 4 proyectos y unos 30 trabajos con sus dependencias.
+- Escribir 15 frases de control: texto de entrada y resultado esperado (proyecto, responsable, plazo, si tiene costo).
+- Escribir 5 escenarios de control de coordinación: qué pasa, cuándo debe preguntar Nexo, cuándo escalar y a quién.
 - Herramientas: skills `brainstorming` y `ask-questions-if-underspecified`; `engineering:architecture` para dejar por escrito la decisión de pila.
 
 ### Etapa 1 — Esqueleto desplegado (día 1, mañana)
 - Crear el proyecto Next.js con `pnpm`, Tailwind y componentes base; conectarlo a Vercel.
-- Crear la base de datos y las tablas: `personas`, `mensajes`, `tareas`, `pedidos`, `acciones`, `aprobaciones`.
-- Ruta que recibe los mensajes de Twilio, comprueba su firma y los guarda.
+- Crear la base de datos y las tablas: `personas`, `proyectos`, `trabajos`, `dependencias`, `eventos`, `acciones`, `decisiones`.
+- Cargar la empresa ficticia y añadir el selector "ver como".
+- Lista sencilla de proyectos y trabajos, de solo lectura.
 - Prueba automática mínima en cada subida (GitHub Actions).
-- Copiar a `Nexo/.claude/` los agentes y las reglas de TREISS, adaptados (sección 7).
+- Copiar a `Nexo/.claude/` los agentes y las reglas de TREISS, adaptados (sección 6).
 - Herramientas: conector de Vercel, `gh`, skill `writing-plans`, agente `arquitecto`.
 
-### Etapa 2 — Modelo vivo e ingesta (día 1, tarde)
-- Lector del archivo de "Exportar chat": autor, fecha, texto y grupo.
-- Cargador de la hoja de pedidos (CSV o Google Sheets).
-- Unificar las tres vías de WhatsApp en la misma tabla de mensajes.
-- Reglas sin IA para lo calculable: tarea sin respuesta en X horas, pedido pasado de fecha.
-- Pruebas primero en esta etapa: un error aquí invalida la demo.
-- Herramientas: agente `backend-dev`, skill `test-driven-development`, agente `verificador` al cierre.
+### Etapa 2 — Captura (día 1, tarde)
+- Caja de captura siempre visible: una frase libre.
+- Claude propone proyecto, responsable, plazo, dependencias y si tiene costo, usando el modelo de la empresa.
+- Si falta un dato, Nexo hace una sola pregunta concreta; la persona confirma con un clic.
+- Vista de proyectos: abierto, atrasado y resuelto.
+- Pasar las 15 frases de control y anotar el resultado real.
+- Herramientas: skill `claude-api`, agentes `backend-dev` y `frontend-dev`, skill `test-driven-development` para las reglas de asignación.
 
-### Etapa 3 — Capa de coordinación (día 2, mañana)
-- F1: clasificar cada mensaje (¿tarea?, ¿bloqueo?, ¿para quién?, ¿urgencia?, ¿tiene costo?).
-- F2: avisar al responsable, preguntar por el estado y escalar al vencer el plazo.
-- F3: generar el brief por rol y enviarlo por WhatsApp.
-- F4: responder preguntas del gerente con los datos del modelo y sus fuentes.
-- Pasar los 15 casos de control y anotar el resultado real.
-- Guardar las respuestas del guion para que la demo no dependa de la red.
-- Herramientas: skill `claude-api`, agente `backend-dev` con Opus, agente `revisor`.
+### Etapa 3 — Coordinación (día 2, mañana)
+- Motor de reloj: al vencer un plazo, Nexo pide el estado al responsable.
+- Escalamiento: sin respuesta en el tiempo acordado, sube al siguiente responsable con el contexto.
+- Dependencias: al bloquearse un trabajo, Nexo marca los que dependen de él y avisa a sus responsables.
+- Decisiones: si una propuesta tiene costo, Nexo redacta la decisión con contexto, opciones y afectados.
+- Botón "adelantar el reloj" y registro de cada acción con su motivo.
+- Pruebas primero en esta etapa: es la lógica que demuestra la tesis.
+- Herramientas: agente `backend-dev` con Opus, skill `test-driven-development`, agentes `revisor` y `verificador`.
 
-### Etapa 4 — Panel y aprobaciones (día 2, tarde)
-- Panel con tres columnas (abierto, atrasado, resuelto) y las dos cifras arriba.
-- Registro de acciones: qué hizo Nexo, cuándo y por qué mensaje.
-- Bandeja de aprobaciones con aprobar y rechazar.
-- Simulador de chat y botón "adelantar el reloj".
+### Etapa 4 — Vistas por persona (día 2, tarde)
+- **Mi día:** lo que debo, lo que espero de otros y qué cambió.
+- **Decisiones:** bandeja del gerente con aprobar y rechazar; al aprobar se desbloquean los trabajos.
+- **Preguntar:** respuesta con enlaces a los trabajos de origen.
+- Las tres cifras de la demo en la vista de proyectos.
 - Recorrido automático del guion en el navegador.
 - Herramientas: agente `frontend-dev`, skills `frontend-design` e `impeccable`, `design:design-critique`, `webapp-testing`.
 
 ### Etapa 5 — Demo (día 3, mañana)
 - Congelar el código a primera hora; desde aquí solo se corrigen fallos del guion.
-- Presentación de 6 diapositivas con el Plan de arranque: problema, solución, demo, cliente y mercado, modelo de negocio, plan de 90 días.
-- Grabar el vídeo de respaldo y volver a unir los teléfonos a Twilio esa mañana.
-- Dos ensayos cronometrados y respuestas preparadas a las preguntas difíciles: privacidad de los chats, miedo a despidos, dependencia de Meta.
+- Presentación de 6 diapositivas: problema (Sequoia), por qué un gestor de proyectos no lo resuelve, demo, cliente y mercado, modelo de negocio, plan de 90 días.
+- Grabar el vídeo de respaldo y guardar las respuestas del guion para no depender de la red.
+- Dos ensayos cronometrados y respuestas preparadas a las preguntas difíciles: en qué se diferencia de Asana con IA, quién carga los datos, miedo a despidos.
 - Herramientas: `verification-before-completion`, `code-review`, skill de presentaciones, `design:ux-copy`.
 
 ---
 
-## 7. Cómo trabajamos (flujo de TREISS, adaptado)
+## 6. Cómo trabajamos (flujo de TREISS, adaptado)
 
 **Se mantiene**
 - **Plan aprobado antes del código.** Cada etapa tiene su plan detallado (skill `writing-plans`), que se aprueba antes de escribir.
@@ -178,30 +178,39 @@ Cada etapa termina con algo que se puede enseñar. Si una se atrasa, se recorta 
 - **Índice del código con CodeGraph** desde el final de la etapa 1.
 
 **Se relaja para el hackathon**
-- La cobertura del 90 % no aplica. Pruebas obligatorias solo en el lector de chats, las reglas de plazo y los 15 casos de control.
-- El panel se verifica con el recorrido del guion, no con pruebas por componente.
+- La cobertura del 90 % no aplica. Pruebas obligatorias solo en las reglas de asignación, el motor de reloj, las dependencias y los casos de control.
+- Las vistas se verifican con el recorrido del guion, no con pruebas por componente.
 - La documentación se limita a `docs/` y a un `CLAUDE.md` corto.
 
 ### Reparto sugerido con 3 personas
 
 | Persona | Etapas 1–2 | Etapas 3–4 | Etapa 5 |
 |---|---|---|---|
-| A (datos y WhatsApp) | Twilio, lector de chats y modelo | Seguimiento, escalamiento y reloj | Teléfonos y respaldo |
-| B (IA) | Empresa ficticia y casos de control | Clasificación, brief y preguntas | Preguntas difíciles |
-| C (producto) | Esqueleto, despliegue y diseño base | Panel, aprobaciones y simulador | Presentación y vídeo |
+| A (modelo y motor) | Tablas, datos de ejemplo y reglas de asignación | Reloj, escalamiento y dependencias | Datos de demo estables |
+| B (IA) | Empresa ficticia, casos de control y captura | Decisiones preparadas y Preguntar | Preguntas difíciles |
+| C (producto) | Esqueleto, despliegue y vista de proyectos | Mi día, Decisiones y cifras | Presentación y vídeo |
 
 ---
 
-## 8. Conectores y permisos
+## 7. Conectores y permisos
 
 | Herramienta | Estado | Uso en el plan |
 |---|---|---|
 | Vercel | Conectado | Despliegue, base de datos, tareas programadas y registros de errores |
 | GitHub (`gh`) | Sesión iniciada | Repositorio y ramas |
-| Google Drive | Conectado | Hoja de pedidos y presentación |
+| Google Drive | Conectado | Presentación y material del hackathon |
 | Notion | Conectado | Opcional: notas del equipo |
-| Twilio | Sin cuenta | Lo crea una persona del equipo en la etapa 0 |
 | Slack, Linear, Asana, Atlassian, Figma | Sin autorizar | No hacen falta para este MVP |
+
+---
+
+## 8. Canales secundarios (después del hackathon)
+
+La plataforma es el centro; los canales llevan el trabajo hacia ella y los avisos hacia las personas.
+
+- **WhatsApp como entrada y aviso.** Es probable que vuelva para el producto real: el Plan de arranque señala la adopción como el mayor riesgo, y los técnicos y bodegueros ya viven en WhatsApp.
+- **Lo aprendido en la v1.** La API oficial de grupos exige una cuenta verificada por Meta y solo funciona con grupos creados desde la API. La conversación 1 a 1 sí es viable desde el primer día.
+- **Si sobra tiempo en el hackathon:** un aviso por correo cuando Nexo escala. No se empieza antes de cerrar la etapa 4.
 
 ---
 
@@ -209,13 +218,13 @@ Cada etapa termina con algo que se puede enseñar. Si una se atrasa, se recorta 
 
 | Riesgo | Señal | Respuesta |
 |---|---|---|
-| Twilio falla o caduca la sesión | El teléfono no recibe respuesta | Simulador de chat (vía C) y vídeo de respaldo |
-| Nexo clasifica mal un mensaje en vivo | Menos de 13 de 15 casos de control bien | Limitar la demo a los mensajes del guion, con respuestas guardadas |
-| Nexo no puede iniciar la conversación del brief | Pasaron más de 24 horas desde el último mensaje del teléfono | La persona escribe "brief" y Nexo responde |
-| La red del lugar falla | — | Vídeo de respaldo |
-| El alcance crece | Aparece una sexta función | Va a la lista "después del hackathon" |
+| El jurado lo ve como "otro gestor de proyectos" | En los ensayos preguntan en qué se diferencia de Asana | La demo abre con la captura y cierra con "el gerente no persiguió a nadie"; la vista de proyectos sale al final |
+| La captura asigna mal un trabajo en vivo | Menos de 12 de 15 frases de control bien | Limitar la demo a las frases del guion, con respuestas guardadas |
+| El motor de coordinación se alarga | Etapa 3 sin cerrar al mediodía del día 2 | Dejar seguimiento y escalamiento; las dependencias entre proyectos se muestran con datos preparados |
+| La red del lugar falla | — | Vídeo de respaldo y respuestas guardadas |
+| El alcance crece | Aparece una sexta función o un canal | Va a la sección 8 |
 
-**Orden de recorte si falta tiempo:** hoja de pedidos en Google Sheets (se usa CSV) → F4 con preguntas libres → vía B en vivo → gráficos. F1, F2 y el panel no se recortan.
+**Orden de recorte si falta tiempo:** F5 con preguntas libres → cifras calculadas en vivo → detección automática de dependencias → Mi día (se sustituye por la vista de proyectos filtrada por persona). F1, el seguimiento con escalamiento y las decisiones no se recortan: son la tesis.
 
 ---
 
@@ -224,10 +233,10 @@ Cada etapa termina con algo que se puede enseñar. Si una se atrasa, se recorta 
 - [ ] Tamaño del equipo y quién hace qué.
 - [ ] Criterios de evaluación y formato de la presentación.
 - [ ] Industria definitiva de la empresa ficticia (el Plan de arranque la deja como pregunta abierta).
-- [ ] Confirmar la pila de la sección 5 y la decisión abierta sobre Python.
+- [ ] Confirmar la pila de la sección 4 y la decisión abierta sobre Python.
+- [ ] Actualizar las secciones "Producto" y "Competencia y diferenciación" del Plan de arranque, que siguen describiendo a Nexo como nativo de WhatsApp.
 
 ## Fuentes
+- Jack Dorsey y Roelof Botha, *From Hierarchy to Intelligence*, Sequoia Capital: https://sequoiacap.com/article/from-hierarchy-to-intelligence
 - Plan de arranque: startup de coordinación inteligente (documento del equipo, 20-11-2026).
 - API de grupos de WhatsApp, documentación de Meta: https://developers.facebook.com/documentation/business-messaging/whatsapp/groups/
-- Hilo de desarrolladores sobre el tope de 8 participantes (no confirmado por Meta): https://developers.facebook.com/community/threads/1084199161066371/
-- Entorno de pruebas de Twilio para WhatsApp: https://www.twilio.com/docs/whatsapp/sandbox
