@@ -19,13 +19,13 @@ Un proyecto Next.js (App Router, `next@latest` estable al crear: 16.x o superior
 | `@anthropic-ai/sdk` | dep | solo si existe `ANTHROPIC_API_KEY` |
 | `zod` | dep | v4; valida la interpretación de la IA (`z.toJSONSchema` para la herramienta de Claude) |
 | `clsx`, `tailwind-merge`, `lucide-react` | dep | para el agente de diseño; **no** se usa shadcn ni Radix (no se toca `package.json` después de 1.1) |
-| `typescript`, `@types/node`, `@types/react`, `@types/react-dom`, `@types/pg` | dev | |
+| `typescript`, `@types/node`, `@types/react`, `@types/react-dom`, `@types/pg` | dev | `typescript` 6.0.x: typescript-eslint aún no admite la 7 |
 | `tailwindcss`, `@tailwindcss/postcss` | dev | v4: `@import "tailwindcss";` en `globals.css` |
 | `eslint`, `eslint-config-next` | dev | configuración plana; `next lint` ya no existe |
 | `vitest` | dev | entorno `node`, `pool: 'forks'` |
 | `tsx` | dev | para `scripts/reiniciar-db.ts` |
 
-`package.json`: `"packageManager": "pnpm@12.x.y"` (la instalada), `"engines": {"node": ">=24"}`. Scripts:
+`package.json`: `"type": "module"`, `"packageManager": "pnpm@12.x.y"` (la instalada), `"engines": {"node": ">=24"}`. Scripts:
 
 | Script | Comando |
 |---|---|
@@ -151,7 +151,7 @@ Tipos de `acciones.tipo`: `crear_trabajo`, `actualizar_trabajo`, `pedir_estado`,
 
 ### 3.3 Semilla (04)
 
-Personas con id = nombre en minúsculas sin tildes, unido con guion (`jose-alfaro`, `lucia-mora`…). Plazos sin hora = 17:00 de ese día; con hora, la indicada (T04 mié 17:00, T22 10:00, T23 14:00, T28 12:00, T29 16:00). `creado_en` = lun 23 7:00; `resuelto_en` = plazo en los 8 resueltos (T01, T02, T03, T08, T09, T14, T19, T20). En curso: T04, T23. Necesidades: T04, T10, T11 → 1 `compresor-2hp`; T25 → 4 `termostato` y 10 `empaque-puerta`. T15 lleva `etiqueta = 'conciliacion_inventario'`. Repuestos con los precios de 04 y `dias_habitual` 6/3/3/3/6. Reloj: `2026-11-25T07:00:00-06:00`. Sin seguimientos, acciones ni eventos iniciales.
+Personas con id = nombre en minúsculas sin tildes, unido con guion (`jose-alfaro`, `lucia-mora`…). Plazos sin hora = 17:00 de ese día; con hora, la indicada (T04 mié 17:00, T22 10:00, T23 14:00, T28 12:00, T29 16:00). `creado_en` = lun 23 7:00; `resuelto_en` = plazo en los 8 resueltos (T01, T02, T03, T08, T09, T14, T19, T20). En curso: T04, T23. Necesidades: T04, T10, T11 → 1 `compresor-2hp`; T25 → 4 `termostato` y 10 `empaque-puerta`. T15 lleva `etiqueta = 'conciliacion_inventario'`. Repuestos con los precios de 04 y `dias_habitual` 6/3/3/3/6. Reloj: `2026-11-25T07:00:00-06:00`. Sin seguimientos ni acciones iniciales. Historial de la gerente: 2 notas de `marcela-solis` con su evento `nota_agregada` (`actor_id` = `marcela-solis`): T19 lun 23 10:00 «Confirmé con Soda El Roble la hora de entrega» y T20 mar 24 10:00 «Pedí priorizar al Hotel Mirador». No hay más eventos iniciales.
 
 ### 3.4 Arranque y reinicio
 
@@ -163,6 +163,8 @@ Personas con id = nombre en minúsculas sin tildes, unido con guion (`jose-alfar
 
 ### 4.0 Archivos de contrato (escritos completos en 1.1, congelados después)
 `dominio/tipos.ts`, `dominio/constantes.ts`, `db/esquema.ts`, `motor/instantanea.ts`, el tipo de `motor/efectos.ts`, `ia/interprete.ts`, `ia/esquema-interpretacion.ts`, `servicios/contexto.ts`, `servicios/vistas.ts`. Además 1.1 crea **todos** los demás archivos de §2 como esqueletos con la firma exacta: los servicios lanzan `new NoImplementado('<archivo>')`; las funciones del motor devuelven un valor neutro (`[]`, `new Map()`, `null`); los componentes devuelven un marcador simple. Así `typecheck` y `build` pasan desde el primer día y cada tarea solo rellena sus archivos.
+
+**Precisiones fijadas por 1.1** (el código manda en el detalle): `NoImplementado` y `ErrorDominio` viven en `dominio/tipos.ts`. Los tipos que cruzan capas se definen en `dominio/tipos.ts` y los archivos de §4.2–4.4 los reexportan: `PersonaBreve`, `PlazoPropuesto`, `PropuestaCompra`, `OpcionCalculada`, `CambioFecha`, `HechoBloqueo`, `Cifras` y el plan validado `Plan` (`PlanTrabajoNuevo | PlanActualizacion | …`: la `Interpretacion` con ids comprobados y plazos ya resueltos a `Date`). `Decision` incluye `opciones: OpcionCalculada[]` (la carga `cargarInstantanea`). `Db` y el objeto `esquema` (todas las tablas) se exportan de `db/esquema.ts`; una transacción `tx` también es `Db`. Firmas que §4 no daba: `persistirEfectos(db, efectos): Promise<{ accionIds: number[] }>`; `validarInterpretacion(inst, interp, autorId): ResultadoValidacion`; `aplicarPlan(db, inst, plan, autorId, capturaId): Promise<ResultadoAplicacion>`; `crearConexion(modo: ModoConexion): Promise<Conexion>` con `Conexion { db; ejecutarSql(sql); cerrar() }` y `obtenerConexion()` (singleton); `crearInterprete(claveApi = process.env.ANTHROPIC_API_KEY)`; `prepararDemo(): Promise<{ ctx; cerrar() }>`.
 
 ### 4.1 Dominio y tiempo
 ```ts
@@ -211,8 +213,8 @@ export type Efecto =
   | { tipo: 'actualizar_necesidad'; trabajoId: string; repuestoId: string; cambios: { fechaDisponible?: Date | null; atendida?: boolean } }
   | { tipo: 'crear_seguimiento'; seguimiento: Seguimiento }
   | { tipo: 'actualizar_seguimiento'; seguimientoId: string; cambios: Partial<Seguimiento> }
-  | { tipo: 'crear_decision'; decision: Decision; opciones: OpcionCalculada[] }
-  | { tipo: 'actualizar_decision'; decisionId: string; cambios: Partial<Decision> }
+  | { tipo: 'crear_decision'; decision: Decision }   // Decision.opciones: OpcionCalculada[] (filas de opciones_decision)
+  | { tipo: 'actualizar_decision'; decisionId: string; cambios: Partial<Omit<Decision, 'id' | 'opciones'>> }
   | { tipo: 'accion'; accion: AccionNueva; aviso: AvisoNuevo | null }   // aviso.personaId = accion.destinatarioId
   | { tipo: 'evento'; evento: EventoNuevo };
 // instantanea.ts (índices puros)
@@ -390,7 +392,7 @@ Marco común (`layout.tsx`, `export const dynamic = 'force-dynamic'`): barra sup
 Server actions (`src/app/acciones/`): `cambiarPersona(id)`, `avanzar(minutos)`, `siguienteEvento()`, `reiniciar()`, `accionCapturar(prev, formData)`, `accionResponderCaptura(prev, formData)`, `accionResponderSeguimiento(formData)`, `accionMarcarLeidos()`, `accionAprobar(decisionId, letra)`, `accionRechazar(decisionId, motivo)`, `accionPreguntar(prev, formData)`. Todas obtienen el contexto con `obtenerContextoApp()`, la persona con `personaActual()`, devuelven datos serializables y llaman `revalidatePath('/', 'layout')`. Las páginas reciben `params` como `Promise` (Next 15+).
 
 **Las tres cifras** (`cifras-demo.tsx`, en `/proyectos` y `/registro`):
-1. «Trabajos cerrados sin intervención de la gerente: **8 de 8 (100 %)** · meta 50 %». Un trabajo resuelto tiene intervención si existe un evento con `actor_id` = gerente y ese `trabajo_id`.
+1. «Trabajos cerrados sin intervención de la gerente: **6 de 8 (75 %)** · meta 50 %». Intervención = existe al menos un evento de cualquier tipo con `actor_id` = la persona con `ROL_GERENTE` y `trabajo_id` = ese trabajo, en cualquier fecha; `porcentaje` = redondeo entero de sin intervención / resueltos × 100.
 2. «Seguimientos hechos por Nexo: **19**» = acciones `pedir_estado` + `recordatorio` + `escalamiento` + `aviso`.
 3. «Horas de coordinación ahorradas esta semana: **3,4 h** · estimado» = (seguimientos × 10 + preguntas respondidas × 15) min. Nota visible: «Hipótesis de minutos, no medición. Línea base: 10 supervisores × 1 h diaria = 50 h/semana». (Valores del final del guion, §6.3.)
 
@@ -450,7 +452,7 @@ Un solo `prepararDemo({hora:'07:00'})` y los pasos de 03 §4 en orden, solo con 
 | 6 | `avanzarReloj(4)`; `capturar(lucia-mora, C11)` | 8:10; D01 para `marcela-solis`; existencia 0; seguimiento de T31 `respondido`; seguimientos = 11 |
 | 7 | `avanzarReloj(2)`; `listarDecisiones({decisorId: marcela})` → [D01]; `aprobarDecision(D01,'A',marcela)` | 8:12; como E4-A (T32 para Karla); seguimientos = 19 |
 | 8 | `avanzarReloj(1)`; `preguntar(marcela, C13)` | 8:13; como C13 |
-| 9 | `avanzarReloj(1)`; `obtenerCifras`; `listarAcciones` | 8:14; `{resueltosSinGerente: 8, resueltosTotal: 8, porcentaje: 100, seguimientos: 19, preguntasRespondidas: 1, minutosAhorrados: 205, horasAhorradas: 3.4}`; ninguna acción de tipo `escalamiento` a `marcela-solis` |
+| 9 | `avanzarReloj(1)`; `obtenerCifras`; `listarAcciones` | 8:14; `{resueltosSinGerente: 6, resueltosTotal: 8, porcentaje: 75, seguimientos: 19, preguntasRespondidas: 1, minutosAhorrados: 205, horasAhorradas: 3.4}`; ninguna acción de tipo `escalamiento` a `marcela-solis` |
 
 ---
 

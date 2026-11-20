@@ -1,0 +1,25 @@
+# dependencias
+/node_modules
+
+# next.js
+/.next/
+/out/
+/build
+*.tsbuildinfo
+
+# datos locales de PGlite
+/.data/
+
+# pruebas
+/coverage
+
+# variables de entorno (solo se versiona el ejemplo)
+.env*
+!.env.example
+
+# varios
+.DS_Store
+*.pem
+npm-debug.log*
+.pnpm-debug.log*
+.vercel
