@@ -198,8 +198,8 @@ describe('persistirEfectos', () => {
     expect(filas).toHaveLength(1);
     expect(filas[0]).toMatchObject({ autorId: 'daniela-quesada', texto: 'Voy en camino', en: AHORA });
     const evs = await ctx.db.select().from(eventos).where(eq(eventos.tipo, 'nota_agregada'));
-    // la semilla trae 2 (de la gerente) + el nuevo
-    expect(evs).toHaveLength(3);
+    // la semilla trae 3 (2 de la gerente y 1 de Diego en T21) + el nuevo
+    expect(evs).toHaveLength(4);
     expect(evs.filter((e) => e.actorId === 'daniela-quesada')).toHaveLength(1);
   });
 

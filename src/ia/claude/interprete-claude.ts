@@ -40,6 +40,18 @@ export interface ClienteMensajes {
 
 type Bloque = { type: string; [clave: string]: unknown };
 
+/**
+ * Deja rastro del fallo antes de usar el respaldo Local. Solo la operación, el modelo, el tipo de error, su
+ * estado HTTP si lo hay y la primera línea del mensaje (recortada): nunca la clave ni la petición.
+ */
+function registrarFallo(operacion: string, modelo: string, error: unknown, claveApi: string): void {
+  const nombre = error instanceof Error ? error.name : typeof error;
+  const estado = typeof error === 'object' && error !== null && 'status' in error ? ` (HTTP ${String(error.status)})` : '';
+  const mensaje = error instanceof Error ? (error.message.split(/\r?\n/)[0] ?? '').slice(0, 200) : '';
+  const seguro = claveApi.length > 0 ? mensaje.replaceAll(claveApi, '[clave]') : mensaje;
+  console.error(`[Nexo] Claude falló en ${operacion} (${modelo}): ${nombre}${estado}${seguro ? `: ${seguro}` : ''}. Se usa el respaldo Local.`);
+}
+
 export class InterpreteClaude implements InterpreteIA {
   readonly nombre = 'claude' as const;
   private cliente: ClienteMensajes | null;
@@ -91,7 +103,8 @@ export class InterpreteClaude implements InterpreteIA {
       const entrada = this.entradaDeHerramienta(contenido, NOMBRE_HERRAMIENTA_INTERPRETACION);
       const valor = esquemaEntradaHerramienta.parse(entrada).interpretacion;
       return { valor, implementacion: 'claude', modelo: MODELO_CAPTURA, respaldo: false };
-    } catch {
+    } catch (error) {
+      registrarFallo('interpretar', MODELO_CAPTURA, error, this.claveApi);
       const r = await this.respaldo.interpretar(texto, ctx);
       return { ...r, respaldo: true };
     }
@@ -111,7 +124,8 @@ export class InterpreteClaude implements InterpreteIA {
       const entrada = this.entradaDeHerramienta(contenido, NOMBRE_HERRAMIENTA_CLASIFICACION);
       const valor = esquemaEntradaClasificacion.parse(entrada).tema;
       return { valor, implementacion: 'claude', modelo: MODELO_PREGUNTAS, respaldo: false };
-    } catch {
+    } catch (error) {
+      registrarFallo('clasificarPregunta', MODELO_PREGUNTAS, error, this.claveApi);
       const r = await this.respaldo.clasificarPregunta(texto, ctx);
       return { ...r, respaldo: true };
     }
@@ -133,7 +147,8 @@ export class InterpreteClaude implements InterpreteIA {
         .trim();
       if (texto === '') throw new Error('Claude devolvió una respuesta vacía');
       return { valor: texto, implementacion: 'claude', modelo: MODELO_PREGUNTAS, respaldo: false };
-    } catch {
+    } catch (error) {
+      registrarFallo('redactarRespuesta', MODELO_PREGUNTAS, error, this.claveApi);
       const r = await this.respaldo.redactarRespuesta(pregunta, hechos);
       return { ...r, respaldo: true };
     }

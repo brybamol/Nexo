@@ -1,5 +1,5 @@
 // Pruebas de 2.2: selección Claude/Local e intérprete Claude con cliente falso (sin red, sin clave real).
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InterpreteClaude, MODELO_CAPTURA, MODELO_PREGUNTAS, type ClienteMensajes } from '@/ia/claude/interprete-claude';
 import { herramientaInterpretacion } from '@/ia/claude/prompts';
 import { crearInterprete } from '@/ia/elegir';
@@ -64,6 +64,9 @@ describe('crearInterprete (selección)', () => {
 });
 
 describe('InterpreteClaude con cliente falso', () => {
+  // Cada caída al respaldo deja rastro con console.error; aquí se silencia (y se comprueba en su prueba).
+  const consola = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  afterEach(() => consola.mockClear());
   it('respuesta válida: devuelve la interpretación de Claude con el modelo de captura', async () => {
     const cliente = clienteQue(async () => ({
       content: [{ type: 'tool_use', id: 'tu_1', name: 'registrar_interpretacion', input: { interpretacion: propuesta } }],
@@ -99,16 +102,26 @@ describe('InterpreteClaude con cliente falso', () => {
     expect(r.implementacion).toBe('local');
   });
 
-  it('error de red: respaldo Local en las tres operaciones', async () => {
+  it('error de red: respaldo Local en las tres operaciones, con rastro en console.error sin la clave', async () => {
+    const clave = 'sk-ant-clave-secreta-de-prueba';
     const cliente = clienteQue(async () => {
-      throw new Error('ECONNRESET');
+      throw new Error(`ECONNRESET usando ${clave}\nsegunda línea con la petición`);
     });
-    const ia = new InterpreteClaude('k', respaldoFalso(), cliente);
+    const ia = new InterpreteClaude(clave, respaldoFalso(), cliente);
     const hechos: HechosPregunta = { tema: 'atrasados', datos: {}, fuentes: [] };
 
     expect(await ia.interpretar('x', ctx)).toMatchObject({ implementacion: 'local', respaldo: true });
     expect(await ia.clasificarPregunta('¿qué hay atrasado?', ctx)).toMatchObject({ valor: 'atrasados', implementacion: 'local', respaldo: true });
     expect(await ia.redactarRespuesta('¿qué hay atrasado?', hechos)).toMatchObject({ valor: 'texto local', implementacion: 'local', respaldo: true });
+
+    expect(consola).toHaveBeenCalledTimes(3);
+    const lineas = consola.mock.calls.map((c) => String(c[0]));
+    for (const op of ['interpretar', 'clasificarPregunta', 'redactarRespuesta']) expect(lineas.some((l) => l.includes(op))).toBe(true);
+    for (const l of lineas) {
+      expect(l).toContain('ECONNRESET');
+      expect(l).not.toContain(clave);
+      expect(l).not.toContain('segunda línea');
+    }
   });
 
   it('clasificarPregunta válida usa el modelo de preguntas; tema inválido cae al respaldo', async () => {

@@ -70,7 +70,7 @@ describe('frases de control (captura a las 7:05)', () => {
     expect(r.estado).toBe('pregunta');
     if (r.estado !== 'pregunta') return;
     expect(r.pregunta).toContain('metros');
-    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 2 });
+    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 3 }); // los 3 de la semilla
     expect(vi.mocked(efectosDecisionNueva)).not.toHaveBeenCalled();
   });
 
@@ -79,7 +79,7 @@ describe('frases de control (captura a las 7:05)', () => {
     expect(r.estado).toBe('ignorada');
     if (r.estado !== 'ignorada') return;
     expect(r.motivo).toBeTruthy();
-    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 2 });
+    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 3 }); // los 3 de la semilla
   });
 
   it('un texto vacío o un autor inexistente no cambian nada', async () => {
@@ -130,7 +130,7 @@ describe('frases de control (captura a las 7:05)', () => {
     vi.mocked(efectosDecisionNueva).mockReturnValueOnce([]);
     const r = await responderCaptura(demo.ctx, p.capturaId, '20');
     expect(r.estado).toBe('error');
-    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 2 });
+    expect(await contar()).toEqual({ trabajos: 30, decisiones: 0, acciones: 0, eventos: 3 }); // los 3 de la semilla
     const [c] = await demo.ctx.db.select().from(capturas).where(eq(capturas.id, p.capturaId));
     expect(c?.estado).toBe('pregunta');
   });

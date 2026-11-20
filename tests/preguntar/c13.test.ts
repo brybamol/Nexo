@@ -34,6 +34,7 @@ describe('C13 · pedidos de la semana', () => {
     expect(r.texto).toContain('7 pedidos');
     expect(r.texto).toContain('Sofía Navarro');
     expect(r.texto).toMatch(/pago/);
+    expect(r.texto).toMatch(/cliente estaba cerrado/i); // nota de T21 en la semilla (04): motivo del atraso de 1043
     for (const n of [1041, 1042, 1043, 1044, 1045, 1046, 1047]) expect(r.texto).toContain(String(n));
   });
 

@@ -66,7 +66,7 @@ describe('frases de actualización (captura a las 7:05)', () => {
     if (r.estado !== 'aplicada') return;
     expect(r.trabajosCreados).toEqual([]);
     expect(r.avisosA).toEqual(['sofia-navarro']);
-    expect(await notasDe('T21')).toHaveLength(1);
+    expect(await notasDe('T21')).toHaveLength(2); // la de la semilla (Diego, mar 24) y la de C03
     expect((await trabajo('T21')).estado).toBe('abierto');
     expect(await contarTrabajos()).toBe(30);
     const a = await avisoPara(r.capturaId, 'sofia-navarro');

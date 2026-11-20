@@ -250,10 +250,16 @@ export const NECESIDADES_SEMILLA: NecesidadRepuesto[] = [
   { trabajoId: 'T25', repuestoId: REPUESTOS.empaque, cantidad: 10, fechaDisponible: null, atendida: false },
 ];
 
-/** Historial inicial de la gerente (§3.3): notas y sus eventos nota_agregada. */
+/** Historial inicial (§3.3): notas de la gerente en T19 y T20, la de Diego en T21 (04), y sus eventos nota_agregada. */
 export const NOTAS_SEMILLA: (typeof notas.$inferInsert)[] = [
   { trabajoId: 'T19', autorId: PERSONAS.marcela, en: enCR(LUN_23, '10:00'), texto: 'Confirmé con Soda El Roble la hora de entrega' },
   { trabajoId: 'T20', autorId: PERSONAS.marcela, en: enCR(MAR_24, '10:00'), texto: 'Pedí priorizar al Hotel Mirador' },
+  {
+    trabajoId: 'T21',
+    autorId: PERSONAS.diego,
+    en: enCR(MAR_24, '15:30'),
+    texto: 'El cliente estaba cerrado el martes; los congeladores volvieron a bodega',
+  },
 ];
 
 export const EVENTOS_SEMILLA: EventoNuevo[] = [
@@ -270,6 +276,14 @@ export const EVENTOS_SEMILLA: EventoNuevo[] = [
     actorId: PERSONAS.marcela,
     tipo: 'nota_agregada',
     trabajoId: 'T20',
+    decisionId: null,
+    datos: {},
+  },
+  {
+    en: enCR(MAR_24, '15:30'),
+    actorId: PERSONAS.diego,
+    tipo: 'nota_agregada',
+    trabajoId: 'T21',
     decisionId: null,
     datos: {},
   },

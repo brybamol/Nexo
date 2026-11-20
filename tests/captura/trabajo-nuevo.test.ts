@@ -132,7 +132,20 @@ describe('C01 · José: falta el compresor de 2 HP', () => {
     expect(await demo.ctx.db.select().from(seguimientos)).toHaveLength(creados);
   });
 
-  it.todo('C01: seguimiento de T31 nivel 0 con proximo_en 7:35 (lo produce iniciarSeguimientoUrgente, tarea 3.1)');
+  it('C01: seguimiento de T31 nivel 0, urgente, para Lucía, desde las 7:05 y con proximo_en 7:35', async () => {
+    await capturar(demo.ctx, 'jose-alfaro', C01);
+    const filas = await demo.ctx.db.select().from(seguimientos).where(eq(seguimientos.trabajoId, 'T31'));
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toMatchObject({
+      nivel: 0,
+      estado: 'pendiente',
+      urgente: true,
+      destinatarioId: 'lucia-mora',
+      plazoReferencia: enCR(MIE, '07:05'),
+      iniciadoEn: enCR(MIE, '07:05'),
+      proximoEn: enCR(MIE, '07:35'),
+    });
+  });
 
   it('la captura queda guardada como aplicada con su interpretación', async () => {
     const r = await capturar(demo.ctx, 'jose-alfaro', C01);

@@ -171,21 +171,23 @@ describe('semilla de Frío del Valle', () => {
     expect(etiquetados.map((t) => [t.id, t.etiqueta])).toEqual([['T15', 'conciliacion_inventario']]);
   });
 
-  it('el historial de la gerente: nota y evento nota_agregada en T19 y T20', async () => {
+  it('el historial: notas y eventos nota_agregada de la gerente en T19 y T20 y de Diego en T21', async () => {
     const notasReales = (await db.select().from(notas)).map((n) => [n.trabajoId, n.autorId, n.texto]).sort();
     expect(notasReales).toEqual(
       [
         ['T19', 'marcela-solis', 'Confirmé con Soda El Roble la hora de entrega'],
         ['T20', 'marcela-solis', 'Pedí priorizar al Hotel Mirador'],
+        ['T21', 'diego-rojas', 'El cliente estaba cerrado el martes; los congeladores volvieron a bodega'],
       ].sort(),
     );
 
     const todos = await db.select().from(eventos);
-    expect(todos).toHaveLength(2);
+    expect(todos).toHaveLength(3);
     expect(todos.map((e) => [e.tipo, e.actorId, e.trabajoId]).sort()).toEqual(
       [
         ['nota_agregada', 'marcela-solis', 'T19'],
         ['nota_agregada', 'marcela-solis', 'T20'],
+        ['nota_agregada', 'diego-rojas', 'T21'],
       ].sort(),
     );
   });
@@ -204,8 +206,8 @@ describe('semilla de Frío del Valle', () => {
     expect(await db.select().from(trabajos)).toHaveLength(30);
     expect(await db.select().from(dependencias)).toHaveLength(19);
     expect(await db.select().from(necesidadesRepuesto)).toHaveLength(5);
-    expect(await db.select().from(notas)).toHaveLength(2);
-    expect(await db.select().from(eventos)).toHaveLength(2);
+    expect(await db.select().from(notas)).toHaveLength(3);
+    expect(await db.select().from(eventos)).toHaveLength(3);
     expect(await db.select().from(reloj)).toHaveLength(1);
   });
 });
