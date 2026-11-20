@@ -1,9 +1,11 @@
 'use server';
 // Caja de captura (useActionState). Tarea 2.5.
 import { revalidatePath } from 'next/cache';
+import { ErrorDominio } from '@/dominio/tipos';
 import { capturar, responderCaptura } from '@/servicios/captura';
 import { obtenerTrabajo } from '@/servicios/consultas-trabajos';
 import type { ContextoServicio } from '@/servicios/contexto';
+import { listarPersonas } from '@/servicios/personas';
 import type { ResultadoCaptura, TrabajoVista } from '@/servicios/vistas';
 import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
 
@@ -21,8 +23,9 @@ export type EstadoFormularioCaptura = {
 const MAX_TEXTO = 1000;
 
 function mensajeDe(e: unknown): string {
-  if (e instanceof Error && e.message) return e.message;
-  return 'No se pudo procesar la captura. Intenta de nuevo.';
+  if (e instanceof ErrorDominio && e.message) return e.message;
+  console.error('[captura] error interno', e);
+  return 'Algo falló al procesar esto. Inténtalo de nuevo.';
 }
 
 /** Carga las vistas de los trabajos que cita el resultado; lo que falle simplemente se omite. */
@@ -35,9 +38,16 @@ async function cargarTrabajos(ctx: ContextoServicio, r: ResultadoCaptura): Promi
   return vistas.filter((v): v is TrabajoVista => v !== null);
 }
 
+/** `avisosA` trae ids de persona; la tarjeta muestra nombres. */
+async function conNombres(ctx: ContextoServicio, r: ResultadoCaptura): Promise<ResultadoCaptura> {
+  if (r.estado !== 'aplicada' || r.avisosA.length === 0) return r;
+  const personas = await listarPersonas(ctx);
+  return { ...r, avisosA: r.avisosA.map((id) => personas.find((p) => p.id === id)?.nombre ?? id) };
+}
+
 async function terminar(ctx: ContextoServicio, r: ResultadoCaptura): Promise<EstadoFormularioCaptura> {
   if (r.estado === 'aplicada') revalidatePath('/', 'layout');
-  return { resultado: r, error: null, trabajos: await cargarTrabajos(ctx, r) };
+  return { resultado: await conNombres(ctx, r), error: null, trabajos: await cargarTrabajos(ctx, r) };
 }
 
 export async function accionCapturar(

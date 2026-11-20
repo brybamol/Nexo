@@ -3,6 +3,7 @@
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
 import { HORA_PLAZO_SIN_HORA, ROL_COMPRAS, ROL_SERVICIO_CLIENTE } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
+import { minusculaInicial } from '@/dominio/texto';
 import { enCR, partesCR } from '@/dominio/tiempo';
 import { ErrorDominio, type Decision, type LetraOpcion, type PropuestaCompra, type Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
@@ -75,7 +76,7 @@ export function efectosDecisionNueva(
       accion: {
         en: inst.ahora,
         tipo: 'corregir_existencia',
-        motivo: `${proponente} informó que hay ${p.existenciaReal} de ${r.nombre.toLowerCase()}; el sistema decía ${r.existencia}.`,
+        motivo: `${proponente} informó que hay ${p.existenciaReal} de ${minusculaInicial(r.nombre)}; el sistema decía ${r.existencia}.`,
         hechoOrigen: hecho,
         trabajoIds: [],
         decisionId: null,

@@ -9,6 +9,8 @@
 
 # datos locales de PGlite
 /.data/
+# carpeta literal que se creaba con NEXO_DATA_DIR=%LOCALAPPDATA%/...
+/%LOCALAPPDATA%/
 
 # pruebas
 /coverage

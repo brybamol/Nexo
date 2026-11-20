@@ -13,13 +13,14 @@ export function ControlReloj({ ahoraTexto }: { ahoraTexto: string }) {
   const [pendiente, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function ejecutar(tarea: () => Promise<unknown>) {
+  function ejecutar(tarea: () => Promise<{ ok: boolean; error: string | null }>) {
     setError(null);
     iniciar(async () => {
       try {
-        await tarea();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo completar la acción.');
+        const r = await tarea();
+        if (!r.ok) setError(r.error);
+      } catch {
+        setError('Algo falló al procesar esto. Inténtalo de nuevo.');
       }
     });
   }

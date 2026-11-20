@@ -56,6 +56,41 @@ describe('efectosActualizacion · liberación', () => {
     expect(avisosDe(efectos)).toEqual([{ personaId: 'diego-rojas', trabajoIds: ['T24'] }]);
   });
 
+  it('responder «en curso» sobre un trabajo bloqueado por otro aún abierto no lo desbloquea: cierra el seguimiento y guarda la nota', () => {
+    const base = trasC15();
+    const inst: Instantanea = {
+      ...base,
+      seguimientos: [
+        {
+          id: 'S1',
+          trabajoId: 'T24',
+          plazoReferencia: base.ahora,
+          nivel: 0,
+          destinatarioId: 'diego-rojas',
+          urgente: false,
+          proximoEn: enCR('2026-11-25', '13:00'),
+          estado: 'pendiente',
+          iniciadoEn: base.ahora,
+        },
+      ],
+    };
+    const efectos = efectosActualizacion(inst, { ...resolver('T24'), nuevoEstado: 'en_curso', nota: 'Sigo con lo demás.' }, 'diego-rojas');
+    const despues = aplicarEnMemoria(inst, efectos);
+    expect(despues.trabajos.find((t) => t.id === 'T24')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31', motivoBloqueo: 'Vitrina dañada' });
+    expect(efectos.some((e) => e.tipo === 'actualizar_trabajo')).toBe(false);
+    expect(despues.seguimientos[0]?.estado).toBe('respondido');
+    expect(efectos).toContainEqual({ tipo: 'agregar_nota', trabajoId: 'T24', autorId: 'diego-rojas', texto: 'Sigo con lo demás.' });
+    expect(avisosDe(efectos)).toEqual([]);
+    const registro = efectos.find((e) => e.tipo === 'accion' && e.accion.tipo === 'actualizar_trabajo');
+    expect(registro?.tipo === 'accion' && registro.accion.motivo).toContain('T24 sigue bloqueado por T31');
+  });
+
+  it('resolver el trabajo bloqueado sí se permite aunque el bloqueante siga abierto', () => {
+    const inst = trasC15();
+    const efectos = efectosActualizacion(inst, resolver('T24'), 'diego-rojas');
+    expect(aplicarEnMemoria(inst, efectos).trabajos.find((t) => t.id === 'T24')).toMatchObject({ estado: 'resuelto', bloqueadoPorId: null });
+  });
+
   it('al liberado que es el autor no se le avisa', () => {
     const inst = trasC15();
     const efectos = efectosActualizacion(

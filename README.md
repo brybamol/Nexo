@@ -31,19 +31,25 @@ Es un MVP de hackathon. Funciona en local con datos de ejemplo de una empresa fi
    cd Nexo
    ```
 
-3. Instala las dependencias:
+3. Activa corepack, que descarga la versión de pnpm que exige el repositorio (12.14.0):
+
+   ```bash
+   corepack enable
+   ```
+
+4. Instala las dependencias:
 
    ```bash
    pnpm install
    ```
 
-4. Arranca la aplicación en modo desarrollo:
+5. Arranca la aplicación en modo desarrollo:
 
    ```bash
    pnpm dev
    ```
 
-5. Abre en el navegador la dirección `http://localhost:3000`. Nexo redirige a «Mi día».
+6. Abre en el navegador la dirección `http://localhost:3000`. Nexo redirige a «Mi día».
 
 No hay que instalar ni configurar ninguna base de datos. Nexo usa PGlite, una base PostgreSQL embebida que guarda sus datos en la carpeta `.data/` dentro del proyecto. Al arrancar, crea las tablas y carga sola los datos de ejemplo. Si el proyecto está dentro de OneDrive, conviene mover esa carpeta con la variable `NEXO_DATA_DIR` (ver `.env.example`).
 
@@ -64,7 +70,7 @@ La demo es el guion de cuatro minutos del plan (`docs/02-plan-mvp-hackathon.md`)
 11. Con Marcela Solís, escribe en **Preguntar** «¿Cómo vamos con los pedidos de la semana?».
 12. Abre **Proyectos** y **Registro**.
 
-> **Advertencia:** no pulses **Siguiente evento** antes de la primera frase (paso 3) ni después de la segunda (paso 9). Ese botón salta a las 11:00 y cambia las cifras.
+> **Advertencia:** **Siguiente evento** primero procesa lo que ya venció a la hora actual, sin mover el reloj; si no hay nada vencido, salta al siguiente evento programado. No lo pulses antes de la primera frase (paso 3). Después de la segunda frase (paso 9) llevaría el reloj a las 10:00 y cambiaría las cifras.
 
 Al final, las cifras esperadas son:
 
@@ -151,4 +157,7 @@ Documentos de `docs/`:
 - No incluye diagramas de Gantt, informes ni gráficos de gestión.
 - Los datos (personas, clientes, proveedores, precios y cifras) son inventados.
 - La integración con la API de Claude no está verificada contra la API real.
+- Las preguntas respondidas no aparecen en el registro de acciones.
+- Con Claude, una reprogramación de una entrega a un cliente se aplica sin pasar por una decisión (la regla está pendiente de definir).
+- El diseño usa fuentes de Windows (Segoe UI y Bahnschrift); en macOS y Linux recurre a equivalentes del sistema.
 - Las horas ahorradas son una estimación basada en minutos supuestos (10 por seguimiento y 15 por pregunta), no una medición.

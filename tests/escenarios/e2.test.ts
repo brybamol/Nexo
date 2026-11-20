@@ -5,7 +5,7 @@ import { acciones, avisos } from '@/db/esquema';
 import { cargarInstantanea } from '@/db/instantanea';
 import { enCR } from '@/dominio/tiempo';
 import { capturar } from '@/servicios/captura';
-import { avanzarReloj, irAlSiguienteEvento, obtenerAhora } from '@/servicios/reloj';
+import { avanzarReloj, fijarReloj, irAlSiguienteEvento, obtenerAhora } from '@/servicios/reloj';
 import { prepararDemo, type Demo } from '../ayudantes/preparar';
 
 let demo: Demo;
@@ -23,6 +23,8 @@ const deT31 = (r: { acciones: { trabajoIds: string[]; tipo: string }[] }) =>
 
 describe('E2 · recordatorio y escalamiento', () => {
   it('7:05 aviso a Lucía; 7:35 recordatorio; 8:05 escalamiento a Andrés con quién, qué bloquea y desde cuándo; 8:35 Marcela; agotado', async () => {
+    // prepararDemo fija las 7:05 sin tick; en la demo se llega con «+5 min», que pide el estado de T15 y T21.
+    await fijarReloj(demo.ctx, enCR(MIE, '07:05'));
     const res = await capturar(demo.ctx, 'jose-alfaro', C01);
     expect(res.estado).toBe('aplicada');
     if (res.estado === 'aplicada') expect(res.trabajosCreados).toEqual(['T31']);

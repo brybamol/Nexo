@@ -1,6 +1,6 @@
 // Respuestas a seguimientos y cambios de estado desde la interfaz (sin pasar por la caja de captura). Tarea 3.4.
 // Cada mutación: transacción → cargarInstantanea → motor → persistirEfectos (§4.4). La respuesta es la regla 3 de §4.2.
-import { cargarInstantanea, persistirEfectos } from '@/db/instantanea';
+import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/instantanea';
 import { ErrorDominio, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
 import { efectosActualizacion } from '@/motor/actualizacion';
 import type { Efecto } from '@/motor/efectos';
@@ -35,6 +35,7 @@ export async function responderSeguimiento(
   r: { estado?: EstadoTrabajo; nota?: string },
 ): Promise<void> {
   await ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
     const { trabajo, persona } = comprobar(inst, trabajoId, personaId, r.estado);
     const nota = r.nota?.trim() || null;
@@ -81,6 +82,7 @@ export async function cambiarEstado(
   estado: EstadoTrabajo,
 ): Promise<void> {
   await ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
     const { trabajo } = comprobar(inst, trabajoId, personaId, estado);
     if (trabajo.estado === estado) return;

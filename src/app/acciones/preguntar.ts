@@ -1,6 +1,7 @@
 'use server';
 // Formulario de /preguntar (useActionState). Tarea 4.3.
 import { revalidatePath } from 'next/cache';
+import { ErrorDominio } from '@/dominio/tipos';
 import { preguntar } from '@/servicios/preguntar';
 import type { RespuestaPregunta } from '@/servicios/vistas';
 import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
@@ -33,6 +34,8 @@ export async function accionPreguntar(
     revalidatePath('/', 'layout');
     return { respuesta, error: null, pregunta: texto };
   } catch (e) {
-    return { respuesta: null, error: e instanceof Error && e.message ? e.message : 'No se pudo responder. Intenta de nuevo.', pregunta: texto };
+    if (e instanceof ErrorDominio && e.message) return { respuesta: null, error: e.message, pregunta: texto };
+    console.error('[preguntar] error interno', e);
+    return { respuesta: null, error: 'Algo falló al procesar esto. Inténtalo de nuevo.', pregunta: texto };
   }
 }

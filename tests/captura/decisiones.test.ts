@@ -50,6 +50,26 @@ describe('decisiones desde la captura (7:05, estado inicial)', () => {
     expect(vista?.decisor.nombre).toBe('Marcela Solís');
   });
 
+  it('C11 dos veces: una sola decisión pendiente y un solo aviso a la decisora; la segunda dice que ya está D01', async () => {
+    const C01 = 'No puedo terminar la instalación en La Colina, falta el compresor de 2 HP';
+    expect((await capturar(demo.ctx, 'jose-alfaro', C01)).estado).toBe('aplicada');
+    const avisosMarcela = async () => (await demo.ctx.db.select().from(avisos)).filter((a) => a.personaId === 'marcela-solis');
+    expect(await capturar(demo.ctx, 'lucia-mora', C11)).toMatchObject({ estado: 'aplicada', decisionId: 'D01' });
+    const accionesAntes = (await demo.ctx.db.select().from(acciones)).length;
+    expect(await avisosMarcela()).toHaveLength(1);
+
+    const r = await capturar(demo.ctx, 'lucia-mora', C11);
+    expect(r.estado).toBe('error');
+    if (r.estado === 'error') {
+      expect(r.mensaje).toContain('D01');
+      expect(r.mensaje).toContain('No creé nada');
+    }
+    const inst = await cargarInstantanea(demo.ctx.db);
+    expect(inst.decisiones.map((d) => [d.id, d.estado])).toEqual([['D01', 'pendiente']]);
+    expect(await avisosMarcela()).toHaveLength(1);
+    expect(await demo.ctx.db.select().from(acciones)).toHaveLength(accionesAntes);
+  });
+
   it('C06 con respuesta «20» · Karla: D01 en P3 para Andrés; A ₡84.000 hoy 15:00, B ₡78.400 sáb 28 07:00; sin C ni cambios', async () => {
     const q = await capturar(demo.ctx, 'karla-jimenez', C06);
     expect(q.estado).toBe('pregunta');

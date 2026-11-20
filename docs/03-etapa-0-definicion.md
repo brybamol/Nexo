@@ -87,8 +87,8 @@ Son la lógica de la etapa 3. Los tiempos son los de la demo; en un cliente real
 | Opción | Compra | Costo | Consecuencia |
 |---|---|---|---|
 | A | 3 compresores al proveedor local, entrega hoy 15:00 | ₡1.380.000 | La Colina se entrega el viernes 27 y Trigal se atiende el jueves 26, como estaba previsto |
-| B | 3 compresores al proveedor habitual, llegan el martes 1 de diciembre | ₡1.140.000 | La Colina y los dos locales de Trigal se atrasan al miércoles 2 de diciembre |
-| C | 1 al proveedor local y 2 al habitual | ₡1.220.000 | La Colina se entrega a tiempo; los dos locales de Trigal se atrasan al 2 de diciembre |
+| B | 3 compresores al proveedor habitual, llegan el martes 1 de diciembre | ₡1.140.000 | La Colina se entrega el jueves 3 de diciembre; los dos locales de Trigal pasan al martes 1 de diciembre |
+| C | 1 al proveedor local y 2 al habitual | ₡1.220.000 | La Colina se entrega a tiempo; los dos locales de Trigal pasan al martes 1 de diciembre |
 
 Nexo presenta las opciones y sus consecuencias. No elige por la gerente.
 

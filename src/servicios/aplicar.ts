@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { capturas, type Db } from '@/db/esquema';
 import { persistirEfectos } from '@/db/instantanea';
 import { formatearFecha } from '@/dominio/formato';
+import { minusculaInicial } from '@/dominio/texto';
 import {
   ErrorDominio,
   type Plan,
@@ -126,7 +127,7 @@ function efectosTrabajoNuevo(inst: Instantanea, plan: PlanTrabajoNuevo, autorId:
       ...efectosBloqueo(actual, {
         trabajoBloqueadoId: bloqueadoId,
         bloqueanteId: id,
-        motivo: repuesto ? `Falta ${repuesto.nombre.toLowerCase()}` : plan.titulo,
+        motivo: repuesto ? `Falta ${minusculaInicial(repuesto.nombre)}` : plan.titulo,
         repuestoFaltanteId: repuesto?.id ?? null,
         autorId,
         descripcion: hecho,
@@ -141,7 +142,7 @@ function efectosTrabajoNuevo(inst: Instantanea, plan: PlanTrabajoNuevo, autorId:
         cambios: {
           estado: 'bloqueado',
           bloqueadoPorId: id,
-          motivoBloqueo: repuesto ? `Falta ${repuesto.nombre.toLowerCase()}` : plan.titulo,
+          motivoBloqueo: repuesto ? `Falta ${minusculaInicial(repuesto.nombre)}` : plan.titulo,
           ...(original?.fechaSolucion ? { fechaSolucion: null } : {}),
         },
         actorId: autorId,
@@ -190,8 +191,17 @@ function resumir(inst: Instantanea, plan: Plan, efectos: Efecto[], creados: stri
       if (bloqueados.length > 0) partes.push(`${unicos(bloqueados).join(', ')} queda bloqueado.`);
       return partes.join(' ');
     }
-    case 'actualizacion':
-      return `Actualicé ${actualizados.join(', ')}${titulo(plan.trabajoId) ? ` («${titulo(plan.trabajoId)}»)` : ''}.`;
+    case 'actualizacion': {
+      const x = inst.trabajos.find((t) => t.id === plan.trabajoId);
+      const bloqueante = x?.estado === 'bloqueado' && x.bloqueadoPorId ? inst.trabajos.find((t) => t.id === x.bloqueadoPorId) : undefined;
+      const cambioEstado = efectos.some((e) => e.tipo === 'actualizar_trabajo' && e.trabajoId === plan.trabajoId && e.cambios.estado);
+      const sigue =
+        plan.nuevoEstado && plan.nuevoEstado !== 'resuelto' && bloqueante && bloqueante.estado !== 'resuelto' && !cambioEstado
+          ? ` ${plan.trabajoId} sigue bloqueado por ${bloqueante.id} «${bloqueante.titulo}»: no cambié su estado.`
+          : '';
+      const hecho = actualizados.length > 0 ? `Actualicé ${actualizados.join(', ')}${titulo(plan.trabajoId) ? ` («${titulo(plan.trabajoId)}»)` : ''}.` : '';
+      return `${hecho}${sigue}`.trim() || `Registré tu respuesta sobre ${plan.trabajoId}.`;
+    }
     case 'decision':
       return decisionId ? `Preparé la decisión ${decisionId}: ${plan.resumen}` : plan.resumen;
     case 'duplicado':

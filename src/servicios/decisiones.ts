@@ -1,6 +1,6 @@
 // Bandeja de decisiones: listar, aprobar (R8) y rechazar. Tarea 3.3.
 // Cada mutación: transacción → cargarInstantanea → motor/decision → persistirEfectos.
-import { cargarInstantanea, persistirEfectos } from '@/db/instantanea';
+import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/instantanea';
 import { formatearColones } from '@/dominio/formato';
 import { ErrorDominio, type Decision, type EstadoDecision, type LetraOpcion, type Persona } from '@/dominio/tipos';
 import * as motor from '@/motor/decision';
@@ -83,6 +83,7 @@ export async function aprobarDecision(
   personaId: string,
 ): Promise<{ trabajosCreados: string[]; avisosA: string[] }> {
   return ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
     comprobarDecisor(inst, id, personaId);
     const efectos = motor.aplicarDecision(inst, id, letra, personaId);
@@ -104,6 +105,7 @@ export async function rechazarDecision(
   const limpio = motivo.trim();
   if (limpio === '') throw new ErrorDominio('Escribe el motivo del rechazo.');
   return ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
     comprobarDecisor(inst, id, personaId);
     const efectos = motor.rechazarDecision(inst, id, personaId, limpio);

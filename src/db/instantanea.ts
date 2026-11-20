@@ -10,7 +10,7 @@
 //    Todos los demás eventos (decision_creada, decision_aprobada, decision_rechazada, respuesta_seguimiento…)
 //    se emiten con un efecto `evento` explícito.
 //  - Un efecto `accion` inserta la acción y, si trae `aviso`, su aviso (personaId = destinatario de la acción).
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   acciones,
   avisos,
@@ -41,6 +41,19 @@ function porIdNatural<T extends { id: string }>(a: T, b: T): number {
 }
 
 /** Lee todo lo que necesita el motor (incluido reloj.ahora y las opciones de cada decisión). */
+/** Clave del cerrojo que serializa las mutaciones (cualquier entero fijo; solo lo usa Nexo). */
+const CLAVE_TURNO_ESCRITURA = 20261125;
+
+/**
+ * Llamar al empezar la transacción de una mutación, ANTES de cargarInstantanea: espera a que termine cualquier otra
+ * mutación en curso (cerrojo de Postgres que se suelta al cerrar la transacción). Así dos capturas a la vez con
+ * `DATABASE_URL` no calculan el mismo id (T31, D01…) ni aprueban dos veces la misma decisión. En PGlite, que ya
+ * serializa las consultas, no cambia nada.
+ */
+export async function tomarTurnoEscritura(tx: Db): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(${CLAVE_TURNO_ESCRITURA})`);
+}
+
 export async function cargarInstantanea(db: Db): Promise<Instantanea> {
   const [filaReloj] = await db.select().from(reloj).where(eq(reloj.id, 1));
   if (!filaReloj) throw new ErrorDominio('El reloj de la demo no está inicializado: falta cargar la semilla.');

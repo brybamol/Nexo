@@ -1,7 +1,7 @@
 'use client';
 // Caja de captura siempre visible (fija abajo en teléfono, arriba en escritorio). Tarea 2.5.
-import { CircleAlert, SendHorizontal } from 'lucide-react';
-import { startTransition, useActionState, useRef, type FormEvent, type KeyboardEvent } from 'react';
+import { CircleAlert, SendHorizontal, X } from 'lucide-react';
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import {
   accionCapturar,
   accionResponderCaptura,
@@ -19,13 +19,27 @@ async function despachar(prev: EstadoFormularioCaptura, formData: FormData): Pro
 export function CajaCaptura() {
   const [estado, enviar, pendiente] = useActionState(despachar, ESTADO_INICIAL);
   const formulario = useRef<HTMLFormElement>(null);
+  // Guarda síncrona: `pendiente` es un valor viejo hasta el siguiente render, y dos Enter seguidos lo atraviesan.
+  const enviando = useRef(false);
+  // Estado que el usuario cerró: cualquier estado nuevo (otra captura) vuelve a mostrar la tarjeta.
+  const [cerrado, setCerrado] = useState<EstadoFormularioCaptura | null>(null);
+
+  useEffect(() => {
+    if (!pendiente) enviando.current = false;
+  }, [pendiente]);
+
+  function lanzar(datos: FormData) {
+    if (enviando.current) return;
+    enviando.current = true;
+    startTransition(() => enviar(datos));
+  }
 
   function alEnviar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const datos = new FormData(e.currentTarget);
     const texto = String(datos.get('texto') ?? '').trim();
-    if (!texto || pendiente) return;
-    startTransition(() => enviar(datos));
+    if (!texto) return;
+    lanzar(datos);
   }
 
   function alTeclear(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -38,7 +52,7 @@ export function CajaCaptura() {
 
   // La respuesta a la pregunta única va por su propio formulario dentro de la tarjeta.
   function enviarRespuesta(datos: FormData) {
-    startTransition(() => enviar(datos));
+    lanzar(datos);
   }
 
   // Tras una captura aceptada se limpia la frase; si falló, se conserva para reintentar.
@@ -75,13 +89,25 @@ export function CajaCaptura() {
             {estado.error}
           </p>
         )}
-        {estado.resultado && (
-          <TarjetaResultadoCaptura
-            resultado={estado.resultado}
-            trabajos={estado.trabajos}
-            enviarRespuesta={enviarRespuesta}
-            pendiente={pendiente}
-          />
+        {estado.resultado && estado !== cerrado && (
+          <div className="caja-captura__tarjeta">
+            <button
+              type="button"
+              className="caja-captura__cerrar"
+              disabled={pendiente}
+              aria-label="Cerrar el resultado de la captura"
+              onClick={() => setCerrado(estado)}
+            >
+              <X className="icono" aria-hidden="true" />
+              <span>Cerrar</span>
+            </button>
+            <TarjetaResultadoCaptura
+              resultado={estado.resultado}
+              trabajos={estado.trabajos}
+              enviarRespuesta={enviarRespuesta}
+              pendiente={pendiente}
+            />
+          </div>
         )}
       </div>
     </section>

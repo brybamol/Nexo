@@ -1,5 +1,6 @@
 // Validación pura de la interpretación de la IA (§4.3 de docs/05). Tarea 2.3.
 // La IA solo propone: aquí se comprueba contra la instantánea y se decide la ÚNICA pregunta (R9).
+import { minusculaInicial } from '@/dominio/texto';
 import { resolverPlazo } from '@/dominio/tiempo';
 import type { Persona, Plan, PlazoPropuesto, Trabajo } from '@/dominio/tipos';
 import type { Interpretacion, InterpretacionDe } from '@/ia/interprete';
@@ -64,6 +65,13 @@ function validarTrabajoNuevo(inst: Instantanea, i: InterpretacionDe<'trabajo_nue
   const repuestoId = i.repuestoFaltante?.repuestoId ?? null;
   if (repuestoId && !inst.repuestos.some((r) => r.id === repuestoId)) {
     return error(`No reconozco el repuesto ${repuestoId}. No creé nada.`);
+  }
+  // Frase repetida: si lo que bloquearía ya está bloqueado por un trabajo no resuelto (en particular, uno que consigue
+  // el mismo repuesto), es ese trabajo. No se crea otro ni se cambia el bloqueante.
+  for (const id of i.bloquea) {
+    const bloqueanteId = trabajos.get(id)?.bloqueadoPorId;
+    const bloqueante = bloqueanteId ? trabajos.get(bloqueanteId) : undefined;
+    if (bloqueante && bloqueante.estado !== 'resuelto') return plan({ tipo: 'duplicado', trabajoId: bloqueante.id });
   }
   const plazo = plazoValido(i.plazo, i.urgente, inst.ahora);
   if (!plazo) return error('No entendí el plazo. No creé nada.');
@@ -136,11 +144,21 @@ function validarDecision(inst: Instantanea, i: InterpretacionDe<'decision'>): Re
   if (i.trabajoRelacionadoId !== null && !inst.trabajos.some((t) => t.id === i.trabajoRelacionadoId)) {
     return error(`No existe el trabajo ${i.trabajoRelacionadoId}. No creé nada.`);
   }
+  // Propuesta repetida: una sola decisión pendiente por repuesto y proyecto.
+  const yaPendiente = inst.decisiones.find(
+    (d) => d.estado === 'pendiente' && d.repuestoId === repuesto.id && d.proyectoId === i.proyectoId,
+  );
+  if (yaPendiente) {
+    const decisor = inst.personas.find((p) => p.id === yaPendiente.decisorId)?.nombre ?? yaPendiente.decisorId;
+    return error(
+      `Ya está pendiente la decisión ${yaPendiente.id} sobre ${minusculaInicial(repuesto.nombre)}, esperando a ${decisor}. No creé nada.`,
+    );
+  }
   if (i.compra.cantidad === null) {
     const unidad = repuesto.unidad === 'unidad' ? 'unidades' : `${repuesto.unidad}s`;
     return {
       tipo: 'pregunta',
-      texto: `¿Cuántos ${unidad} de ${repuesto.nombre.toLowerCase()} se van a comprar?`,
+      texto: `¿Cuántos ${unidad} de ${minusculaInicial(repuesto.nombre)} se van a comprar?`,
       opciones: [],
     };
   }

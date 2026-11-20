@@ -3,7 +3,7 @@
 // sobre una instantánea recargada dentro de ella. Cada captura deja su fila en `capturas`, también si falla.
 import { eq } from 'drizzle-orm';
 import { capturas, type Db } from '@/db/esquema';
-import { cargarInstantanea } from '@/db/instantanea';
+import { cargarInstantanea, tomarTurnoEscritura } from '@/db/instantanea';
 import { normalizar } from '@/dominio/texto';
 import { ErrorDominio, NoImplementado, type EstadoCaptura } from '@/dominio/tipos';
 import { construirContextoCaptura } from '@/ia/contexto';
@@ -165,6 +165,7 @@ export async function capturar(ctx: ContextoServicio, autorId: string, texto: st
   // 3. Validación, plan, efectos y persistencia: todo en una transacción.
   try {
     return await ctx.db.transaction(async (tx) => {
+      await tomarTurnoEscritura(tx);
       const inst = await cargarInstantanea(tx);
       const capturaId = await insertarCaptura(tx, { ...fila, en: inst.ahora }, 'error');
       return resolverEnTransaccion(tx, inst, interp, autorId, capturaId, meta);
@@ -201,6 +202,7 @@ export async function responderCaptura(
 ): Promise<ResultadoCaptura> {
   try {
     return await ctx.db.transaction(async (tx) => {
+      await tomarTurnoEscritura(tx);
       const [c] = await tx.select().from(capturas).where(eq(capturas.id, capturaId));
       if (!c) throw new ErrorDominio(`No existe la captura ${capturaId}.`);
       const previo = c.resultado as Partial<ResultadoCaptura> | null;

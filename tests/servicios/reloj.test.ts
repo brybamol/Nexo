@@ -125,16 +125,49 @@ describe('avanzarReloj', () => {
     await expect(avanzarReloj(demo.ctx, Number.NaN)).rejects.toBeInstanceOf(ErrorDominio);
     expect(await obtenerAhora(demo.ctx)).toEqual(T0705);
   });
+
+  it('rechaza avanzar más de 7 días (10.080 minutos) de una vez', async () => {
+    await expect(avanzarReloj(demo.ctx, 10_081)).rejects.toBeInstanceOf(ErrorDominio);
+    await expect(avanzarReloj(demo.ctx, Number.POSITIVE_INFINITY)).rejects.toBeInstanceOf(ErrorDominio);
+    expect(await obtenerAhora(demo.ctx)).toEqual(T0705);
+    await avanzarReloj(demo.ctx, 10_080);
+    expect(await obtenerAhora(demo.ctx)).toEqual(sumarMinutos(T0705, 10_080));
+  });
+});
+
+describe('irAlSiguienteEvento con algo vencido sin procesar', () => {
+  it('a las 7:00 recién reiniciada procesa T15 y T21 sin mover el reloj; la siguiente vez salta a las 10:00 (T22)', async () => {
+    const siete = await prepararDemo({ hora: '07:00' });
+    try {
+      const r = await irAlSiguienteEvento(siete.ctx);
+      expect(r.ahora).toBe(enCR('2026-11-25', '07:00').toISOString());
+      expect(r.acciones.map((a) => [a.tipo, a.destinatario?.id, a.trabajoIds])).toEqual([
+        ['pedir_estado', 'lucia-mora', ['T15']],
+        ['pedir_estado', 'diego-rojas', ['T21']],
+      ]);
+      const r2 = await irAlSiguienteEvento(siete.ctx);
+      expect(r2.ahora).toBe(enCR('2026-11-25', '10:00').toISOString());
+      expect(r2.acciones.map((a) => [a.tipo, a.trabajoIds])).toEqual([['pedir_estado', ['T22']]]);
+    } finally {
+      await siete.cerrar();
+    }
+  });
 });
 
 describe('irAlSiguienteEvento', () => {
+  // prepararDemo fija las 7:05 sin tick: se procesa antes lo ya vencido (T15, T21), como hace «+5 min» en la demo.
+  beforeEach(async () => {
+    await fijarReloj(demo.ctx, T0705);
+    vi.mocked(tick).mockClear();
+  });
+
   it('va al instante que dice siguienteEvento y hace tick allí', async () => {
     const destino = enCR('2026-11-25', '07:35');
     vi.mocked(siguienteEvento).mockReturnValueOnce(destino);
     const r = await irAlSiguienteEvento(demo.ctx);
     expect(r.ahora).toBe(destino.toISOString());
     expect(await obtenerAhora(demo.ctx)).toEqual(destino);
-    expect(vi.mocked(tick).mock.calls[0]?.[0].ahora).toEqual(destino);
+    expect(vi.mocked(tick).mock.calls.at(-1)?.[0].ahora).toEqual(destino);
   });
 
   it('si no hay evento, avanza 30 minutos', async () => {

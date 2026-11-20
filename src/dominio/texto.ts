@@ -10,6 +10,11 @@ export function normalizar(s: string): string {
     .trim();
 }
 
+/** Solo la primera letra en minúscula, para usar un nombre dentro de una frase: «Compresor de 2 HP» → «compresor de 2 HP». */
+export function minusculaInicial(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
 function bigramas(s: string): Map<string, number> {
   const m = new Map<string, number>();
   for (let i = 0; i < s.length - 1; i++) {

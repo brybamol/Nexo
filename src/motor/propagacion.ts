@@ -1,6 +1,7 @@
 // Propagación del bloqueo y avisos agrupados: R4, R5 (§4.2 regla 4). Puro. Tarea 3.2.
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
 import { ETIQUETA_CONCILIACION } from '@/dominio/constantes';
+import { minusculaInicial } from '@/dominio/texto';
 import type { CausaRiesgo, HechoBloqueo, Marcas, Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
 import { porId, type Instantanea } from '@/motor/instantanea';
@@ -34,7 +35,7 @@ export function efectosBloqueo(inst: Instantanea, hecho: HechoBloqueo): Efecto[]
 
   const despues = aplicarEnMemoria(inst, efectos);
   const autor = inst.personas.find((p) => p.id === hecho.autorId)?.nombre ?? hecho.autorId;
-  const motivo = hecho.motivo.charAt(0).toLowerCase() + hecho.motivo.slice(1);
+  const motivo = minusculaInicial(hecho.motivo);
   let encabezado = `${autor} reportó que ${t.id} «${t.titulo}» quedó bloqueado: ${motivo}.`;
   const causa = repuesto ? causaCitada(inst, repuesto.id) : null;
   if (repuesto && causa) {
@@ -65,7 +66,7 @@ function porQue(causas: CausaRiesgo[], inst: Instantanea): string {
   const partes = causas.map((c) => {
     switch (c.tipo) {
       case 'repuesto':
-        return `necesita ${(repuestos.get(c.repuestoId ?? '')?.nombre ?? c.repuestoId ?? 'un repuesto').toLowerCase()}`;
+        return `necesita ${minusculaInicial(repuestos.get(c.repuestoId ?? '')?.nombre ?? c.repuestoId ?? 'un repuesto')}`;
       case 'bloqueado':
         return `depende de ${c.trabajoId}, bloqueado`;
       case 'atrasado':

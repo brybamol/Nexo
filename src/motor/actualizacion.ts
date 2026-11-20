@@ -63,8 +63,15 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
     }
   };
 
-  // Cambio de estado.
-  const nuevo = plan.nuevoEstado && plan.nuevoEstado !== x.estado ? plan.nuevoEstado : null;
+  // Cambio de estado. Un trabajo bloqueado por otro que sigue sin resolver no sale de bloqueado por una respuesta
+  // («sigo con…»): lo libera resolver su bloqueante (regla 5). Resolverlo directamente sí se permite.
+  const pedido = plan.nuevoEstado && plan.nuevoEstado !== x.estado ? plan.nuevoEstado : null;
+  const bloqueante = x.estado === 'bloqueado' && x.bloqueadoPorId ? trabajos.get(x.bloqueadoPorId) : undefined;
+  const sigueBloqueado = pedido !== null && pedido !== 'resuelto' && bloqueante !== undefined && bloqueante.estado !== 'resuelto';
+  const nuevo = sigueBloqueado ? null : pedido;
+  if (sigueBloqueado && bloqueante) {
+    cambiosTexto.push(`${x.id} sigue bloqueado por ${bloqueante.id} «${bloqueante.titulo}»: no cambió su estado`);
+  }
   if (nuevo) {
     const saleDeBloqueo = x.estado === 'bloqueado';
     efectos.push({

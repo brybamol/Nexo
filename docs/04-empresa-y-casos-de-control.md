@@ -195,7 +195,7 @@ Empieza después de E3, con la frase C11 a las 8:10.
 | mié 8:12 | — | Quitar "en riesgo" de T05, T06, T07, T10, T11 y T13. T04 sigue Bloqueado, con fecha de solución hoy 15:00 |
 | mié 8:12 | — | Avisar a los seis afectados y a Lucía Mora. Registrar la decisión y quién la tomó |
 
-**Variante:** si Marcela aprueba la opción B, Nexo mueve T04 al martes 1 de diciembre, recalcula los plazos de T05, T06, T07, T10, T11 y T13, y crea un trabajo para Sofía Navarro: avisar a los dos clientes del atraso.
+**Variante:** si Marcela aprueba la opción B, Nexo mueve T04, T10 y T11 al martes 1 de diciembre, T05 al miércoles 2, y T06, T07 y T13 al jueves 3 (La Colina se entrega el jueves 3 de diciembre), y crea un trabajo para Sofía Navarro: avisar a los dos clientes del atraso.
 
 ### E5 · Cierre de ciclo sin jefes
 | Reloj | Hecho | Nexo debe |

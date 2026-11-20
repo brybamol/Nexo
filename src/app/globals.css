@@ -759,3 +759,15 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--paral); width:
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Tarjeta de resultado de la captura con botón Cerrar */
+.caja-captura__tarjeta { position: relative; }
+.caja-captura__cerrar {
+  position: absolute; top: 0.5rem; right: 0.5rem; z-index: 1;
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  min-height: 2.75rem; padding: 0 0.75rem;
+  border: 1px solid var(--regla-fuerte); border-radius: var(--radio);
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.caja-captura__cerrar:disabled { opacity: 0.6; cursor: default; }
+.caja-captura__tarjeta .tarjeta-captura > header { padding-right: 6.5rem; }

@@ -155,6 +155,23 @@ describe('C01 · José: falta el compresor de 2 HP', () => {
     expect(c?.resultado).toMatchObject({ estado: 'aplicada', trabajosCreados: ['T31'] });
   });
 
+  it('la misma frase dos veces no crea otro trabajo: la segunda es «duplicado» de T31 y no cambia nada', async () => {
+    const primera = await capturar(demo.ctx, 'jose-alfaro', C01);
+    expect(primera.estado).toBe('aplicada');
+    const accionesAntes = (await demo.ctx.db.select().from(acciones)).length;
+    const avisosAntes = (await demo.ctx.db.select().from(avisos)).length;
+    const seguimientosAntes = (await demo.ctx.db.select().from(seguimientos)).length;
+
+    const segunda = await capturar(demo.ctx, 'jose-alfaro', C01);
+    expect(segunda).toMatchObject({ estado: 'duplicado', trabajoId: 'T31' });
+    expect(await contarTrabajos()).toBe(31);
+    expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
+    expect((await trabajo('T31')).estado).toBe('abierto');
+    expect(await demo.ctx.db.select().from(acciones)).toHaveLength(accionesAntes);
+    expect(await demo.ctx.db.select().from(avisos)).toHaveLength(avisosAntes);
+    expect(await demo.ctx.db.select().from(seguimientos)).toHaveLength(seguimientosAntes);
+  });
+
   it('si algo falla al persistir no queda nada a medias: se deshace todo y la captura queda como error', async () => {
     vi.mocked(efectosBloqueo).mockReturnValueOnce([
       { tipo: 'actualizar_trabajo', trabajoId: 'T99', cambios: { estado: 'bloqueado' }, actorId: 'jose-alfaro' },
@@ -262,6 +279,15 @@ describe('C15 · Diego: vitrina del pedido 1045 quebrada', () => {
     expect(t24).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
     const sinFaltante = await demo.ctx.db.select().from(repuestos);
     expect(sinFaltante.every((x) => x.faltanteReportadoEn === null)).toBe(true);
+  });
+});
+
+describe('capturas a la vez', () => {
+  it('dos capturas simultáneas reciben ids distintos (cada mutación toma su turno)', async () => {
+    const [a, b] = await Promise.all([capturar(demo.ctx, 'sofia-navarro', C05), capturar(demo.ctx, 'mario-chaves', C08)]);
+    const creados = [a, b].flatMap((r) => (r.estado === 'aplicada' ? r.trabajosCreados : []));
+    expect(creados.sort()).toEqual(['T31', 'T32']);
+    expect(await contarTrabajos()).toBe(32);
   });
 });
 

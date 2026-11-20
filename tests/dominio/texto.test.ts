@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizar, similitud } from '@/dominio/texto';
+import { minusculaInicial, normalizar, similitud } from '@/dominio/texto';
 
 describe('normalizar', () => {
   it('minúsculas, sin tildes ni puntuación, espacios simples', () => {
@@ -29,5 +29,12 @@ describe('similitud', () => {
     expect(similitud('a', 'b')).toBe(0);
     expect(similitud('', '')).toBe(1);
     expect(similitud('', 'hola')).toBe(0);
+  });
+});
+
+describe('minusculaInicial', () => {
+  it('solo baja la primera letra: conserva siglas como «HP»', () => {
+    expect(minusculaInicial('Compresor de 2 HP')).toBe('compresor de 2 HP');
+    expect(minusculaInicial('')).toBe('');
   });
 });

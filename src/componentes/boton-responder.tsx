@@ -12,6 +12,11 @@ export function BotonResponder({ trabajoId, titulo }: { trabajoId: string; titul
   function alEnviar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const datos = new FormData(e.currentTarget);
+    if (!datos.get('estado')) {
+      setError('Elige cómo va el trabajo: En curso o Resuelto.');
+      return;
+    }
+    setError(null);
     iniciar(async () => {
       const r = await accionResponderSeguimiento(datos);
       setError(r.ok ? null : r.error);
@@ -30,10 +35,10 @@ export function BotonResponder({ trabajoId, titulo }: { trabajoId: string; titul
           <legend>¿Cómo va {trabajoId}?</legend>
           <div className="opciones-radio">
             <label className="opcion-radio">
-              <input type="radio" name="estado" value="en_curso" defaultChecked /> En curso
+              <input type="radio" name="estado" value="en_curso" required /> En curso
             </label>
             <label className="opcion-radio">
-              <input type="radio" name="estado" value="resuelto" /> Resuelto
+              <input type="radio" name="estado" value="resuelto" required /> Resuelto
             </label>
           </div>
           <div>

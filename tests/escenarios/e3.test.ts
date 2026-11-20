@@ -58,6 +58,11 @@ describe('E3 · propagación entre proyectos', () => {
     const mario = props.find((a) => a.personaId === 'mario-chaves');
     expect(mario?.cuerpo).toContain('Cámara fría La Colina');
     expect(mario?.cuerpo).toContain('Mantenimiento Trigal');
+    // El nombre del repuesto tal como está en los datos («2 HP», no «2 hp»).
+    for (const a of props) expect(a.cuerpo).not.toContain('2 hp');
+    expect(mario?.cuerpo).toContain('falta compresor de 2 HP');
+    const t10 = props.find((a) => a.personaId === 'daniela-quesada');
+    expect(t10?.cuerpo).toContain('necesita compresor de 2 HP');
     // Al autor (José) no se le avisa; Lucía solo recibe su aviso de asignación.
     expect(props.some((a) => a.personaId === 'jose-alfaro' || a.personaId === 'lucia-mora')).toBe(false);
     if (r.estado === 'aplicada') {

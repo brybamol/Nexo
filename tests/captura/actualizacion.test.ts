@@ -5,9 +5,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { acciones, avisos, necesidadesRepuesto, notas, trabajos } from '@/db/esquema';
 import { enCR } from '@/dominio/tiempo';
 import type { PlanActualizacion, Seguimiento } from '@/dominio/tipos';
+import type { Interpretacion } from '@/ia/interprete';
 import { efectosActualizacion } from '@/motor/actualizacion';
 import type { Efecto } from '@/motor/efectos';
 import { capturar } from '@/servicios/captura';
+import { aprobarDecision } from '@/servicios/decisiones';
+import { cambiarEstado } from '@/servicios/estado-trabajos';
 import { instantaneaDesdeSemilla, prepararDemo, type Demo } from '../ayudantes/preparar';
 
 const C01 = 'No puedo terminar la instalación en La Colina, falta el compresor de 2 HP';
@@ -15,6 +18,7 @@ const C02 = 'Listo el mantenimiento de Escazú, Tibás queda para mañana';
 const C03 = 'Mae, el cliente de Don Beto no estaba, me devolví con los congeladores';
 const C09 = 'Todavía no entra el pago de La Colina por las vitrinas';
 const C14 = 'Ya llegó el compresor, sigo con la instalación';
+const C11 = 'No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local';
 
 describe('frases de actualización (captura a las 7:05)', () => {
   let demo: Demo;
@@ -109,6 +113,39 @@ describe('frases de actualización (captura a las 7:05)', () => {
     const a = await avisoPara(r.capturaId, 'mario-chaves');
     expect(a?.aviso?.trabajoIds).toEqual(['T05']);
     expect(await contarTrabajos()).toBe(31);
+  });
+
+  it('tras C01, «sigo con T04» (en curso) no desbloquea T04: lo dice el resultado y al aprobar la compra T04 recibe su fecha de solución', async () => {
+    await capturar(demo.ctx, 'jose-alfaro', C01);
+    const interp: Interpretacion = {
+      tipo: 'actualizacion',
+      trabajoId: 'T04',
+      nuevoEstado: 'en_curso',
+      nota: 'Sigo con lo que puedo.',
+      hayProblema: false,
+      reprogramar: [],
+      notasRelacionadas: [],
+    };
+    // Un intérprete que propone esa actualización (como podría hacerlo Claude); el resto, el Local.
+    const ia = Object.assign(Object.create(demo.ctx.ia) as typeof demo.ctx.ia, {
+      interpretar: async () => ({ valor: interp, implementacion: 'local' as const, modelo: null, respaldo: false }),
+    });
+    const r = await capturar({ ...demo.ctx, ia }, 'jose-alfaro', 'sigo con T04');
+    expect(r.estado).toBe('aplicada');
+    if (r.estado === 'aplicada') {
+      expect(r.resumen).toContain('T04 sigue bloqueado por T31');
+      expect(r.avisosA).toEqual([]);
+    }
+    expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
+    expect(await notasDe('T04')).toHaveLength(1);
+
+    // Lo mismo desde la interfaz.
+    await cambiarEstado(demo.ctx, 'T04', 'jose-alfaro', 'en_curso');
+    expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
+
+    await capturar(demo.ctx, 'lucia-mora', C11);
+    await aprobarDecision(demo.ctx, 'D01', 'A', 'marcela-solis');
+    expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31', fechaSolucion: enCR('2026-11-25', '15:00') });
   });
 
   it('C14 sin C01 no inventa: no hay bloqueante del compresor y no cambia nada', async () => {
