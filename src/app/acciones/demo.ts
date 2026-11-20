@@ -1,7 +1,11 @@
 'use server';
 // Botón «Reiniciar demo». Tarea 1.7.
-import { NoImplementado } from '@/dominio/tipos';
+import { revalidatePath } from 'next/cache';
+import { reiniciarDemo } from '@/servicios/demo';
+import { obtenerContextoApp } from '@/servidor/contexto-app';
 
 export async function reiniciar(): Promise<void> {
-  throw new NoImplementado('app/acciones/demo.ts (1.7)');
+  const ctx = await obtenerContextoApp();
+  await reiniciarDemo(ctx);
+  revalidatePath('/', 'layout');
 }

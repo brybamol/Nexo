@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/* Estructura mínima y funcional; el rediseño visual es de la tarea 4.6. */
+.app { min-height: 100vh; display: flex; flex-direction: column; font-family: system-ui, sans-serif; }
+.app__saltar { position: absolute; left: -9999px; }
+.app__saltar:focus { left: 0.5rem; top: 0.5rem; background: #fff; padding: 0.5rem; z-index: 50; }
+.app__contenido { flex: 1; padding: 1rem; max-width: 72rem; width: 100%; margin: 0 auto; }
+.app__captura { padding: 0.5rem 1rem; border-bottom: 1px solid #ccc; }
+
+/* Teléfono (< 640 px): la captura queda fija abajo y se reserva espacio para ella. */
+@media (max-width: 639px) {
+  .app__captura {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    border-bottom: 0; border-top: 1px solid #ccc; background: #fff;
+    max-height: 60vh; overflow-y: auto;
+  }
+  .app__contenido { padding-bottom: 8rem; }
+}
+
+.barra { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.5rem 1rem; border-bottom: 1px solid #ccc; }
+.barra__nav { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; list-style: none; margin: 0; padding: 0; }
+.barra__controles { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-left: auto; }
+.reloj { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+.cuadricula { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); list-style: none; padding: 0; }
+.tarjeta { border: 1px solid #ccc; border-radius: 0.5rem; padding: 0.75rem; overflow-wrap: anywhere; }
+.insignia { display: inline-block; border: 1px solid currentColor; border-radius: 999px; padding: 0 0.5rem; font-size: 0.75rem; }
+.insignia--atrasado { color: #b91c1c; }
+.insignia--riesgo { color: #b45309; }

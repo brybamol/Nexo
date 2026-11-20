@@ -1,8 +1,10 @@
 // Elige la implementación de la IA: Claude si hay clave (con respaldo Local), si no Local. Tarea 2.2.
-import { NoImplementado } from '@/dominio/tipos';
+import { InterpreteClaude } from '@/ia/claude/interprete-claude';
 import type { InterpreteIA } from '@/ia/interprete';
+import { InterpreteLocal } from '@/ia/local/interprete-local';
 
 export function crearInterprete(claveApi: string | undefined = process.env.ANTHROPIC_API_KEY): InterpreteIA {
-  void claveApi;
-  throw new NoImplementado('ia/elegir.ts (2.2)');
+  const local = new InterpreteLocal();
+  const clave = claveApi?.trim();
+  return clave ? new InterpreteClaude(clave, local) : local;
 }
