@@ -25,17 +25,24 @@ export default async function PaginaRegistro() {
   const [cifras, acciones] = await Promise.all([obtenerCifras(ctx), listarAcciones(ctx)]);
   return (
     <>
-      <h1>Registro</h1>
-      <section aria-labelledby="titulo-cifras">
-        <h2 id="titulo-cifras">Las tres cifras</h2>
+      <header className="pagina__cabecera">
+        <h1 className="pagina__titulo">Registro</h1>
+      </header>
+      <section aria-labelledby="titulo-cifras" className="seccion">
+        <h2 id="titulo-cifras" className="seccion__titulo">
+          Las tres cifras
+        </h2>
         <CifrasDemo cifras={cifras} />
       </section>
-      <section aria-labelledby="titulo-acciones">
-        <h2 id="titulo-acciones">Acciones de Nexo</h2>
+      <section aria-labelledby="titulo-acciones" className="seccion">
+        <h2 id="titulo-acciones" className="seccion__titulo">
+          Acciones de Nexo <span className="seccion__cuenta">{acciones.length}</span>
+        </h2>
         {acciones.length === 0 ? (
-          <p>Nexo todavía no ha hecho acciones.</p>
+          <p className="vacio">Nexo todavía no ha hecho acciones.</p>
         ) : (
-          <table>
+          <div className="tabla-envoltura" role="region" aria-labelledby="titulo-acciones" tabIndex={0}>
+          <table className="tabla">
             <caption>Acciones de Nexo, la más reciente primero</caption>
             <thead>
               <tr>
@@ -50,12 +57,16 @@ export default async function PaginaRegistro() {
             <tbody>
               {acciones.map((a) => (
                 <tr key={a.id}>
-                  <td>
+                  <td className="tabla__hora">
                     <time dateTime={a.en.toISOString()}>{formatearFecha(a.en)}</time>
                   </td>
-                  <td>{ETIQUETAS[a.tipo]}</td>
-                  <td>{a.destinatario ? `${a.destinatario.nombre} (${a.destinatario.rol})` : '—'}</td>
                   <td>
+                    <span className="insignia tipo-accion" data-tipo={a.tipo}>
+                      {ETIQUETAS[a.tipo]}
+                    </span>
+                  </td>
+                  <td>{a.destinatario ? `${a.destinatario.nombre} (${a.destinatario.rol})` : '—'}</td>
+                  <td className="tabla__trabajos">
                     {a.trabajoIds.length === 0
                       ? '—'
                       : a.trabajoIds.map((id, i) => (
@@ -71,6 +82,7 @@ export default async function PaginaRegistro() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
     </>

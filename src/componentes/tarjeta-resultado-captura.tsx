@@ -1,5 +1,6 @@
 'use client';
 // Resultado de una captura, con opciones si Nexo pregunta. Tarea 2.5.
+import { CircleAlert, CircleCheck, Copy, Info, MessageCircleQuestion, MessageSquareText } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ResultadoCaptura, TrabajoVista } from '@/servicios/vistas';
@@ -23,11 +24,24 @@ const TEMAS_PREGUNTA: Record<string, string> = {
   mis_pendientes: 'Mis pendientes',
 };
 
+const ICONOS = {
+  aplicada: CircleCheck,
+  pregunta: MessageCircleQuestion,
+  duplicado: Copy,
+  ignorada: Info,
+  respuesta: MessageSquareText,
+  error: CircleAlert,
+} as const;
+
 function Marco({ titulo, resultado, children }: { titulo: string; resultado: ResultadoCaptura; children: ReactNode }) {
+  const Icono = ICONOS[resultado.estado];
   return (
     <article className="tarjeta tarjeta-captura" data-estado={resultado.estado} aria-label={titulo}>
       <header>
-        <h2>{titulo}</h2>
+        <h2>
+          <Icono className="icono" aria-hidden="true" />
+          {titulo}
+        </h2>
         <InsigniaImplementacion ia={resultado.ia} />
       </header>
       {children}
@@ -53,7 +67,7 @@ function DetalleTrabajo({ trabajo }: { trabajo: TrabajoVista }) {
     <>
       <TarjetaTrabajo trabajo={trabajo} />
       {trabajo.bloquea.length > 0 && (
-        <p>
+        <p className="tarjeta-captura__meta">
           Bloquea: <EnlacesTrabajos ids={trabajo.bloquea} />
         </p>
       )}
@@ -77,22 +91,34 @@ function FormularioPregunta({
     <form action={enviarRespuesta} aria-busy={pendiente}>
       <input type="hidden" name="capturaId" value={resultado.capturaId} />
       {opciones.length > 0 ? (
-        <fieldset disabled={pendiente}>
+        <fieldset disabled={pendiente} className="tarjeta-captura__opciones">
           <legend className="sr-only">Opciones de respuesta</legend>
           {opciones.map((o) => (
-            <button key={o.valor} type="submit" name="respuesta" value={o.valor}>
+            <button key={o.valor} type="submit" name="respuesta" value={o.valor} className="boton">
               {o.etiqueta}
             </button>
           ))}
         </fieldset>
       ) : (
-        <>
-          <label htmlFor={idCampo}>Tu respuesta</label>
-          <input id={idCampo} name="respuesta" type="text" required autoComplete="off" disabled={pendiente} />
-          <button type="submit" disabled={pendiente}>
+        <div className="tarjeta-captura__respuesta">
+          <div className="campo-envoltura">
+            <label htmlFor={idCampo} className="etiqueta-campo">
+              Tu respuesta
+            </label>
+            <input
+              id={idCampo}
+              name="respuesta"
+              type="text"
+              required
+              autoComplete="off"
+              disabled={pendiente}
+              className="campo"
+            />
+          </div>
+          <button type="submit" disabled={pendiente} className="boton boton--solido">
             {pendiente ? 'Enviando…' : 'Responder'}
           </button>
-        </>
+        </div>
       )}
     </form>
   );
@@ -138,7 +164,9 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
               Decisión <Link href="/decisiones">{resultado.decisionId}</Link> enviada a quien debe decidir.
             </p>
           )}
-          {resultado.avisosA.length > 0 && <p>Nexo avisó a: {resultado.avisosA.join(', ')}.</p>}
+          {resultado.avisosA.length > 0 && (
+            <p className="tarjeta-captura__meta">Nexo avisó a: {resultado.avisosA.join(', ')}.</p>
+          )}
         </Marco>
       );
     }
@@ -200,7 +228,10 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
     case 'error':
       return (
         <Marco titulo="No se pudo capturar" resultado={resultado}>
-          <p role="alert">{resultado.mensaje}</p>
+          <p role="alert" className="alerta">
+            <CircleAlert className="icono" aria-hidden="true" />
+            {resultado.mensaje}
+          </p>
         </Marco>
       );
   }

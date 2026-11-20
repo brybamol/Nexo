@@ -10,15 +10,20 @@ export function CifrasDemo(props: { cifras: Cifras }) {
     <div className="cifras">
       <ul>
         <li>
-          Trabajos cerrados sin intervención de la gerente:{' '}
-          <strong>{`${cifras.resueltosSinGerente} de ${cifras.resueltosTotal} (${cifras.porcentaje} %)`}</strong>{' '}
-          · meta {META_SIN_INTERVENCION} %
+          <span className="cifras__etiqueta">Trabajos cerrados sin intervención de la gerente:</span>{' '}
+          <strong className="cifras__valor">{`${cifras.resueltosSinGerente} de ${cifras.resueltosTotal} (${cifras.porcentaje} %)`}</strong>{' '}
+          <span className="cifras__nota-valor">meta {META_SIN_INTERVENCION} %</span>
         </li>
         <li>
-          Seguimientos hechos por Nexo: <strong>{cifras.seguimientos}</strong>
+          <span className="cifras__etiqueta">Seguimientos hechos por Nexo:</span>{' '}
+          <strong className="cifras__valor">{cifras.seguimientos}</strong>
         </li>
         <li>
-          Horas de coordinación ahorradas esta semana: <strong>{formatearHoras(cifras.minutosAhorrados)}</strong> · estimado
+          <span className="cifras__etiqueta">Horas de coordinación ahorradas esta semana:</span>{' '}
+          <span>
+            <strong className="cifras__valor">{formatearHoras(cifras.minutosAhorrados)}</strong>{' '}
+            <span className="cifras__estimado">estimado</span>
+          </span>
         </li>
       </ul>
       <p>

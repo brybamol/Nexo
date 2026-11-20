@@ -4,11 +4,13 @@ import { FormularioPregunta } from '@/componentes/formulario-pregunta';
 export default function PaginaPreguntar() {
   return (
     <>
-      <h1>Preguntar</h1>
-      <p>
-        Pregunta cómo van los pedidos, los proyectos o qué está atrasado. Nexo responde con los datos actuales y enlaza a los
-        trabajos de origen; si no tiene el dato, dice «no lo sé».
-      </p>
+      <header className="pagina__cabecera">
+        <h1 className="pagina__titulo">Preguntar</h1>
+        <p className="pagina__sub">
+          Pregunta cómo van los pedidos, los proyectos o qué está atrasado. Nexo responde con los datos actuales y enlaza a
+          los trabajos de origen; si no tiene el dato, dice «no lo sé».
+        </p>
+      </header>
       <FormularioPregunta />
     </>
   );

@@ -1,5 +1,6 @@
 'use client';
 // Caja de captura siempre visible (fija abajo en teléfono, arriba en escritorio). Tarea 2.5.
+import { CircleAlert, SendHorizontal } from 'lucide-react';
 import { startTransition, useActionState, useRef, type FormEvent, type KeyboardEvent } from 'react';
 import {
   accionCapturar,
@@ -59,15 +60,21 @@ export function CajaCaptura() {
             key={aceptada ? estado.resultado?.capturaId : 'pendiente'}
             readOnly={pendiente}
           />
-          <button type="submit" disabled={pendiente}>
-            {pendiente ? 'Enviando…' : 'Enviar'}
+          <button type="submit" disabled={pendiente} className="caja-captura__enviar">
+            <SendHorizontal className="icono" aria-hidden="true" />
+            <span className="caja-captura__enviar-texto">{pendiente ? 'Enviando…' : 'Enviar'}</span>
           </button>
         </div>
         <p className="caja-captura__ayuda">Enter envía · Mayús+Enter agrega una línea</p>
       </form>
 
-      <div aria-live="polite">
-        {estado.error && <p role="alert">{estado.error}</p>}
+      <div aria-live="polite" className="caja-captura__resultado">
+        {estado.error && (
+          <p role="alert" className="alerta">
+            <CircleAlert className="icono" aria-hidden="true" />
+            {estado.error}
+          </p>
+        )}
         {estado.resultado && (
           <TarjetaResultadoCaptura
             resultado={estado.resultado}

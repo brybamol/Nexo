@@ -1,9 +1,10 @@
 // Detalle de un trabajo: estado, marcas con causas, bloqueante, notas, dependencias. Lee obtenerTrabajo. Tarea 1.7.
+import { ArrowLeft, Ban, Clock, Link2, Package, TriangleAlert, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BotonResponder } from '@/componentes/boton-responder';
+import { InsigniaEstado, Rotulo } from '@/componentes/insignia-estado';
 import { InsigniaMarcas } from '@/componentes/insignia-marcas';
-import { ETIQUETA_ESTADO } from '@/componentes/tarjeta-trabajo';
 import { formatearFecha } from '@/dominio/formato';
 import type { CausaRiesgo } from '@/dominio/tipos';
 import { obtenerTrabajo } from '@/servicios/consultas-trabajos';
@@ -17,6 +18,8 @@ function EnlacesTrabajos({ ids }: { ids: string[] }) {
     </span>
   ));
 }
+
+const ICONO_CAUSA = { bloqueado: Ban, atrasado: Clock, repuesto: Package, cadena: Link2 } as const;
 
 function textoCausa(c: CausaRiesgo) {
   const enlace = c.trabajoId ? <Link href={`/trabajos/${c.trabajoId}`}>{c.trabajoId}</Link> : null;
@@ -39,33 +42,52 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
   if (!t) notFound();
   return (
     <>
-      <p>
-        <Link href={`/proyectos/${t.proyecto.id}`}>← {t.proyecto.nombre}</Link>
-      </p>
-      <h1>
-        {t.id} · {t.titulo}
-      </h1>
-      <p>
-        <span className="insignia">{ETIQUETA_ESTADO[t.estado]}</span>{' '}
-        {t.urgente && <span className="insignia">Urgente</span>}{' '}
-        {t.conCostoProbable && <span className="insignia">Costo probable</span>}{' '}
-        <InsigniaMarcas marcas={t.marcas} />
-      </p>
-      <dl>
-        <dt>Responsable</dt>
-        <dd>{t.responsable.nombre}</dd>
+      <header className="pagina__cabecera">
+        <Link href={`/proyectos/${t.proyecto.id}`} className="volver">
+          <ArrowLeft className="icono" aria-hidden="true" />
+          {t.proyecto.nombre}
+        </Link>
+        <div className="detalle__cabecera">
+          <span aria-hidden="true">
+            <Rotulo id={t.id} estado={t.estado} grande />
+          </span>
+          <h1 className="pagina__titulo">
+            <span className="sr-only">{t.id} · </span>
+            {t.titulo}
+          </h1>
+        </div>
+        <p className="detalle__insignias">
+          <InsigniaEstado estado={t.estado} />
+          {t.urgente && (
+            <span className="insignia insignia--urgente">
+              <Zap className="icono" aria-hidden="true" />
+              Urgente
+            </span>
+          )}
+          {t.conCostoProbable && <span className="insignia">Costo probable</span>}
+          <InsigniaMarcas marcas={t.marcas} />
+        </p>
+      </header>
+
+      <dl className="detalle__datos">
+        <div>
+          <dt>Responsable</dt>
+          <dd>{t.responsable.nombre}</dd>
+        </div>
         {t.solicitadoPor && (
-          <>
+          <div>
             <dt>Lo pidió</dt>
             <dd>{t.solicitadoPor.nombre}</dd>
-          </>
+          </div>
         )}
-        <dt>Plazo</dt>
-        <dd>
-          <time dateTime={t.plazo.toISOString()}>{formatearFecha(t.plazo)}</time>
-        </dd>
+        <div>
+          <dt>Plazo</dt>
+          <dd>
+            <time dateTime={t.plazo.toISOString()}>{formatearFecha(t.plazo)}</time>
+          </dd>
+        </div>
         {t.bloqueadoPor && (
-          <>
+          <div>
             <dt>Bloqueado por</dt>
             <dd>
               <Link href={`/trabajos/${t.bloqueadoPor.id}`}>
@@ -73,67 +95,81 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
               </Link>
               {t.fechaSolucion ? <> · solución: {formatearFecha(t.fechaSolucion)}</> : <> · sin fecha de solución</>}
             </dd>
-          </>
+          </div>
         )}
         {t.dependeDe.length > 0 && (
-          <>
+          <div>
             <dt>Depende de</dt>
             <dd>
               <EnlacesTrabajos ids={t.dependeDe} />
             </dd>
-          </>
+          </div>
         )}
         {t.bloquea.length > 0 && (
-          <>
+          <div>
             <dt>Arrastra a</dt>
             <dd>
               <EnlacesTrabajos ids={t.bloquea} />
             </dd>
-          </>
+          </div>
         )}
         {t.necesita.length > 0 && (
-          <>
+          <div>
             <dt>Necesita</dt>
             <dd>{t.necesita.map((n) => `${n.cantidad} × ${n.repuesto}`).join(', ')}</dd>
-          </>
+          </div>
         )}
         {t.seguimiento && (
-          <>
+          <div>
             <dt>Seguimiento</dt>
             <dd>
               Nivel {t.seguimiento.nivel} desde {formatearFecha(t.seguimiento.desde)}
             </dd>
-          </>
+          </div>
         )}
       </dl>
 
       {t.marcas.causas.length > 0 && (
-        <section aria-labelledby="causas">
-          <h2 id="causas">Causas de las marcas</h2>
-          <ul>
-            {t.marcas.causas.map((c, i) => (
-              <li key={i}>{textoCausa(c)}</li>
-            ))}
+        <section aria-labelledby="causas" className="seccion">
+          <h2 id="causas" className="seccion__titulo">
+            Causas de las marcas
+          </h2>
+          <ul className="causas">
+            {t.marcas.causas.map((c, i) => {
+              const Icono = ICONO_CAUSA[c.tipo] ?? TriangleAlert;
+              return (
+                <li key={i}>
+                  <Icono className="icono" aria-hidden="true" />
+                  <span>{textoCausa(c)}</span>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
 
       {t.seguimiento && (
-        <section aria-labelledby="responder">
-          <h2 id="responder">Seguimiento pendiente</h2>
+        <section aria-labelledby="responder" className="seccion">
+          <h2 id="responder" className="seccion__titulo">
+            Seguimiento pendiente
+          </h2>
           <BotonResponder trabajoId={t.id} />
         </section>
       )}
 
-      <section aria-labelledby="notas">
-        <h2 id="notas">Notas</h2>
+      <section aria-labelledby="notas" className="seccion">
+        <h2 id="notas" className="seccion__titulo">
+          Notas
+        </h2>
         {t.notas.length === 0 ? (
-          <p>Sin notas.</p>
+          <p className="vacio">Sin notas.</p>
         ) : (
-          <ul>
+          <ul className="notas">
             {t.notas.map((n, i) => (
               <li key={i}>
-                <strong>{n.autor}</strong> · <time dateTime={n.en.toISOString()}>{formatearFecha(n.en)}</time>
+                <p className="notas__cabecera">
+                  <strong>{n.autor}</strong> · <time dateTime={n.en.toISOString()}>{formatearFecha(n.en)}</time>
+                </p>
                 <p>{n.texto}</p>
               </li>
             ))}

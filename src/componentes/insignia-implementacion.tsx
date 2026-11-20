@@ -1,4 +1,5 @@
 // «Respondió: Local» / «Respondió: Claude · modelo» / «Local (respaldo)». Tarea 2.5.
+import { Cpu } from 'lucide-react';
 import type { MetaIA } from '@/servicios/vistas';
 
 /** Texto de la insignia según qué implementación respondió. */
@@ -11,7 +12,12 @@ export function etiquetaImplementacion(ia: MetaIA): string {
 
 export function InsigniaImplementacion(props: { ia: MetaIA }) {
   return (
-    <span className="insignia insignia--ia" data-implementacion={props.ia.implementacion}>
+    <span
+      className="insignia insignia--ia"
+      data-implementacion={props.ia.implementacion}
+      data-respaldo={props.ia.respaldo || undefined}
+    >
+      <Cpu className="icono" aria-hidden="true" />
       {etiquetaImplementacion(props.ia)}
     </span>
   );

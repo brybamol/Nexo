@@ -5,6 +5,7 @@ import { listarPersonas } from '@/servicios/personas';
 import { obtenerAhora } from '@/servicios/reloj';
 import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
 import { ControlReloj } from './control-reloj';
+import { NavPrincipal } from './nav-principal';
 import { SelectorPersona } from './selector-persona';
 
 const ENLACES = [
@@ -25,21 +26,23 @@ export async function BarraSuperior() {
   ]);
   return (
     <header className="barra">
-      <Link href="/mi-dia" className="barra__marca">
-        <strong>Nexo</strong>
-      </Link>
-      <nav aria-label="Principal">
-        <ul className="barra__nav">
-          {ENLACES.map((e) => (
-            <li key={e.href}>
-              <Link href={e.href}>{e.texto}</Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="barra__controles">
-        <SelectorPersona personas={personas} actual={actual} />
-        <ControlReloj ahoraTexto={formatearFecha(ahora)} />
+      <div className="consola" role="region" aria-label="Consola de la demo">
+        <div className="consola__interior barra__controles">
+          <span className="consola__titulo" aria-hidden="true">
+            Demo
+          </span>
+          <SelectorPersona personas={personas} actual={actual} />
+          <ControlReloj ahoraTexto={formatearFecha(ahora)} />
+        </div>
+      </div>
+      <div className="barra__fila">
+        <Link href="/mi-dia" className="barra__marca">
+          <span className="barra__logo">Nexo</span>
+          <span className="barra__empresa">Frío del Valle</span>
+        </Link>
+        <nav aria-label="Principal" className="barra__nav-contenedor">
+          <NavPrincipal enlaces={ENLACES} />
+        </nav>
       </div>
     </header>
   );

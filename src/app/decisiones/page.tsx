@@ -15,19 +15,33 @@ export default async function PaginaDecisiones() {
   // Hijos planos con claves estables: al decidir, la tarjeta pasa de «por decidir» a «historial»
   // sin remontarse, y conserva el resultado que muestra (trabajos creados, a quién se avisó).
   return (
-    <main>
-      <h1>Decisiones</h1>
-      <p>Nexo presenta las opciones y sus consecuencias; no elige por ti.</p>
-      <h2 key="h-pendientes">Por decidir ({pendientes.length})</h2>
-      {pendientes.length === 0 && <p key="vacio-pendientes">No tienes decisiones pendientes.</p>}
+    <div className="decisiones">
+      <header className="pagina__cabecera" key="cabecera">
+        <h1 className="pagina__titulo">Decisiones</h1>
+        <p className="pagina__sub">Nexo presenta las opciones y sus consecuencias; no elige por ti.</p>
+      </header>
+      <h2 key="h-pendientes" className="seccion__titulo">
+        Por decidir <span className="seccion__cuenta">{pendientes.length}</span>
+      </h2>
+      {pendientes.length === 0 && (
+        <p key="vacio-pendientes" className="vacio">
+          No tienes decisiones pendientes.
+        </p>
+      )}
       {pendientes.map((d) => (
         <TarjetaDecision key={d.id} decision={d} personaActualId={personaId} />
       ))}
-      <h2 key="h-historial">Historial y propuestas ({resto.length})</h2>
-      {resto.length === 0 && <p key="vacio-historial">Aún no hay decisiones en el historial.</p>}
+      <h2 key="h-historial" className="seccion__titulo decisiones__historial">
+        Historial y propuestas <span className="seccion__cuenta">{resto.length}</span>
+      </h2>
+      {resto.length === 0 && (
+        <p key="vacio-historial" className="vacio">
+          Aún no hay decisiones en el historial.
+        </p>
+      )}
       {resto.map((d) => (
         <TarjetaDecision key={d.id} decision={d} personaActualId={personaId} />
       ))}
-    </main>
+    </div>
   );
 }

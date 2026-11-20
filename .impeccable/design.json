@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T00:00:00Z",
+  "title": "Sistema de diseño: Nexo",
+  "extensions": {
+    "colorMeta": {
+      "paral": { "role": "primary", "displayName": "Azul de paral", "canonical": "oklch(0.37 0.125 260)" },
+      "viga": { "role": "secondary", "displayName": "Naranja de viga (solo captura)", "canonical": "oklch(0.72 0.175 50)" },
+      "suelo": { "role": "neutral", "displayName": "Suelo galvanizado", "canonical": "oklch(0.955 0.006 250)" },
+      "papel": { "role": "neutral", "displayName": "Papel de etiqueta", "canonical": "oklch(1 0 0)" }
+    },
+    "typographyMeta": {
+      "rotulo": { "displayName": "Rótulo", "purpose": "Códigos de trabajo y decisión, letras de opción, reloj, cifras y conteos." },
+      "cuerpo": { "displayName": "Cuerpo", "purpose": "Todo el texto de interfaz; pila del sistema." }
+    },
+    "shadows": [
+      { "name": "tarjeta", "value": "0 1px 2px oklch(0.3 0.03 258 / 0.08), 0 2px 8px oklch(0.3 0.03 258 / 0.06)", "purpose": "Tarjetas sobre el suelo." },
+      { "name": "resultado-captura", "value": "0 4px 16px oklch(0.2 0.06 260 / 0.25)", "purpose": "Tarjeta de resultado sobre la banda azul." }
+    ],
+    "motion": [
+      { "name": "salida-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Impresión del rótulo y entrada del resultado de la captura." }
+    ],
+    "breakpoints": [
+      { "name": "telefono", "value": "639px" },
+      { "name": "escritorio", "value": "640px" },
+      { "name": "dos-columnas", "value": "1024px" },
+      { "name": "proyector", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón de captura",
+      "kind": "button",
+      "refersTo": "boton-captura",
+      "description": "Enviar de la caja de captura; único uso del naranja.",
+      "html": "<button class=\"ds-captura\">Enviar</button>",
+      "css": ".ds-captura { min-height: 56px; padding: 0 20px; border: 0; border-radius: 6px; background: oklch(0.72 0.175 50); color: oklch(0.2 0.03 45); font: 700 1.0625rem system-ui, sans-serif; }"
+    },
+    {
+      "name": "Rótulo de trabajo",
+      "kind": "custom",
+      "refersTo": "rotulo-bloqueado",
+      "description": "Código del trabajo relleno con el color de su estado.",
+      "html": "<span class=\"ds-rotulo\">T04</span>",
+      "css": ".ds-rotulo { display: inline-flex; min-width: 3.25rem; justify-content: center; padding: 2px 8px; border: 2px solid oklch(0.5 0.19 27); border-radius: 3px; background: oklch(0.5 0.19 27); color: #fff; font: 700 1.125rem Bahnschrift, 'Arial Narrow', sans-serif; font-stretch: condensed; }"
+    },
+    {
+      "name": "Insignia En riesgo",
+      "kind": "chip",
+      "refersTo": "insignia-riesgo",
+      "description": "Marca calculada, siempre con texto e icono.",
+      "html": "<span class=\"ds-riesgo\">En riesgo</span>",
+      "css": ".ds-riesgo { display: inline-flex; padding: 2px 8px; border: 1px solid oklch(0.72 0.14 80); border-radius: 999px; background: oklch(0.91 0.12 90); color: oklch(0.38 0.08 70); font: 600 0.8125rem system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La bodega bien rotulada",
+    "overview": "Cada trabajo tiene su rótulo de ubicación y nada se pierde en la estantería. Azul de paral para el marco, naranja de viga solo para la captura, suelo gris galvanizado y tarjetas de papel con ritmo de kárdex.",
+    "keyCharacteristics": ["Rótulos en DIN condensada", "Captura como gesto principal", "Estados con texto e icono", "Números tabulares"],
+    "rules": [
+      { "name": "La regla de la viga", "body": "El naranja es solo de la captura.", "section": "colors" },
+      { "name": "Nunca solo color", "body": "Cada estado y marca lleva su nombre e icono.", "section": "colors" }
+    ],
+    "dos": ["Escribir el estado además de colorearlo", "Usar números tabulares"],
+    "donts": ["No usar naranja fuera de la captura", "No recomendar opciones en las decisiones"]
+  }
+}

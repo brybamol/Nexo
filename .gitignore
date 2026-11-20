@@ -23,3 +23,6 @@
 npm-debug.log*
 .pnpm-debug.log*
 .vercel
+
+# material de trabajo de impeccable
+.impeccable/review/
