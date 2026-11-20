@@ -1,7 +1,43 @@
 'use client';
-// Botón Responder a un seguimiento pendiente. Tarea 4.1 (esqueleto de 1.1).
+// Botón Responder a un seguimiento pendiente: marca En curso o Resuelto y añade una nota opcional, sin salir de la página.
+// Tarea 4.1. Props: `trabajoId` (obligatoria); `titulo` (opcional, solo para el nombre accesible del botón).
+import { useState, useTransition, type FormEvent } from 'react';
+import { accionResponderSeguimiento } from '@/app/acciones/trabajos';
 
-export function BotonResponder(props: { trabajoId: string }) {
-  void props;
-  return <div data-pendiente="4.1">BotonResponder (no implementado: 4.1)</div>;
+export function BotonResponder({ trabajoId, titulo }: { trabajoId: string; titulo?: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, iniciar] = useTransition();
+
+  function alEnviar(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const datos = new FormData(e.currentTarget);
+    iniciar(async () => {
+      const r = await accionResponderSeguimiento(datos);
+      setError(r.ok ? null : r.error);
+    });
+  }
+
+  return (
+    <details className="responder">
+      <summary aria-label={`Responder sobre ${trabajoId}${titulo ? `: ${titulo}` : ''}`}>Responder</summary>
+      <form onSubmit={alEnviar} aria-busy={pendiente}>
+        <input type="hidden" name="trabajoId" value={trabajoId} />
+        <fieldset disabled={pendiente}>
+          <legend>¿Cómo va {trabajoId}?</legend>
+          <label>
+            <input type="radio" name="estado" value="en_curso" defaultChecked /> En curso
+          </label>{' '}
+          <label>
+            <input type="radio" name="estado" value="resuelto" /> Resuelto
+          </label>
+          <div>
+            <label htmlFor={`nota-${trabajoId}`}>Nota (opcional)</label>
+            <textarea id={`nota-${trabajoId}`} name="nota" rows={2} maxLength={1000} />
+          </div>
+          <button type="submit">{pendiente ? 'Enviando…' : 'Enviar respuesta'}</button>
+        </fieldset>
+        <div aria-live="polite">{error && <p role="alert">{error}</p>}</div>
+      </form>
+    </details>
+  );
 }

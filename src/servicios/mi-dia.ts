@@ -1,18 +1,110 @@
 // Vista «Mi día» por persona. Tarea 4.1.
-import { NoImplementado } from '@/dominio/tipos';
+// Lee la instantánea (trabajos con marcas) y los avisos guardados; no escribe salvo marcarAvisosLeidos.
+import { and, desc, eq, isNull } from 'drizzle-orm';
+import { acciones, avisos } from '@/db/esquema';
+import { ErrorDominio, NoImplementado, type Persona } from '@/dominio/tipos';
+import { registrarRespuesta } from '@/motor/seguimiento';
 import type { ContextoServicio } from '@/servicios/contexto';
-import type { MiDia } from '@/servicios/vistas';
+import { cargarVistasTrabajos } from '@/servicios/consultas-trabajos';
+import { listarDecisiones } from '@/servicios/decisiones';
+import { obtenerAhora } from '@/servicios/reloj';
+import type { AvisoVista, DecisionVista, MiDia, PersonaBreve, TrabajoVista } from '@/servicios/vistas';
 
-const N = 'servicios/mi-dia.ts (4.1)';
+const MAX_AVISOS = 20;
 
-export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Promise<MiDia> {
-  void ctx;
-  void personaId;
-  throw new NoImplementado(N);
+function breve(p: Persona): PersonaBreve {
+  return { id: p.id, nombre: p.nombre, rol: p.rol, area: p.area };
 }
 
+function persona(personas: Persona[], id: string): Persona {
+  const p = personas.find((x) => x.id === id);
+  if (!p) throw new ErrorDominio(`No existe la persona ${id}.`);
+  return p;
+}
+
+/** Orden de «lo que debo»: urgentes, luego atrasados, luego plazo ascendente (empate: id). */
+function ordenDebo(a: TrabajoVista, b: TrabajoVista): number {
+  if (a.urgente !== b.urgente) return a.urgente ? -1 : 1;
+  if (a.marcas.atrasado !== b.marcas.atrasado) return a.marcas.atrasado ? -1 : 1;
+  return a.plazo.getTime() - b.plazo.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+async function avisosDe(ctx: ContextoServicio, personaId: string): Promise<AvisoVista[]> {
+  const filas = await ctx.db
+    .select({ aviso: avisos, tipo: acciones.tipo })
+    .from(avisos)
+    .innerJoin(acciones, eq(avisos.accionId, acciones.id))
+    .where(eq(avisos.personaId, personaId))
+    .orderBy(desc(avisos.en), desc(avisos.id))
+    .limit(MAX_AVISOS);
+  return filas.map(({ aviso, tipo }) => ({
+    id: aviso.id,
+    en: aviso.en,
+    titulo: aviso.titulo,
+    cuerpo: aviso.cuerpo,
+    trabajoIds: aviso.trabajoIds,
+    tipoAccion: tipo,
+    leido: aviso.leidoEn !== null,
+  }));
+}
+
+async function decisionesPendientesDe(ctx: ContextoServicio, personaId: string): Promise<DecisionVista[]> {
+  try {
+    return await listarDecisiones(ctx, { decisorId: personaId, estado: 'pendiente' });
+  } catch (e) {
+    if (e instanceof NoImplementado) return []; // la bandeja de decisiones (3.3) aún no existe en esta rama
+    throw e;
+  }
+}
+
+/**
+ * Lo que la persona ve al abrir Nexo. `debo`: sus trabajos no resueltos (urgente, atrasado, plazo).
+ * `esperoDeOtros`: trabajos no resueltos de otros responsables que ella solicitó, de los que dependen sus trabajos
+ * o por los que están bloqueados, sin repetir y por plazo. `avisos`: los suyos, del más reciente al más antiguo, máx. 20.
+ */
+export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Promise<MiDia> {
+  const { inst, vistas } = await cargarVistasTrabajos(ctx.db);
+  const yo = persona(inst.personas, personaId);
+
+  const pendientes = vistas.filter((v) => v.estado !== 'resuelto');
+  const debo = pendientes.filter((v) => v.responsable.id === personaId).sort(ordenDebo);
+
+  const necesarios = new Set<string>();
+  for (const t of debo) {
+    for (const id of t.dependeDe) necesarios.add(id);
+    if (t.bloqueadoPor) necesarios.add(t.bloqueadoPor.id);
+  }
+  const esperoDeOtros = pendientes.filter(
+    (v) => v.responsable.id !== personaId && (v.solicitadoPor?.id === personaId || necesarios.has(v.id)),
+  ); // `vistas` ya viene por plazo ascendente
+
+  return {
+    persona: breve(yo),
+    ahora: inst.ahora,
+    debo,
+    esperoDeOtros,
+    avisos: await avisosDe(ctx, personaId),
+    decisionesPendientes: await decisionesPendientesDe(ctx, personaId),
+  };
+}
+
+/**
+ * Trabajos con un seguimiento pendiente que la persona puede responder (es el responsable, o un jefe al que
+ * ya se escaló): los que Nexo le está pidiendo ahora. Del seguimiento más antiguo al más reciente.
+ */
+export async function obtenerSeguimientosPendientes(ctx: ContextoServicio, personaId: string): Promise<TrabajoVista[]> {
+  const { inst, vistas } = await cargarVistasTrabajos(ctx.db);
+  persona(inst.personas, personaId);
+  return vistas
+    .filter((v) => v.seguimiento !== null && registrarRespuesta(inst, v.id, personaId).length > 0)
+    .sort((a, b) => (a.seguimiento?.desde.getTime() ?? 0) - (b.seguimiento?.desde.getTime() ?? 0) || (a.id < b.id ? -1 : 1));
+}
+
+/** Marca como leídos todos los avisos de la persona que aún no lo estaban. */
 export async function marcarAvisosLeidos(ctx: ContextoServicio, personaId: string): Promise<void> {
-  void ctx;
-  void personaId;
-  throw new NoImplementado(N);
+  const ahora = await obtenerAhora(ctx);
+  await ctx.db
+    .update(avisos)
+    .set({ leidoEn: ahora })
+    .where(and(eq(avisos.personaId, personaId), isNull(avisos.leidoEn)));
 }

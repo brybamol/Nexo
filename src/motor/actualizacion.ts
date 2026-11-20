@@ -81,8 +81,9 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
     if (nuevo === 'resuelto') liberar(x, 'quedó resuelto');
     else if (saleDeBloqueo) liberar(x, 'ya no está bloqueado');
 
-    if (nuevo === 'resuelto' && x.repuestoId) {
-      // Regla 5: llegó el repuesto → los trabajos bloqueados por X vuelven a en curso y su necesidad queda atendida.
+    if (nuevo === 'resuelto') {
+      // Regla 5: resuelto el bloqueante → los trabajos bloqueados por X vuelven a en curso (avisando a su responsable,
+      // dependiente directo de X) y, si X conseguía un repuesto, su necesidad de ese repuesto queda atendida.
       for (const t of inst.trabajos) {
         if (t.bloqueadoPorId !== x.id || t.estado !== 'bloqueado') continue;
         efectos.push({
@@ -91,8 +92,9 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
           cambios: { estado: 'en_curso', bloqueadoPorId: null, motivoBloqueo: null, fechaSolucion: null },
           actorId: autorId,
         });
+        avisos.agregar(t.responsableId, [t.id], `${x.id} «${x.titulo}» quedó resuelto: ${t.id} «${t.titulo}» ya no está bloqueado.`);
         for (const n of inst.necesidades) {
-          if (n.trabajoId === t.id && n.repuestoId === x.repuestoId && !n.atendida) {
+          if (x.repuestoId && n.trabajoId === t.id && n.repuestoId === x.repuestoId && !n.atendida) {
             efectos.push({ tipo: 'actualizar_necesidad', trabajoId: t.id, repuestoId: n.repuestoId, cambios: { atendida: true } });
           }
         }

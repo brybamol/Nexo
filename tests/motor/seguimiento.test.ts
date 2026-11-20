@@ -252,6 +252,28 @@ describe('respuesta y resolución detienen el seguimiento', () => {
     expect(tick(r.inst)).toEqual([]);
   });
 
+  it('si otra persona mueve el plazo al futuro, el seguimiento de R1 se cierra y no se persigue hasta el plazo nuevo (E5, T21)', () => {
+    const a0705 = mover(instantaneaDesdeSemilla(), enCR(MIE, '07:05')).inst;
+    expect(seguimientoDe(a0705, 'T21')[0]).toMatchObject({ estado: 'pendiente' });
+    const movido = aplicarEnMemoria(enHora(a0705, enCR(MIE, '09:30')), [
+      { tipo: 'actualizar_trabajo', trabajoId: 'T21', cambios: { plazo: enCR(JUE, '12:00') }, actorId: 'sofia-navarro' },
+    ]);
+    const r = mover(movido, enCR(MIE, '09:30'));
+    expect(r.efectos).toContainEqual({ tipo: 'actualizar_seguimiento', seguimientoId: 'S2', cambios: { estado: 'respondido' } });
+    expect(sobre(r.efectos, 'T21')).toEqual([]);
+    // Ni recordatorio a las 11:00 ni nada el miércoles; al vencer el plazo nuevo se vuelve a pedir el estado.
+    expect(sobre(mover(r.inst, enCR(MIE, '17:00')).efectos, 'T21')).toEqual([]);
+    const jue = mover(r.inst, enCR(JUE, '12:00'));
+    expect(sobre(jue.efectos, 'T21').map(resumen)).toEqual([{ tipo: 'pedir_estado', a: 'diego-rojas', trabajos: ['T21'] }]);
+  });
+
+  it('mover el plazo no cierra el seguimiento urgente de captura (referencia = creación)', () => {
+    const inst = aplicarEnMemoria(trasC01(), [
+      { tipo: 'actualizar_trabajo', trabajoId: 'T31', cambios: { plazo: enCR(JUE, '12:00') }, actorId: 'jose-alfaro' },
+    ]);
+    expect(mover(inst, enCR(MIE, '07:35')).efectos.filter((e) => e.tipo === 'actualizar_seguimiento' && e.cambios.estado === 'respondido')).toEqual([]);
+  });
+
   it('un seguimiento respondido no impide pedir el estado cuando vence el plazo sin resolver', () => {
     const inst = trasC01();
     const respondido = aplicarEnMemoria(inst, registrarRespuesta(inst, 'T31', 'lucia-mora'));

@@ -194,7 +194,7 @@ function agenda(inst: Instantanea): Pendiente[] {
 /**
  * R1, R2, R3 hasta inst.ahora, en orden cronológico de lo programado. Idempotente: repetir el tick a la misma hora
  * sobre la instantánea ya actualizada no produce nada. Cierra (`respondido`) los seguimientos pendientes de
- * trabajos ya resueltos. Las acciones llevan `en` = inst.ahora (cuándo actuó Nexo).
+ * trabajos ya resueltos o cuyo plazo se movió al futuro. Las acciones llevan `en` = inst.ahora (cuándo actuó Nexo).
  */
 export function tick(inst: Instantanea): Efecto[] {
   const efectos: Efecto[] = [];
@@ -206,7 +206,15 @@ export function tick(inst: Instantanea): Efecto[] {
 
   const trabajos = porId(inst.trabajos);
   for (const s of inst.seguimientos) {
-    if (s.estado === 'pendiente' && trabajos.get(s.trabajoId)?.estado === 'resuelto') {
+    const t = trabajos.get(s.trabajoId);
+    if (s.estado !== 'pendiente' || !t) continue;
+    // Resuelto, o plazo movido al futuro por otra persona (un seguimiento de R1 ya no tiene motivo: el nuevo plazo
+    // abrirá el suyo al vencer). El urgente de captura (referencia = creación del trabajo) no depende del plazo.
+    const plazoMovido =
+      t.plazo.getTime() > inst.ahora.getTime() &&
+      s.plazoReferencia.getTime() !== t.plazo.getTime() &&
+      s.plazoReferencia.getTime() !== t.creadoEn.getTime();
+    if (t.estado === 'resuelto' || plazoMovido) {
       emitir([{ tipo: 'actualizar_seguimiento', seguimientoId: s.id, cambios: { estado: 'respondido' } }]);
     }
   }
