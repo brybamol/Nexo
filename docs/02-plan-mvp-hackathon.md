@@ -65,7 +65,7 @@ Se escribe antes que el código y manda sobre el alcance. La empresa es una dist
 | 1:00 | La supervisora abre "Mi día": el trabajo ya está ahí, con el contexto. Nadie le reenvió nada | F3 |
 | 1:30 | Se adelanta el reloj: sin respuesta. Nexo le pide el estado, detecta que el mismo repuesto bloquea dos trabajos de otro proyecto y avisa a sus responsables | F2 |
 | 2:15 | La supervisora propone una compra urgente. Como tiene costo, Nexo la convierte en una decisión preparada para el gerente | F4 |
-| 2:45 | El gerente aprueba con un clic. Nexo avisa a todos y desbloquea los tres trabajos | F4 |
+| 2:45 | El gerente aprueba con un clic. Nexo avisa a todos, crea el trabajo de compra y los trabajos afectados quedan con fecha de solución | F4 |
 | 3:10 | El gerente pregunta cómo van los proyectos de la semana y recibe la respuesta con sus fuentes | F5 |
 | 3:35 | Vista de proyectos, registro de acciones y las tres cifras. Cierre: el gerente tomó una decisión y no persiguió a nadie | — |
 
@@ -124,10 +124,11 @@ Cada etapa termina con algo que se puede enseñar. Si una se atrasa, se recorta 
 - Escribir 15 frases de control: texto de entrada y resultado esperado (proyecto, responsable, plazo, si tiene costo).
 - Escribir 5 escenarios de control de coordinación: qué pasa, cuándo debe preguntar Nexo, cuándo escalar y a quién.
 - Herramientas: skills `brainstorming` y `ask-questions-if-underspecified`; `engineering:architecture` para dejar por escrito la decisión de pila.
+- **Detalle:** `03-etapa-0-definicion.md` y `04-empresa-y-casos-de-control.md`.
 
 ### Etapa 1 — Esqueleto desplegado (día 1, mañana)
 - Crear el proyecto Next.js con `pnpm`, Tailwind y componentes base; conectarlo a Vercel.
-- Crear la base de datos y las tablas: `personas`, `proyectos`, `trabajos`, `dependencias`, `eventos`, `acciones`, `decisiones`.
+- Crear la base de datos y las tablas: `personas`, `proyectos`, `trabajos`, `dependencias`, `repuestos`, `eventos`, `acciones`, `decisiones`.
 - Cargar la empresa ficticia y añadir el selector "ver como".
 - Lista sencilla de proyectos y trabajos, de solo lectura.
 - Prueba automática mínima en cada subida (GitHub Actions).
