@@ -182,10 +182,20 @@ CREATE TABLE IF NOT EXISTS reloj (
   id integer PRIMARY KEY,
   ahora timestamptz NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS correcciones_correo (
+  id serial PRIMARY KEY,
+  compromiso_id text NOT NULL,
+  persona_id text NOT NULL,
+  en timestamptz NOT NULL,
+  tipo text NOT NULL,
+  cambios jsonb NOT NULL DEFAULT '{}'::jsonb
+);
 `;
 
 /** DROP TABLE IF EXISTS … CASCADE de todas las tablas. */
 export const DDL_BORRAR = `
+DROP TABLE IF EXISTS correcciones_correo CASCADE;
 DROP TABLE IF EXISTS reloj CASCADE;
 DROP TABLE IF EXISTS preguntas CASCADE;
 DROP TABLE IF EXISTS capturas CASCADE;

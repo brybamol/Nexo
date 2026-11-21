@@ -17,6 +17,7 @@ const ENLACES = [
   { href: '/decisiones', texto: 'Decisiones' },
   { href: '/preguntar', texto: 'Preguntar' },
   { href: '/registro', texto: 'Registro' },
+  { href: '/correo', texto: 'Correo' },
 ];
 
 /** Componente de servidor sin props: lee personas, persona actual y reloj. */

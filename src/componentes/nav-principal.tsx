@@ -1,6 +1,6 @@
 'use client';
 // Navegación principal con la pantalla actual marcada (aria-current). Tarea 4.6, solo presentación.
-import { FolderKanban, MessageCircleQuestion, ScrollText, Scale, Sun, type LucideIcon } from 'lucide-react';
+import { FolderKanban, Mail, MessageCircleQuestion, ScrollText, Scale, Sun, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -11,6 +11,7 @@ const ICONOS: Record<string, LucideIcon> = {
   '/decisiones': Scale,
   '/preguntar': MessageCircleQuestion,
   '/registro': ScrollText,
+  '/correo': Mail,
 };
 
 /** Props: `enlaces` (href y texto). Marca como actual el enlace cuya ruta coincide con la de la página. */

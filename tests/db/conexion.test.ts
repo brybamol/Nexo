@@ -44,7 +44,7 @@ describe('DDL sobre PGlite en memoria', () => {
 
   it('crea todas las tablas de esquema.ts', async () => {
     const esperadas = tablas.map((t) => getTableName(t)).sort();
-    expect(esperadas.length).toBe(16);
+    expect(esperadas.length).toBe(17);
     const reales = await tablasEnBase(c);
     for (const t of esperadas) expect(reales).toContain(t);
   });
@@ -172,6 +172,13 @@ describe('DDL sobre PGlite en memoria', () => {
       respuesta: 'r',
       fuentes: [{ trabajoId: 'T01', etiqueta: 'e' }],
       implementacion: 'local',
+    });
+    await db.insert(esquema.correccionesCorreo).values({
+      compromisoId: 'c-h1-m1',
+      personaId: 'luis-mendez',
+      en,
+      tipo: 'corregir',
+      cambios: { estado: 'en_curso' },
     });
 
     for (const t of tablas) {

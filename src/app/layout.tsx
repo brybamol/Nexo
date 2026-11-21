@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { BarraSuperior } from '@/componentes/barra-superior';
 import { CajaCaptura } from '@/componentes/caja-captura';
+import { ZonaCaptura } from '@/componentes/zona-captura';
 import './globals.css';
 
 // Tipografías de marca, autoalojadas por next/font en el build (el navegador no llama a Google).
@@ -43,9 +44,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <BarraSuperior />
         <div className="app__principal">
           {/* Escritorio: la captura va arriba del contenido. Teléfono: fija abajo (ver globals.css). */}
-          <div className="app__captura" role="region" aria-label="Captura">
-            <CajaCaptura key={reinicios} />
-          </div>
+          <ZonaCaptura>
+            <div className="app__captura" role="region" aria-label="Captura">
+              <CajaCaptura key={reinicios} />
+            </div>
+          </ZonaCaptura>
           <main id="contenido" className="app__contenido">
             {children}
           </main>

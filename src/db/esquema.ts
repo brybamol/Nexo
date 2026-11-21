@@ -27,6 +27,7 @@ import type {
   TipoAccion,
   TipoEvento,
 } from '@/dominio/tipos';
+import type { CambiosCorreccion, TipoCorreccion } from '@/correo/tipos';
 
 const fecha = (nombre: string) => timestamp(nombre, { withTimezone: true, mode: 'date' });
 
@@ -255,6 +256,16 @@ export const reloj = pgTable('reloj', {
   ahora: fecha('ahora').notNull(),
 });
 
+/** Giro a correo (docs/06 §6): lo único que guarda el prototipo. Los compromisos se recalculan desde los correos. */
+export const correccionesCorreo = pgTable('correcciones_correo', {
+  id: serial('id').primaryKey(),
+  compromisoId: text('compromiso_id').notNull(),
+  personaId: text('persona_id').notNull(),
+  en: fecha('en').notNull(),
+  tipo: text('tipo').$type<TipoCorreccion>().notNull(),
+  cambios: jsonb('cambios').$type<CambiosCorreccion>().notNull().default({}),
+});
+
 /** Todas las tablas; se pasa como `schema` a drizzle() en db/conexion.ts. */
 export const esquema = {
   personas,
@@ -273,6 +284,7 @@ export const esquema = {
   capturas,
   preguntas,
   reloj,
+  correccionesCorreo,
 };
 
 /** Base de datos de Nexo: sirve igual con PGlite (local, pruebas) y con pg (DATABASE_URL). Las transacciones (tx) también lo cumplen. */
