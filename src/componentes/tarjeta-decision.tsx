@@ -3,7 +3,7 @@
 // Props: `decision` (DecisionVista); `personaActualId` (persona de «ver como»: solo si es el decisor
 // y la decisión está pendiente se muestran los botones). Nexo no recomienda: `opcionPropuesta` es
 // la opción que propuso el proponente.
-import { ArrowRight, Check, CircleAlert, CircleCheck } from 'lucide-react';
+import { ArrowRight, Check, CircleAlert, CircleCheck, CircleX, Hourglass } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition, type FormEvent } from 'react';
 import { accionAprobar, accionRechazar, type ResultadoDecision } from '@/app/acciones/decisiones';
@@ -14,6 +14,8 @@ import type { DecisionVista } from '@/servicios/vistas';
 type Confirmando = { tipo: 'aprobar'; letra: LetraOpcion } | { tipo: 'rechazar' } | null;
 
 const ETIQUETA_ESTADO = { pendiente: 'Pendiente', aprobada: 'Aprobada', rechazada: 'Rechazada' } as const;
+// Pendiente espera la aprobación de una persona; Aprobada y Rechazada quedan registradas.
+const ICONO_ESTADO = { pendiente: Hourglass, aprobada: CircleCheck, rechazada: CircleX } as const;
 
 export function TarjetaDecision({ decision, personaActualId }: { decision: DecisionVista; personaActualId: string }) {
   const [confirmando, setConfirmando] = useState<Confirmando>(null);
@@ -48,12 +50,13 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
     iniciar(async () => terminar(await accionRechazar(decision.id, motivo)));
   }
 
+  const IconoEstado = ICONO_ESTADO[decision.estado];
   const opcionConfirmada = confirmando?.tipo === 'aprobar' ? decision.opciones.find((o) => o.letra === confirmando.letra) : undefined;
 
   return (
     <article className="tarjeta decision" data-estado={decision.estado} aria-labelledby={idTitulo} aria-busy={pendiente}>
       <div className="decision__cabecera">
-        <span className="rotulo" aria-hidden="true">
+        <span className="codigo" aria-hidden="true">
           {decision.id}
         </span>
         <h3 id={idTitulo} className="decision__titulo">
@@ -62,6 +65,7 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
           <span className="sr-only"> · {ETIQUETA_ESTADO[decision.estado]}</span>
         </h3>
         <span className="insignia decision__estado" data-estado={decision.estado} aria-hidden="true">
+          <IconoEstado className="icono" />
           {ETIQUETA_ESTADO[decision.estado]}
         </span>
       </div>

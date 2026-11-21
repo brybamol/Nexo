@@ -4,6 +4,7 @@ import { BellRing, Scale } from 'lucide-react';
 import Link from 'next/link';
 import { BotonResponder } from '@/componentes/boton-responder';
 import { ListaAvisos } from '@/componentes/lista-avisos';
+import { IsotipoNexo } from '@/componentes/marca/logo-nexo';
 import { TarjetaTrabajo } from '@/componentes/tarjeta-trabajo';
 import { formatearFecha } from '@/dominio/formato';
 import { obtenerMiDia, obtenerSeguimientosPendientes } from '@/servicios/mi-dia';
@@ -58,6 +59,7 @@ export default async function PaginaMiDia() {
       <div className="mi-dia">
         <section aria-labelledby="md-pide" className="seccion mi-dia__pide">
           <h2 id="md-pide" className="seccion__titulo">
+            <IsotipoNexo tamano={22} />
             Nexo te pide <Cuenta n={pedidos.length} />
           </h2>
           {pedidos.length === 0 ? (

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <title>Nexo</title>
+  <defs>
+    <linearGradient id="a" x1="8" y1="40" x2="30" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#69E1C7"/>
+      <stop offset="1" stop-color="#5CC3D8"/>
+    </linearGradient>
+    <linearGradient id="b" x1="26" y1="34" x2="44" y2="10" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#56A9EE"/>
+      <stop offset="1" stop-color="#4B8FF7"/>
+    </linearGradient>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="50" height="50">
+      <rect width="50" height="50" fill="#fff"/>
+      <path d="M27.3 24.6 L29.4 29.4" fill="none" stroke="#000" stroke-width="10.6" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <rect width="48" height="48" rx="11" fill="#0B172B"/>
+  <g transform="translate(24 24) scale(0.82) translate(-26 -25)" fill="none" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8.6 38.2 L13.9 16.1 C15 11.6 21.1 10.9 23.1 15.2 L29.6 29.8" stroke="url(#a)" mask="url(#m)"/>
+    <path d="M27.3 24.6 L30.1 31.4 C32.1 35.8 38.1 35.4 39.1 30.9 L43.5 11.5" stroke="url(#b)"/>
+  </g>
+</svg>

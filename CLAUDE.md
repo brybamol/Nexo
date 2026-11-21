@@ -21,6 +21,13 @@ Nexo es una plataforma web donde viven los trabajos y proyectos de una empresa, 
 - Las mutaciones son Server Actions en `src/app/acciones/`.
 - Los archivos de contrato (§4.0 de `docs/05`) no cambian sin aprobación humana. Tampoco se cambian dependencias ni `package.json` sin aprobación.
 
+## Marca y diseño
+
+- La identidad aprobada está en `docs/marca/`; su aplicación a la interfaz, los tokens derivados y los contrastes, en `DESIGN.md`.
+- Seis colores obligatorios, con valores exactos: Core Navy `#0B172B`, Nexo Mint `#69E1C7`, Signal Blue `#4B8FF7`, Canvas White `#F5F8FC`, Steel Gray `#71849B`, Surface Navy `#17283F`.
+- Dos tipografías obligatorias: Space Grotesk (títulos, marca y cifras) e Inter (interfaz y párrafos), cargadas con `next/font` en `src/app/layout.tsx`.
+- El logo vive en `src/componentes/marca/`. No se añaden colores ni fuentes fuera de `DESIGN.md`.
+
 ## Comandos de verificación
 
 - `pnpm verificar`: tipos, lint y pruebas. Es lo que comprueba GitHub.

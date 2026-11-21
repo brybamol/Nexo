@@ -4,26 +4,32 @@
   "title": "Sistema de diseño: Nexo",
   "extensions": {
     "colorMeta": {
-      "paral": { "role": "primary", "displayName": "Azul de paral", "canonical": "oklch(0.37 0.125 260)" },
-      "viga": { "role": "secondary", "displayName": "Naranja de viga (solo captura)", "canonical": "oklch(0.72 0.175 50)" },
-      "suelo": { "role": "neutral", "displayName": "Suelo galvanizado", "canonical": "oklch(0.955 0.006 250)" },
-      "papel": { "role": "neutral", "displayName": "Papel de etiqueta", "canonical": "oklch(1 0 0)" }
+      "core-navy": { "role": "primary", "displayName": "Core Navy", "canonical": "#0B172B" },
+      "nexo-mint": { "role": "secondary", "displayName": "Nexo Mint", "canonical": "#69E1C7" },
+      "signal-blue": { "role": "tertiary", "displayName": "Signal Blue", "canonical": "#4B8FF7" },
+      "canvas-white": { "role": "neutral", "displayName": "Canvas White", "canonical": "#F5F8FC" },
+      "steel-gray": { "role": "neutral", "displayName": "Steel Gray", "canonical": "#71849B" },
+      "surface-navy": { "role": "neutral", "displayName": "Surface Navy", "canonical": "#17283F" }
     },
     "typographyMeta": {
-      "rotulo": { "displayName": "Rótulo", "purpose": "Códigos de trabajo y decisión, letras de opción, reloj, cifras y conteos." },
-      "cuerpo": { "displayName": "Cuerpo", "purpose": "Todo el texto de interfaz; pila del sistema." }
+      "titulo-pagina": { "displayName": "Título (Space Grotesk)", "purpose": "Títulos de página y sección, wordmark." },
+      "cifra": { "displayName": "Cifra (Space Grotesk)", "purpose": "Cifras, costos, conteos, códigos de trabajo y hora del reloj." },
+      "cuerpo": { "displayName": "Cuerpo (Inter)", "purpose": "Controles, datos, párrafos y tablas." }
     },
     "shadows": [
-      { "name": "tarjeta", "value": "0 1px 2px oklch(0.3 0.03 258 / 0.08), 0 2px 8px oklch(0.3 0.03 258 / 0.06)", "purpose": "Tarjetas sobre el suelo." },
-      { "name": "resultado-captura", "value": "0 4px 16px oklch(0.2 0.06 260 / 0.25)", "purpose": "Tarjeta de resultado sobre la banda azul." }
+      { "name": "sombra-1", "value": "0 1px 2px rgb(11 23 43 / 0.05), 0 1px 3px rgb(11 23 43 / 0.06)", "purpose": "Tarjetas sobre Canvas." },
+      { "name": "sombra-2", "value": "0 2px 4px rgb(11 23 43 / 0.05), 0 6px 16px rgb(11 23 43 / 0.08)", "purpose": "Reserva para superficies elevadas." },
+      { "name": "sombra-3", "value": "0 8px 24px rgb(4 10 20 / 0.32), 0 2px 6px rgb(4 10 20 / 0.2)", "purpose": "Resultado de la captura sobre la banda Surface Navy." }
     ],
     "motion": [
-      { "name": "salida-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Impresión del rótulo y entrada del resultado de la captura." }
+      { "name": "salida", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Entrada del resultado de la captura (220 ms) y anillo Mint del código creado (600 ms)." },
+      { "name": "estado", "value": "150ms", "purpose": "Hover y cambios de estado." }
     ],
     "breakpoints": [
       { "name": "telefono", "value": "639px" },
-      { "name": "escritorio", "value": "640px" },
-      { "name": "dos-columnas", "value": "1024px" },
+      { "name": "tableta", "value": "640px" },
+      { "name": "barra-lateral", "value": "1024px" },
+      { "name": "mi-dia-dos-columnas", "value": "1100px" },
       { "name": "proyector", "value": "1600px" }
     ]
   },
@@ -32,17 +38,25 @@
       "name": "Botón de captura",
       "kind": "button",
       "refersTo": "boton-captura",
-      "description": "Enviar de la caja de captura; único uso del naranja.",
+      "description": "«Enviar» de la caja de captura: el único botón Mint.",
       "html": "<button class=\"ds-captura\">Enviar</button>",
-      "css": ".ds-captura { min-height: 56px; padding: 0 20px; border: 0; border-radius: 6px; background: oklch(0.72 0.175 50); color: oklch(0.2 0.03 45); font: 700 1.0625rem system-ui, sans-serif; }"
+      "css": ".ds-captura { min-height: 56px; padding: 0 20px; border: 0; border-radius: 12px; background: #69E1C7; color: #0B172B; font: 600 1rem Inter, system-ui, sans-serif; }"
     },
     {
-      "name": "Rótulo de trabajo",
+      "name": "Botón sólido",
+      "kind": "button",
+      "refersTo": "boton-solido",
+      "description": "Acción primaria: Signal Blue con texto Core Navy (5,61:1).",
+      "html": "<button class=\"ds-solido\">Preguntar</button>",
+      "css": ".ds-solido { min-height: 44px; padding: 8px 16px; border: 1px solid #4B8FF7; border-radius: 8px; background: #4B8FF7; color: #0B172B; font: 600 0.9375rem Inter, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Código de trabajo bloqueado",
       "kind": "custom",
-      "refersTo": "rotulo-bloqueado",
-      "description": "Código del trabajo relleno con el color de su estado.",
-      "html": "<span class=\"ds-rotulo\">T04</span>",
-      "css": ".ds-rotulo { display: inline-flex; min-width: 3.25rem; justify-content: center; padding: 2px 8px; border: 2px solid oklch(0.5 0.19 27); border-radius: 3px; background: oklch(0.5 0.19 27); color: #fff; font: 700 1.125rem Bahnschrift, 'Arial Narrow', sans-serif; font-stretch: condensed; }"
+      "refersTo": "codigo-bloqueado",
+      "description": "Código del trabajo teñido con el color de su estado.",
+      "html": "<span class=\"ds-codigo\">T04</span>",
+      "css": ".ds-codigo { display: inline-flex; min-width: 3rem; justify-content: center; padding: 2px 8px; border: 1px solid #B42330; border-radius: 8px; background: #B42330; color: #fff; font: 600 0.9375rem 'Space Grotesk', system-ui, sans-serif; }"
     },
     {
       "name": "Insignia En riesgo",
@@ -50,18 +64,27 @@
       "refersTo": "insignia-riesgo",
       "description": "Marca calculada, siempre con texto e icono.",
       "html": "<span class=\"ds-riesgo\">En riesgo</span>",
-      "css": ".ds-riesgo { display: inline-flex; padding: 2px 8px; border: 1px solid oklch(0.72 0.14 80); border-radius: 999px; background: oklch(0.91 0.12 90); color: oklch(0.38 0.08 70); font: 600 0.8125rem system-ui, sans-serif; }"
+      "css": ".ds-riesgo { display: inline-flex; padding: 3px 10px; border: 1px solid #E0A526; border-radius: 999px; background: #FFF4DB; color: #8A5300; font: 500 0.8125rem Inter, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Pedido de Nexo",
+      "kind": "card",
+      "refersTo": "pedido-nexo",
+      "description": "Lo que Nexo pide o propone: superficie Mint tenue.",
+      "html": "<div class=\"ds-pedido\">Nexo pide el estado</div>",
+      "css": ".ds-pedido { padding: 12px; border: 1px solid #9FE9D7; border-radius: 16px; background: #E6F9F4; color: #0B172B; font: 600 0.9375rem Inter, system-ui, sans-serif; }"
     }
   ],
   "narrative": {
-    "northStar": "La bodega bien rotulada",
-    "overview": "Cada trabajo tiene su rótulo de ubicación y nada se pierde en la estantería. Azul de paral para el marco, naranja de viga solo para la captura, suelo gris galvanizado y tarjetas de papel con ritmo de kárdex.",
-    "keyCharacteristics": ["Rótulos en DIN condensada", "Captura como gesto principal", "Estados con texto e icono", "Números tabulares"],
+    "northStar": "Sala de coordinación en la marca Nexo",
+    "overview": "Marco Core Navy con el lockup de la N de cintas y la captura en Surface Navy; mesa clara sobre Canvas White donde se lee el trabajo. Mint para la voz de Nexo, Signal Blue para lo que hace una persona, verde para lo ejecutado.",
+    "keyCharacteristics": ["Paleta cerrada de seis colores", "Space Grotesk e Inter", "Isotipo de N de cintas", "Captura como gesto principal", "Propone, aprueba, ejecutado", "Estados con texto e icono"],
     "rules": [
-      { "name": "La regla de la viga", "body": "El naranja es solo de la captura.", "section": "colors" },
-      { "name": "Nunca solo color", "body": "Cada estado y marca lleva su nombre e icono.", "section": "colors" }
+      { "name": "Tres registros", "body": "Mint tenue es lo que Nexo propone; azul lo que espera a una persona; verde lo ejecutado.", "section": "colors" },
+      { "name": "Nunca solo color", "body": "Cada estado y marca lleva su nombre e icono.", "section": "colors" },
+      { "name": "El degradado es del isotipo", "body": "Mint→Blue solo vive en el isotipo.", "section": "colors" }
     ],
-    "dos": ["Escribir el estado además de colorearlo", "Usar números tabulares"],
-    "donts": ["No usar naranja fuera de la captura", "No recomendar opciones en las decisiones"]
+    "dos": ["Usar los seis colores exactos", "Escribir el estado además de colorearlo", "Usar números tabulares"],
+    "donts": ["No texto blanco sobre Signal Blue", "No degradados fuera del isotipo", "No recomendar opciones en las decisiones"]
   }
 }

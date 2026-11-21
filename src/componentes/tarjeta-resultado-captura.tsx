@@ -1,6 +1,6 @@
 'use client';
 // Resultado de una captura, con opciones si Nexo pregunta. Tarea 2.5.
-import { CircleAlert, CircleCheck, Copy, Info, MessageCircleQuestion, MessageSquareText } from 'lucide-react';
+import { CircleAlert, CircleCheck, Copy, Info, MessageCircleQuestion, MessageSquareText, Scale } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ResultadoCaptura, TrabajoVista } from '@/servicios/vistas';
@@ -33,10 +33,26 @@ const ICONOS = {
   error: CircleAlert,
 } as const;
 
-function Marco({ titulo, resultado, children }: { titulo: string; resultado: ResultadoCaptura; children: ReactNode }) {
-  const Icono = ICONOS[resultado.estado];
+function Marco({
+  titulo,
+  resultado,
+  esPropuesta = false,
+  children,
+}: {
+  titulo: string;
+  resultado: ResultadoCaptura;
+  /** true si lo creado espera la aprobación de una persona (una decisión): se muestra como propuesta, no como hecho. */
+  esPropuesta?: boolean;
+  children: ReactNode;
+}) {
+  const Icono = esPropuesta ? Scale : ICONOS[resultado.estado];
   return (
-    <article className="tarjeta tarjeta-captura" data-estado={resultado.estado} aria-label={titulo}>
+    <article
+      className="tarjeta tarjeta-captura"
+      data-estado={resultado.estado}
+      data-propuesta={esPropuesta || undefined}
+      aria-label={titulo}
+    >
       <header>
         <h2>
           <Icono className="icono" aria-hidden="true" />
@@ -140,7 +156,7 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
             ? 'Decisión creada'
             : 'Actualización hecha';
       return (
-        <Marco titulo={titulo} resultado={resultado}>
+        <Marco titulo={titulo} resultado={resultado} esPropuesta={titulo === 'Decisión creada'}>
           <p>{resultado.resumen}</p>
           {creados.map((t) => (
             <DetalleTrabajo key={t.id} trabajo={t} />

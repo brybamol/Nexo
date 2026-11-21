@@ -1,4 +1,16 @@
 // Las tres cifras y la lista de acciones de Nexo. Lee listarAcciones y obtenerCifras. Tarea 4.4.
+import {
+  BellRing,
+  ChevronsUp,
+  CircleCheck,
+  FilePen,
+  FilePlus2,
+  Megaphone,
+  MessageSquareText,
+  PackageCheck,
+  Scale,
+  type LucideIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { CifrasDemo } from '@/componentes/cifras-demo';
 import { formatearFecha } from '@/dominio/formato';
@@ -19,6 +31,25 @@ const ETIQUETAS: Record<TipoAccion, string> = {
   responder_pregunta: 'Responder pregunta',
   corregir_existencia: 'Corregir existencia',
 };
+
+// Icono de cada tipo: el color de la insignia distingue lo que Nexo propone, lo ejecutado y lo que escala.
+const ICONOS: Record<TipoAccion, LucideIcon> = {
+  crear_trabajo: FilePlus2,
+  actualizar_trabajo: FilePen,
+  pedir_estado: BellRing,
+  recordatorio: BellRing,
+  escalamiento: ChevronsUp,
+  aviso: Megaphone,
+  crear_decision: Scale,
+  aplicar_decision: CircleCheck,
+  responder_pregunta: MessageSquareText,
+  corregir_existencia: PackageCheck,
+};
+
+function IconoTipo({ tipo }: { tipo: TipoAccion }) {
+  const Icono = ICONOS[tipo];
+  return <Icono className="icono" aria-hidden="true" />;
+}
 
 export default async function PaginaRegistro() {
   const ctx = await obtenerContextoApp();
@@ -62,6 +93,7 @@ export default async function PaginaRegistro() {
                   </td>
                   <td>
                     <span className="insignia tipo-accion" data-tipo={a.tipo}>
+                      <IconoTipo tipo={a.tipo} />
                       {ETIQUETAS[a.tipo]}
                     </span>
                   </td>
