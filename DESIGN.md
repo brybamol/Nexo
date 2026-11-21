@@ -1,194 +1,364 @@
 ---
 name: Nexo
-description: Rotulación de bodega para la coordinación de Frío del Valle
+description: Identidad Nexo 3.0 «Enterprise Tech» aplicada a la aplicación de coordinación
 colors:
-  suelo: "oklch(0.955 0.006 250)"
-  suelo-2: "oklch(0.925 0.009 250)"
-  papel: "oklch(1 0 0)"
-  tinta: "oklch(0.23 0.025 258)"
-  tinta-2: "oklch(0.43 0.025 258)"
-  regla: "oklch(0.87 0.012 250)"
-  regla-fuerte: "oklch(0.74 0.018 250)"
-  paral: "oklch(0.37 0.125 260)"
-  paral-hondo: "oklch(0.29 0.1 262)"
-  paral-tenue: "oklch(0.94 0.025 258)"
-  sobre-paral-2: "oklch(0.87 0.035 258)"
-  viga: "oklch(0.72 0.175 50)"
-  sobre-viga: "oklch(0.2 0.03 45)"
-  en-curso: "oklch(0.5 0.14 245)"
-  bloqueado: "oklch(0.5 0.19 27)"
-  resuelto: "oklch(0.5 0.12 155)"
-  atrasado: "oklch(0.47 0.18 27)"
-  atrasado-fondo: "oklch(0.955 0.03 25)"
-  riesgo: "oklch(0.38 0.08 70)"
-  riesgo-fondo: "oklch(0.91 0.12 90)"
-  riesgo-borde: "oklch(0.72 0.14 80)"
+  core-navy: "#0B172B"
+  nexo-mint: "#69E1C7"
+  signal-blue: "#4B8FF7"
+  canvas-white: "#F5F8FC"
+  steel-gray: "#71849B"
+  surface-navy: "#17283F"
+  blanco: "#FFFFFF"
+  tinta-2: "#4A5B70"
+  canvas-2: "#EAF0F7"
+  borde: "#DCE3EC"
+  borde-opcion: "#C9D3DF"
+  niebla: "#A9B8CA"
+  linea-navy: "#2F4461"
+  azul-tinta: "#1F5FCC"
+  azul-tenue: "#E8F0FE"
+  azul-borde: "#B9D0FB"
+  azul-claro: "#6AA2F8"
+  mint-tenue: "#E6F9F4"
+  mint-borde: "#9FE9D7"
+  mint-claro: "#84E7D1"
+  mint-medio: "#5CC3D8"
+  azul-medio: "#56A9EE"
+  critico: "#B42330"
+  critico-hondo: "#9C1D29"
+  critico-tenue: "#FDECEE"
+  critico-borde: "#F1B6BC"
+  critico-sobre-navy: "#FFB4BC"
+  aviso: "#8A5300"
+  aviso-tenue: "#FFF4DB"
+  aviso-borde: "#E0A526"
+  exito: "#137A55"
+  exito-tenue: "#E6F6EF"
+  exito-borde: "#A7DBC4"
+  exito-fondo: "#F4FBF8"
+  fila-hover: "#FAFCFE"
 typography:
-  rotulo:
-    fontFamily: "Bahnschrift, 'DIN Alternate', 'DIN Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 700
+  titulo-pagina:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "clamp(1.75rem, 1.35rem + 1.1vw, 2.25rem)"
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-0.02em"
+  titulo-seccion:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 600
     lineHeight: 1.25
-    letterSpacing: "0.02em"
+    letterSpacing: "-0.01em"
   cifra:
-    fontFamily: "Bahnschrift, 'DIN Alternate', 'Roboto Condensed', sans-serif"
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
     fontSize: "2rem"
     fontWeight: 600
-    lineHeight: 1.1
-  titulo-pagina:
-    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif"
-    fontSize: "clamp(1.625rem, 1.2rem + 1.4vw, 2.25rem)"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.015em"
+    lineHeight: 1.15
+    letterSpacing: "-0.02em"
+  codigo:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 600
+    lineHeight: 1.4
   cuerpo:
-    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
-  cabecera-columna:
-    fontFamily: "'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif"
+  dato:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.5
+  etiqueta:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 500
+    lineHeight: 1.35
+  mini:
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: "0.75rem"
+    fontWeight: 500
+    lineHeight: 1.25
+  titulo-tarjeta:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "1.0625rem"
     fontWeight: 600
-    letterSpacing: "0.05em"
+    lineHeight: 1.35
+  campo-captura:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 400
+    lineHeight: 1.4
+  costo:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "1.75rem"
+    fontWeight: 600
+    lineHeight: 1.2
+  codigo-grande:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 600
+  conteo:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "1.5rem"
+    fontWeight: 600
+  reloj:
+    fontFamily: "Space Grotesk, system-ui, sans-serif"
+    fontSize: "1.125rem"
+    fontWeight: 600
+  nota:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
 rounded:
-  etiqueta: "3px"
-  chico: "4px"
-  tarjeta: "6px"
+  s: "8px"
+  m: "12px"
+  l: "16px"
   pastilla: "999px"
 spacing:
-  canal-telefono: "16px"
-  canal-escritorio: "24px"
-  seccion: "40px"
+  "1": "4px"
+  "2": "8px"
+  "3": "12px"
+  "4": "16px"
+  "5": "24px"
+  "6": "32px"
+  "7": "48px"
+  "8": "64px"
 components:
   boton-captura:
-    backgroundColor: "{colors.viga}"
-    textColor: "{colors.sobre-viga}"
-    rounded: "{rounded.tarjeta}"
+    backgroundColor: "{colors.nexo-mint}"
+    textColor: "{colors.core-navy}"
+    rounded: "{rounded.m}"
     height: "56px"
     padding: "0 20px"
+  boton-captura-hover:
+    backgroundColor: "{colors.mint-claro}"
   boton-solido:
-    backgroundColor: "{colors.paral}"
-    textColor: "{colors.papel}"
-    rounded: "{rounded.chico}"
+    backgroundColor: "{colors.signal-blue}"
+    textColor: "{colors.core-navy}"
+    rounded: "{rounded.s}"
     height: "44px"
     padding: "8px 16px"
   boton-solido-hover:
-    backgroundColor: "{colors.paral-hondo}"
-  boton-contorno:
-    backgroundColor: "{colors.papel}"
-    textColor: "{colors.paral}"
-    rounded: "{rounded.chico}"
+    backgroundColor: "{colors.azul-claro}"
+  boton:
+    backgroundColor: "{colors.blanco}"
+    textColor: "{colors.core-navy}"
+    rounded: "{rounded.s}"
     height: "44px"
     padding: "8px 16px"
-  rotulo-abierto:
-    backgroundColor: "{colors.papel}"
-    textColor: "{colors.tinta}"
-    typography: "{typography.rotulo}"
-    rounded: "{rounded.etiqueta}"
-  rotulo-bloqueado:
-    backgroundColor: "{colors.bloqueado}"
-    textColor: "{colors.papel}"
-    typography: "{typography.rotulo}"
-    rounded: "{rounded.etiqueta}"
+  boton-peligro-solido:
+    backgroundColor: "{colors.critico}"
+    textColor: "{colors.blanco}"
+    rounded: "{rounded.s}"
+    height: "44px"
+  codigo-bloqueado:
+    backgroundColor: "{colors.critico}"
+    textColor: "{colors.blanco}"
+    typography: "{typography.codigo}"
+    rounded: "{rounded.s}"
+  codigo-en-curso:
+    backgroundColor: "{colors.azul-tenue}"
+    textColor: "{colors.azul-tinta}"
+    typography: "{typography.codigo}"
+    rounded: "{rounded.s}"
   insignia-riesgo:
-    backgroundColor: "{colors.riesgo-fondo}"
-    textColor: "{colors.riesgo}"
+    backgroundColor: "{colors.aviso-tenue}"
+    textColor: "{colors.aviso}"
     rounded: "{rounded.pastilla}"
+  pedido-nexo:
+    backgroundColor: "{colors.mint-tenue}"
+    rounded: "{rounded.l}"
+    padding: "12px"
   tarjeta:
-    backgroundColor: "{colors.papel}"
-    rounded: "{rounded.tarjeta}"
-    padding: "14px 16px"
+    backgroundColor: "{colors.blanco}"
+    rounded: "{rounded.m}"
+    padding: "16px 20px"
+  barra-lateral:
+    backgroundColor: "{colors.core-navy}"
+    textColor: "{colors.niebla}"
+    width: "264px"
+  banda-captura:
+    backgroundColor: "{colors.surface-navy}"
+    textColor: "{colors.blanco}"
 ---
 
 # Sistema de diseño: Nexo
 
 ## Overview
 
-Nexo se ve como la bodega bien rotulada de Frío del Valle. Cada trabajo lleva su rótulo de ubicación (T04, T15) en DIN condensada y gruesa, relleno con el color de su estado, como las etiquetas de las estanterías de carga. El marco usa el azul de los parales de estantería; el naranja de las vigas se reserva para el gesto central, «Enviar» en la caja de captura. El suelo es gris galvanizado frío y las tarjetas son blancas como papel de etiqueta. Las listas siguen el ritmo de una tarjeta kárdex: columnas fijas, encabezados de columna en mayúscula pequeña y números tabulares.
+Nexo aplica la identidad aprobada Nexo 3.0, «Enterprise Tech»: moderna, sobria, precisa y confiable. La fuente de verdad de la marca es `docs/marca/` (`BRAND_BRIEF.md`, `VISUAL_SYSTEM.md`, `design-tokens.json` y la imagen de dirección aprobada). Este documento describe cómo se aplicó a la aplicación y qué se añadió.
 
-Es una herramienta operativa: serena, precisa, directa. El mundo de la bodega aporta solo cuatro cosas (paleta, tipografía de rótulo, densidad de kárdex y el rótulo como firma); la navegación, los controles y la estructura son los estándar de la web.
+El marco es de marca: una barra lateral Core Navy con el lockup de la N de cintas, la navegación y, aparte, la consola de la demo; y una banda Surface Navy con la captura, el gesto principal. El trabajo se lee sobre una mesa clara: Canvas White de fondo, tarjetas blancas con borde fino y sombra suave, Space Grotesk en títulos, códigos y cifras, Inter en todo lo demás.
+
+Es una herramienta operativa: la marca aporta paleta, tipografía, el isotipo y una gramática de tres registros (propone, aprueba, ejecutado). La navegación, los controles y la estructura son los estándar de la web.
 
 Tema claro únicamente. No hay tema oscuro.
 
+Sustituye por completo la dirección anterior («rotulación de bodega»: Bahnschrift, azul de paral y naranja de viga). No queda ningún color, fuente ni elemento de aquella.
+
 ## Colors
 
-### Primary
-- **Paral** (`paral`): barra superior, banda de captura, botones sólidos, enlaces. **Paral hondo** (`paral-hondo`) para la consola de la demo y el hover.
+### Marca (cerrados, valores exactos)
 
-### Secondary
-- **Viga** (`viga`) con texto **sobre-viga**: solo el botón «Enviar» de la captura y el subrayado de la pestaña activa. Nada más en la interfaz es naranja.
+| Token | HEX | Uso en la aplicación |
+|---|---|---|
+| Core Navy | `#0B172B` | Barra lateral y cabecera; texto principal; texto de los botones Mint y Blue; insignia Urgente |
+| Nexo Mint | `#69E1C7` | Botón «Enviar» de la captura; insignia Nuevo; icono de la pantalla actual; anillo del código recién creado; inicio del degradado del isotipo |
+| Signal Blue | `#4B8FF7` | Botón sólido (acciones primarias, con texto Navy); subrayado de enlaces; foco sobre zonas Navy; bordes de lo activo (confirmar, En curso); final del degradado |
+| Canvas White | `#F5F8FC` | Fondo de la aplicación |
+| Steel Gray | `#71849B` | Bordes de controles (campos, botones de contorno); barra de desplazamiento. Nunca texto pequeño sobre claro |
+| Surface Navy | `#17283F` | Banda de captura; elemento activo de la barra lateral; selector «ver como» |
 
-### Neutral
-- **Suelo** (`suelo`) para el fondo de página, **papel** (`papel`) para tarjetas, **tinta** y **tinta-2** para texto, **regla** y **regla-fuerte** para bordes.
+### Tokens derivados (pendientes de validar con el fundador)
 
-### Estados y marcas
-- Estados: Abierto (papel con borde de tinta), En curso (`en-curso`), Bloqueado (`bloqueado`), Resuelto (`resuelto`).
-- Marcas: Atrasado (`atrasado` sobre `atrasado-fondo`, icono de reloj) y En riesgo (`riesgo` sobre `riesgo-fondo`, icono de triángulo).
+Los seis colores de marca no cubren texto secundario legible sobre claro, ni estados semánticos. Estos derivados se usan solo donde los seis no cumplen su función.
+
+| Nombre | Valor | Para qué |
+|---|---|---|
+| `blanco` | `#FFFFFF` | Superficie de tarjetas sobre Canvas |
+| `tinta-2` | `#4A5B70` | Texto secundario sobre claro (Steel Gray solo da 3,60:1) |
+| `canvas-2` | `#EAF0F7` | Superficie hundida: cabeceras de tabla, cuentas, hover, letra de opción |
+| `borde` | `#DCE3EC` | Bordes decorativos de tarjetas y separadores |
+| `borde-opcion` | `#C9D3DF` | Borde de las opciones de una decisión |
+| `niebla` | `#A9B8CA` | Texto secundario sobre Core Navy y Surface Navy |
+| `linea-navy` | `#2F4461` | Bordes sobre Navy (consola DEMO, botones del reloj) |
+| `azul-tinta` | `#1F5FCC` | Texto azul pequeño (En curso, Pendiente, Claude) y anillo de foco sobre claro (Signal Blue sobre Canvas da 3,00:1) |
+| `azul-tenue` / `azul-borde` | `#E8F0FE` / `#B9D0FB` | Fondo y borde de lo que espera a una persona: confirmar una opción, decisiones pendientes, En curso |
+| `azul-claro` | `#6AA2F8` | Hover del botón sólido (sube el contraste del texto Navy) |
+| `mint-tenue` / `mint-borde` | `#E6F9F4` / `#9FE9D7` | Superficie de lo que Nexo pide o propone («Nexo te pide», «Crear decisión» en el registro) |
+| `mint-claro` | `#84E7D1` | Hover del botón de captura |
+| `mint-medio`, `azul-medio` | `#5CC3D8`, `#56A9EE` | Paradas intermedias del degradado del isotipo (interpolación Mint→Blue) |
+| `critico` | `#B42330` | Bloqueado, Atrasado, Escalamiento, Rechazar, errores |
+| `critico-hondo` | `#9C1D29` | Hover de «Confirmar rechazo» |
+| `critico-tenue` / `critico-borde` | `#FDECEE` / `#F1B6BC` | Fondo y borde de insignias y alertas críticas |
+| `critico-sobre-navy` | `#FFB4BC` | Error del reloj dentro de la consola DEMO |
+| `aviso` | `#8A5300` | En riesgo, «estimado», causas de las marcas, etiqueta DEMO |
+| `aviso-tenue` / `aviso-borde` | `#FFF4DB` / `#E0A526` | Fondo y borde de lo anterior |
+| `exito` | `#137A55` | Resuelto, Aprobada, Elegida, «Trabajo creado», Aplicar decisión |
+| `exito-tenue` / `exito-borde` / `exito-fondo` | `#E6F6EF` / `#A7DBC4` / `#F4FBF8` | Fondos y bordes de lo ejecutado o registrado |
+| `fila-hover` | `#FAFCFE` | Hover de las filas del registro |
+
+### Contrastes medidos (WCAG 2.x, relación de luminancia)
+
+Texto normal exige 4,5:1; texto grande y componentes de interfaz, 3:1.
+
+| Texto / elemento | Fondo | Relación | Uso |
+|---|---|---|---|
+| Core Navy | Canvas White | 16,83 | Texto principal |
+| Core Navy | Blanco | 17,92 | Texto en tarjetas |
+| `tinta-2` | Canvas White | 6,52 | Subtítulos, etiquetas |
+| `tinta-2` | Blanco | 6,95 | Datos secundarios en tarjetas |
+| `tinta-2` | `canvas-2` | 6,06 | Cabeceras de tabla, cuentas |
+| Core Navy | Signal Blue | 5,61 | Botón sólido |
+| Core Navy | `azul-claro` | 6,94 | Botón sólido en hover |
+| Core Navy | Nexo Mint | 11,26 | Botón «Enviar», insignia Nuevo |
+| Core Navy | `mint-tenue` | 16,40 | «Nexo te pide» |
+| Blanco | Core Navy | 17,92 | Barra lateral |
+| Blanco | Surface Navy | 14,88 | Banda de captura |
+| `niebla` | Core Navy | 8,87 | Navegación inactiva, textos de la consola |
+| `niebla` | Surface Navy | 7,36 | Ayuda de la captura |
+| Nexo Mint | Core Navy | 11,26 | Icono de la pantalla actual |
+| Signal Blue | Core Navy | 5,61 | Anillo de foco en la barra |
+| Signal Blue | Surface Navy | 4,65 | Anillo de foco en la captura |
+| `azul-tinta` | Canvas White | 5,53 | Anillo de foco sobre claro |
+| `azul-tinta` | `azul-tenue` | 5,14 | En curso, Pendiente |
+| `critico` | `critico-tenue` | 5,71 | Bloqueado, Atrasado, alertas |
+| Blanco | `critico` | 6,51 | Código de trabajo bloqueado, Confirmar rechazo |
+| `aviso` | `aviso-tenue` | 5,79 | En riesgo, estimado, DEMO |
+| `exito` | `exito-tenue` | 4,77 | Resuelto, Aprobada, Elegida |
+| `exito` | `exito-fondo` | 5,07 | Texto en la opción elegida |
+| Blanco | `exito` | 5,33 | Letra de la opción elegida |
+| Steel Gray (borde) | Blanco | 3,83 | Borde de campos y botones (≥ 3:1) |
+
+Combinaciones que **no** se usan como texto porque no llegan a 4,5:1: blanco sobre Signal Blue (3,20), Signal Blue sobre Canvas White (3,00) o blanco (3,20), Mint sobre Canvas White (1,49), Steel Gray sobre Canvas White (3,60) o blanco (3,83), Steel Gray sobre Surface Navy (3,88).
 
 ### Named Rules
-- **La regla de la viga:** el naranja es de la captura. Si aparece en otro botón, la captura deja de ser lo más reconocible.
-- **Nunca solo color:** cada estado y marca lleva su nombre escrito y un icono; el color acompaña.
+
+- **Tres registros:** Mint tenue con el isotipo es lo que Nexo pide o propone; azul es lo que espera la acción de una persona (aprobar, responder, confirmar); verde con marca de verificación es lo ejecutado o registrado. Rojo y ámbar quedan para lo crítico y lo que está en riesgo.
+- **Nunca solo color:** cada estado, marca y tipo de acción lleva su nombre escrito y un icono.
+- **El degradado es del isotipo:** Mint→Blue solo vive en el isotipo. No hay degradados en fondos, botones ni texto.
+- **Mint es de la captura:** el único botón Mint es «Enviar». Las acciones primarias del resto de pantallas son Signal Blue con texto Navy.
 
 ## Typography
 
-- **Rótulo** (Bahnschrift, condensada): códigos de trabajo y de decisión, letras de opción, hora del reloj, cifras y conteos. Es la voz de la bodega.
-- **Cuerpo** (pila del sistema: Segoe UI Variable, system-ui, -apple-system, Roboto): todo lo demás. Sin fuentes descargadas.
-- **Cabecera de columna:** 0,75 rem, mayúsculas, 0,05 em de espaciado, `tinta-2`. Solo para términos de un `dl` o encabezados de tabla, nunca encima de un título.
+- **Space Grotesk** (500/600/700) para títulos de página y sección, el wordmark, códigos de trabajo y decisión (T04, D01), letras de opción, costos, cifras, conteos y la hora del reloj. Números tabulares.
+- **Inter** (400/500/600) para todo lo demás: controles, datos, párrafos, tablas.
+- Se cargan con `next/font/google` en `src/app/layout.tsx` (variables `--fuente-inter` y `--fuente-space-grotesk`, `display: swap`, pila de respaldo `system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`). El build las descarga y las autoaloja: el navegador no llama a Google.
 
 ### Hierarchy
-Título de página (clamp 1,625–2,25 rem, 700) → título de sección (1,1875 rem, 700, con su cuenta en un rótulo gris) → título de tarjeta (1,0625 rem, 650) → cuerpo (1 rem) → datos (0,9375 rem).
+Título de página (Space Grotesk 600, clamp 1,75–2,25 rem) → título de sección (Space Grotesk 600, 1,25 rem, con su cuenta en una pastilla) → título de tarjeta (Inter 600, 1,0625 rem) → cuerpo (Inter 400, 1 rem) → datos (0,9375 rem) → etiquetas de datos (Inter 500, 0,8125 rem, `tinta-2`, sin mayúsculas).
 
 ## Layout
 
-- Ancho máximo 80 rem; canal lateral 16 px en teléfono y 24 px desde 640 px; a partir de 1600 px la raíz sube a 18 px para el proyector.
-- Marco: consola de la demo (azul hondo) → marca y navegación (azul) → banda de captura (azul) → contenido. En teléfono (< 640 px) la banda de captura queda fija abajo (máx. 62 vh) y la consola y la navegación se desplazan en horizontal.
-- «Mi día» en escritorio (≥ 1024 px): columna principal con «Nexo te pide», «Lo que debes» y «Lo que esperas de otros»; columna lateral de 19–25 rem con «Decisiones pendientes» y «Qué cambió».
-- Decisiones: las tres opciones en columnas iguales (auto-fit, mín. 17 rem) con el costo en la misma altura; en teléfono se apilan.
+- Espaciado base 8 px (4/8/12/16/24/32/48/64). Ancho máximo del contenido 76 rem; canal lateral 16 px en teléfono, 24 px desde 640 px y 32 px desde 1280 px; desde 1600 px la raíz sube a 18 px para el proyector.
+- **Escritorio (≥ 1024 px):** barra lateral fija de 264 px (lockup, navegación con iconos y, al pie, el panel DEMO con borde discontinuo). A la derecha, la banda de captura a todo el ancho y debajo el contenido.
+- **Teléfono y tableta (< 1024 px):** cabecera Navy con lockup y empresa, pestañas desplazables con la actual subrayada en Mint, y una franja DEMO desplazable (Surface Navy, borde superior discontinuo). Bajo 640 px la captura queda fija abajo (máx. 62 vh).
+- «Mi día» en dos columnas desde 1100 px: «Nexo te pide», «Lo que debes» y «Lo que esperas de otros» a la izquierda; «Decisiones pendientes» y «Qué cambió» a la derecha.
+- Decisiones: las tres opciones en columnas iguales (auto-fit, mín. 17 rem); la cabecera de la opción tiene alto fijo desde 640 px para que los costos queden alineados.
 
 ## Elevation & Depth
 
-Una sola sombra suave (`0 1px 2px` + `0 2px 8px`, azul tinta muy transparente) para tarjetas sobre el suelo. La tarjeta de resultado de la captura tiene una sombra más honda porque flota sobre el azul. No hay sombras duras.
+Tres sombras suaves con desplazamiento y desenfoque, tintadas con Navy: `sombra-1` (tarjetas), `sombra-2` (reserva) y `sombra-3` (tarjeta de resultado sobre la banda de captura). Sin brillos, sin glassmorphism, sin sombras duras.
 
 ## Shapes
 
-Rótulos con esquina de 3 px (etiqueta impresa), controles 4 px, tarjetas 6 px, insignias en pastilla.
+Radios 8 px (controles, códigos), 12 px (tarjetas, campo de captura) y 16 px (decisiones, cifras, resultado de la captura, «Nexo te pide»); pastilla 999 px para insignias.
 
 ## Components
 
+### Logo (`src/componentes/marca/logo-nexo.tsx`)
+- `IsotipoNexo` (props `tamano`, `mono`, `className`, `titulo`): N de dos cintas con extremos redondeados. La primera sube por la izquierda, gira arriba y baja por la diagonal; la segunda entra por encima en la diagonal, gira abajo y sube por la derecha. Un hueco recortado con máscara marca el cruce y funciona sobre cualquier fondo. Degradado Mint → Blue (con dos paradas intermedias) o una tinta (`currentColor`).
+- `LogoNexo` (props `variante` `horizontal|isotipo`, `fondo` `claro|oscuro`, `mono`, `tamano`, `titulo`): lockup con el wordmark `nexo` en Space Grotesk 700 y espaciado −0,035 em; blanco sobre oscuro, Core Navy sobre claro, `currentColor` en monocromo.
+- Icono de la aplicación: `src/app/icon.svg` (isotipo sobre cuadrado Core Navy redondeado).
+- **El arte final del logo es exploratorio.** Es una geometría propia inspirada en la referencia, no un vector de producción: falta la construcción final, el área libre y la comprobación de similitud con marcas existentes.
+
 ### Buttons
-- **Captura** (viga): 56 px de alto, icono de enviar; en teléfono solo el icono (el texto queda para lectores de pantalla).
-- **Sólido** (paral): la acción primaria de cada pantalla (Preguntar, Sí, aprobar, Enviar respuesta, Ir a decisiones).
-- **Contorno** (paral): acciones iguales entre sí, como «Aprobar opción A/B/C», para no empujar ninguna.
-- **Quieto** (borde gris): Cancelar, ejemplos, marcar avisos.
-- **Peligro** (rojo): Rechazar y Confirmar rechazo.
-- Todos con 44 px de alto mínimo.
+- **Captura** (Mint, texto Navy): 56 px de alto, icono de enviar; en teléfono solo el icono.
+- **Sólido** (Signal Blue, texto Navy): la acción primaria de cada pantalla (Preguntar, Sí, aprobar, Enviar respuesta, Ir a decisiones, Responder).
+- **Contorno** (blanco, borde Steel Gray): acciones iguales entre sí, como «Aprobar opción A/B/C», para no empujar ninguna.
+- **Quieto** (borde `borde`, fondo transparente): Cancelar, ejemplos, marcar avisos.
+- **Peligro** (`critico`): Rechazar y Confirmar rechazo.
+- Todos con 44 px de alto mínimo, transición de 150 ms y foco visible.
 
 ### Chips
-Insignias en pastilla con icono: estado, Urgente (tinta llena), Atrasado, En riesgo, Nuevo (paral lleno), implementación de IA.
+Pastillas con icono: estado (Abierto, En curso, Bloqueado, Resuelto), Urgente (Navy con rayo Mint), Atrasado, En riesgo, Nuevo (Mint), implementación de IA, estado de la decisión (Pendiente con reloj de arena, Aprobada, Rechazada) y tipo de acción del registro.
+
+### Código de trabajo
+El código (T04, D01) en Space Grotesk 600, teñido con el color del estado: Abierto blanco con borde Steel, En curso azul tenue, Bloqueado rojo lleno, Resuelto verde tenue. Cuando la captura crea un trabajo, su código recibe un anillo Mint que se apaga en 600 ms.
 
 ### Cards / Containers
-Tarjeta de trabajo: rótulo a la izquierda, título e insignias, y debajo una fila kárdex de datos (Proyecto, Responsable, Plazo, Bloqueado por, Depende de) separada por una regla.
+Tarjeta de trabajo: código a la izquierda, título e insignias, y debajo una fila de datos (Proyecto, Responsable, Plazo, Bloqueado por, Depende de) separada por un borde.
 
 ### Inputs / Fields
-Borde de 1,5 px `regla-fuerte`, foco con anillo de 3 px `paral` (en las zonas azules el anillo es ámbar claro).
+Borde de 1 px Steel Gray, radio 8 px, foco con anillo de 2 px `azul-tinta`. El campo de captura es blanco, 18 px, radio 12 px, sobre la banda Surface Navy.
 
 ### Navigation
-Pestañas de texto sobre el azul; la actual en blanco con subrayado de viga y `aria-current="page"`.
+Barra lateral: enlaces de 44 px con icono Lucide; el actual con fondo Surface Navy, texto blanco, icono Mint y `aria-current="page"`. En teléfono, pestañas con subrayado Mint.
 
-### Rótulo (componente firma)
-El código del trabajo en Bahnschrift condensada, relleno con el color del estado. Cuando la captura crea un trabajo, su rótulo «se imprime» una vez (revelado de arriba abajo, 700 ms, salida exponencial). Con `prefers-reduced-motion` no hay movimiento.
+### Consola DEMO
+Ver como, reloj (+5 min, +30 min, Siguiente evento) y Reiniciar demo, siempre separados del producto: panel con borde discontinuo al pie de la barra lateral o franja aparte en teléfono, con la pastilla ámbar «DEMO» y la nota «datos de demostración».
+
+## Motion
+Transiciones de 150 ms en hover y cambios de estado. Una sola entrada orquestada: la tarjeta de resultado de la captura (220 ms, opacidad y 6 px) y el anillo Mint del código recién creado. Con `prefers-reduced-motion` no hay movimiento.
 
 ## Do's and Don'ts
 
 ### Do:
-- Escribir el estado y la marca además de colorearlos.
-- Usar números tabulares en horas, costos y conteos.
+- Usar los seis colores de marca con sus valores exactos y las dos tipografías.
+- Escribir el estado y la marca además de colorearlos, con icono.
+- Usar números tabulares en horas, costos, códigos y conteos.
 - Mostrar «Propuesta por…» como pastilla neutra en la cabecera de la opción.
-- Mantener «estimado» junto a la cifra de horas.
+- Mantener «estimado» junto a la cifra de horas y la nota de hipótesis.
+- Distinguir lo que Nexo propone (Mint tenue), lo que una persona aprueba (azul) y lo ejecutado (verde).
 
 ### Don't:
-- No usar el naranja fuera de la captura.
+- No usar Steel Gray, Signal Blue ni Mint como texto pequeño sobre claro; usar `tinta-2` y `azul-tinta`.
+- No poner texto blanco sobre Signal Blue.
+- No usar degradados fuera del isotipo, ni brillos, biseles, 3D o glassmorphism.
 - No marcar ninguna opción de una decisión como recomendada ni destacarla antes de elegirla.
 - No poner etiquetas pequeñas en mayúscula encima de los títulos.
-- No descargar fuentes ni usar imágenes externas.
+- No usar una X ni un símbolo de cuatro ramas como marca; no incrustar la imagen de referencia.
+- No usar imágenes externas.

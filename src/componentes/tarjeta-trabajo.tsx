@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { formatearFecha } from '@/dominio/formato';
 import type { EstadoTrabajo } from '@/dominio/tipos';
 import type { TrabajoVista } from '@/servicios/vistas';
-import { InsigniaEstado, Rotulo } from './insignia-estado';
+import { CodigoTrabajo, InsigniaEstado } from './insignia-estado';
 import { InsigniaMarcas } from './insignia-marcas';
 
 export const ETIQUETA_ESTADO: Record<EstadoTrabajo, string> = {
@@ -27,8 +27,8 @@ export function TarjetaTrabajo({
 }) {
   return (
     <article className="tarjeta trabajo" data-estado={trabajo.estado}>
-      <div className="trabajo__rotulo" aria-hidden="true">
-        <Rotulo id={trabajo.id} estado={trabajo.estado} />
+      <div className="trabajo__codigo" aria-hidden="true">
+        <CodigoTrabajo id={trabajo.id} estado={trabajo.estado} />
       </div>
       <div>
         <h3 className="trabajo__titulo">

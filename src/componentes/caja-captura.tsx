@@ -7,6 +7,7 @@ import {
   accionResponderCaptura,
   type EstadoFormularioCaptura,
 } from '@/app/acciones/captura';
+import { IsotipoNexo } from './marca/logo-nexo';
 import { TarjetaResultadoCaptura } from './tarjeta-resultado-captura';
 
 const ESTADO_INICIAL: EstadoFormularioCaptura = { resultado: null, error: null };
@@ -61,7 +62,10 @@ export function CajaCaptura() {
   return (
     <section className="caja-captura" aria-label="Captura de trabajo">
       <form ref={formulario} onSubmit={alEnviar} aria-busy={pendiente}>
-        <label htmlFor="captura-texto">Cuéntale a Nexo qué pasó o qué se necesita</label>
+        <label htmlFor="captura-texto">
+          <IsotipoNexo tamano={20} className="caja-captura__isotipo" />
+          <span>Cuéntale a Nexo qué pasó o qué se necesita</span>
+        </label>
         <div className="caja-captura__fila">
           <textarea
             id="captura-texto"

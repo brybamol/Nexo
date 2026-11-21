@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> Escrito por el agente de la tarea 4.6 a partir del encargo y de `docs/02`, `docs/03` y `docs/05`, sin entrevista con el equipo (el agente trabajaba sin canal de preguntas). Todo lo de aquí sale de esos documentos; lo que se dedujo va marcado como *(inferido)*.
+> Escrito por el agente de la tarea 4.6 a partir del encargo y de `docs/02`, `docs/03` y `docs/05`, sin entrevista con el equipo (el agente trabajaba sin canal de preguntas). Actualizado al aplicar la identidad aprobada de `docs/marca/`. Todo lo de aquí sale de esos documentos; lo que se dedujo va marcado como *(inferido)*.
 
 ## Platform
 
@@ -32,12 +32,14 @@ No es un gestor de proyectos ni un tablero: es quien hace la coordinación. El g
 
 - Pantallas: `/mi-dia` (inicio), `/proyectos`, `/proyectos/[id]`, `/trabajos/[id]`, `/decisiones`, `/preguntar`, `/registro`. En todas: navegación, «ver como», reloj de la demo y caja de captura siempre visible (arriba en escritorio, fija abajo en teléfono).
 - Vocabulario fijo: Proyecto, Trabajo, Responsable, Dependencia, Decisión, Acción. Estados solo **Abierto, En curso, Bloqueado, Resuelto**. Marcas calculadas **Atrasado** y **En riesgo**.
-- Pila: Next.js (App Router), React 19, Tailwind CSS v4, TypeScript estricto. Sin fuentes descargadas ni imágenes externas: pila de fuentes del sistema.
+- Pila: Next.js (App Router), React 19, Tailwind CSS v4, TypeScript estricto. Fuentes de marca (Space Grotesk e Inter) autoalojadas con `next/font` en el build; sin imágenes externas.
 
 ## Compromisos de marca
 
 - Nombre: **Nexo**. Todo en español (de Costa Rica: colones con «₡», fechas como «mié 25 nov, 7:05»).
-- Carácter: herramienta operativa **serena, precisa y directa**; se siente como un buen jefe de operaciones, no como un tablero genérico de SaaS ni como otro gestor de proyectos.
+- Identidad aprobada por el fundador: **Nexo 3.0, «Enterprise Tech»** (`docs/marca/`): moderna, sobria, precisa y confiable. Paleta cerrada de seis colores (Core Navy `#0B172B`, Nexo Mint `#69E1C7`, Signal Blue `#4B8FF7`, Canvas White `#F5F8FC`, Steel Gray `#71849B`, Surface Navy `#17283F`), Space Grotesk para títulos y cifras, Inter para la interfaz, isotipo de N de cintas entrelazadas con degradado Mint→Blue y wordmark `nexo` en minúscula. El arte final del logo es exploratorio.
+- Carácter: herramienta operativa **serena, precisa y directa**; se siente como un buen jefe de operaciones, no como un tablero genérico de SaaS, ni como otro gestor de proyectos, ni como un chatbot. Sin frases grandilocuentes sobre IA: «La inteligencia propone. Tu equipo mantiene el control».
+- La interfaz distingue lo que Nexo **propone**, lo que una persona **aprueba** y lo que queda **ejecutado** o registrado.
 - Nexo no recomienda en las decisiones: una opción propuesta por una persona se muestra como «Propuesta por…», nunca como «recomendada».
 - La insignia de IA dice qué implementación respondió (Local, Claude o Local como respaldo).
 

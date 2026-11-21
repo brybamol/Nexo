@@ -1,4 +1,4 @@
-// Insignia del estado de un trabajo (icono + nombre) y rótulo del código. Tarea 4.6, solo presentación.
+// Insignia del estado de un trabajo (icono + nombre) y código del trabajo. Tarea 4.6, solo presentación.
 import { Ban, Circle, CircleCheck, CircleDot } from 'lucide-react';
 import type { EstadoTrabajo } from '@/dominio/tipos';
 
@@ -22,10 +22,10 @@ export function InsigniaEstado({ estado }: { estado: EstadoTrabajo }) {
   );
 }
 
-/** Rótulo de ubicación con el código del trabajo, relleno con el color de su estado. */
-export function Rotulo({ id, estado, grande = false }: { id: string; estado: EstadoTrabajo; grande?: boolean }) {
+/** Código del trabajo (T04) en Space Grotesk, teñido con el color de su estado. */
+export function CodigoTrabajo({ id, estado, grande = false }: { id: string; estado: EstadoTrabajo; grande?: boolean }) {
   return (
-    <span className={grande ? 'rotulo rotulo--grande' : 'rotulo'} data-estado={estado}>
+    <span className={grande ? 'codigo codigo--grande' : 'codigo'} data-estado={estado}>
       {id}
     </span>
   );

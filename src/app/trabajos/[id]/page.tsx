@@ -3,7 +3,7 @@ import { ArrowLeft, Ban, Clock, Link2, Package, TriangleAlert, Zap } from 'lucid
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BotonResponder } from '@/componentes/boton-responder';
-import { InsigniaEstado, Rotulo } from '@/componentes/insignia-estado';
+import { CodigoTrabajo, InsigniaEstado } from '@/componentes/insignia-estado';
 import { InsigniaMarcas } from '@/componentes/insignia-marcas';
 import { formatearFecha } from '@/dominio/formato';
 import type { CausaRiesgo } from '@/dominio/tipos';
@@ -49,7 +49,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
         </Link>
         <div className="detalle__cabecera">
           <span aria-hidden="true">
-            <Rotulo id={t.id} estado={t.estado} grande />
+            <CodigoTrabajo id={t.id} estado={t.estado} grande />
           </span>
           <h1 className="pagina__titulo">
             <span className="sr-only">{t.id} · </span>
