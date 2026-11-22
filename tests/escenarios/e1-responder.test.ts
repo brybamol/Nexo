@@ -57,7 +57,9 @@ describe('responderSeguimiento / cambiarEstado', () => {
 
     await cambiarEstado(demo.ctx, 'T28', 'paola-herrera', 'en_curso');
     expect((await seguimientoT28()).map((s) => s.estado)).toEqual(['respondido']); // el responsable respondió
-    await cambiarEstado(demo.ctx, 'T28', 'paola-herrera', 'resuelto');
+    // Reformas v2 (docs/08 regla 19, §7.3): resolver desde el botón necesita evidencia; T28 no tiene solicitante.
+    await expect(cambiarEstado(demo.ctx, 'T28', 'paola-herrera', 'resuelto')).rejects.toThrow('Escribe qué entregaste o pega el enlace.');
+    await cambiarEstado(demo.ctx, 'T28', 'paola-herrera', 'resuelto', 'Ya la envié.');
     const inst = await cargarInstantanea(demo.ctx.db);
     expect(inst.trabajos.find((t) => t.id === 'T28')).toMatchObject({ estado: 'resuelto' });
     expect(inst.trabajos.find((t) => t.id === 'T28')?.resueltoEn).not.toBeNull();

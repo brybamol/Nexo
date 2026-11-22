@@ -1,7 +1,7 @@
 // Construye el contexto que recibe la IA para una captura. Puro. Tarea 2.3.
 import { ErrorDominio } from '@/dominio/tipos';
 import type { ContextoCaptura } from '@/ia/interprete';
-import { nombrador, type Instantanea } from '@/motor/instantanea';
+import { instantaneaVisible, nombrador, type Instantanea } from '@/motor/instantanea';
 
 const DESFASE_MS = 6 * 60 * 60 * 1000; // Costa Rica = UTC−6, sin horario de verano
 
@@ -13,8 +13,11 @@ export function isoCR(d: Date): string {
 /**
  * Lo que la IA necesita para interpretar una frase del autor: personas, proyectos, trabajos NO resueltos
  * (con su bloqueante y su repuesto), existencias y los trabajos con un seguimiento pendiente dirigido al autor.
+ * Reformas v2 (regla 18 de docs/08): la IA ve la instantánea general, sin propuestas de Nexo ni descartados, aunque
+ * reciba la completa.
  */
-export function construirContextoCaptura(inst: Instantanea, autorId: string): ContextoCaptura {
+export function construirContextoCaptura(completa: Instantanea, autorId: string): ContextoCaptura {
+  const inst = instantaneaVisible(completa, null);
   const autor = inst.personas.find((p) => p.id === autorId);
   if (!autor) throw new ErrorDominio(`No existe la persona ${autorId}.`);
 

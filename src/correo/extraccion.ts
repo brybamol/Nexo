@@ -2,10 +2,11 @@
 // En producción la hará Claude con un esquema zod; esto quedará como respaldo. Nada se inventa: sin señal de
 // plazo, el plazo es null («no lo sé»).
 import { enCR, partesCR } from '@/dominio/tiempo';
-import type { Compromiso, EmpresaCorreo, Espera, Evidencia, HechoCorreo, Hilo, MensajeUnido, PersonaCorreo } from '@/correo/tipos';
-import { noImplementado } from '@/dominio/tipos';
+import type { Compromiso, EmpresaCorreo, Espera, EsperaCorreo, Evidencia, HechoCorreo, Hilo, MensajeUnido, PersonaCorreo } from '@/correo/tipos';
+import { asuntoBase } from '@/correo/union';
+import { MAX_CITA_EVIDENCIA } from '@/dominio/constantes';
 
-const MAX_CITA = 220;
+const MAX_CITA = MAX_CITA_EVIDENCIA;
 
 const MESES: Record<string, string> = {
   enero: '01', febrero: '02', marzo: '03', abril: '04', mayo: '05', junio: '06',
@@ -166,13 +167,102 @@ export function extraerDeHilo(hilo: Hilo, empresa: EmpresaCorreo): Compromiso[] 
   return compromisos;
 }
 
-// ── Reformas v2 (docs/08 regla 11): hechos por mensaje. Esqueleto de R2; lo implementa R5 (sustituye a extraerDeHilo). ──
+// ── Reformas v2 (docs/08 regla 11): hechos por mensaje (sustituye a extraerDeHilo, que retira R9). ──────────
+
+const RE_RECIBIDO = /\b(recibido|recibidas?|recibidos|ya l[oa]s? recib[ií]|l[oa]s? recib[ií])\b/i;
 
 /**
- * Hechos de un hilo, en el orden de sus mensajes y, dentro de cada mensaje, en el orden en que aparecen: `pedido`,
- * `aceptacion`, `espera` (`dependencia` si la escribe el solicitante al pedir; `bloqueo` si la escribe el responsable),
- * `entrega`, `recepcion` e `insistencia`. Sin señal de plazo, `plazo = null`.
+ * «… en cuanto Paola envíe la cotización» → `{ texto: 'en cuanto Paola envíe la cotización', actor: 'Paola', objeto:
+ * 'la cotización' }`. Objeto pronominal («en cuanto Diego me los envíe») → objeto ''.
+ */
+export function esperaCorreoDesdeTexto(texto: string, clase: EsperaCorreo['clase'], quienEsperaId: string | null): EsperaCorreo | null {
+  const m = RE_ESPERA.exec(texto);
+  const base = esperaDesdeTexto(texto, clase);
+  if (!m || !base) return null;
+  return { clase, texto: m[0].trim(), actor: base.actor, objeto: base.objeto, quienEsperaId };
+}
+
+/** 'c-h3-m1' desde '<h3-m1@friodelvalle.cr>': une los hechos de un mismo pedido entre lecturas. */
+export function claveCompromiso(idInternet: string): string {
+  const local = idInternet.replace(/^</, '').split('@')[0] ?? idInternet;
+  return `c-${local.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}`;
+}
+
+interface PedidoDelHilo {
+  clave: string;
+  solicitanteId: string | null;
+  responsableId: string | null;
+  entregado: boolean;
+}
+
+/**
+ * Hechos de un hilo, en el orden de sus mensajes. Dentro de un mensaje: primero el `pedido` nuevo (con su espera
+ * `dependencia` dentro: no sale como hecho aparte) y después lo que el mensaje responde sobre los pedidos anteriores del
+ * hilo: `aceptacion`, `espera` (`bloqueo`, del responsable) o `entrega` del responsable (una sola, en ese orden de
+ * prioridad: espera > entrega > aceptación), y `recepcion` (tras una entrega) e `insistencia` del solicitante.
+ * Sin señal de plazo, `plazo = null`. Un pedido a nadie de la empresa sale con `responsableId = null` (regla 12a).
  */
 export function extraerHechos(hilo: Hilo, empresa: EmpresaCorreo): HechoCorreo[] {
-  return noImplementado('R5 · correo/extraccion.ts · extraerHechos', hilo, empresa);
+  const porCorreo = new Map(empresa.personas.map((p) => [p.correo.toLowerCase(), p]));
+  const pedidos: PedidoDelHilo[] = [];
+  const hechos: HechoCorreo[] = [];
+
+  for (const m of hilo.mensajes) {
+    const autor = porCorreo.get(m.deCorreo.toLowerCase());
+    const autorId = autor?.id ?? null;
+    const base = (clave: string, re: RegExp) => ({
+      compromisoClave: clave,
+      mensajeId: m.internetMessageId,
+      autorId,
+      en: m.enviado,
+      cita: cita(oracionCon(m.texto, re)),
+      enlaces: { ...m.enlaces },
+      buzones: Object.keys(m.enlaces),
+    });
+    const anteriores = [...pedidos];
+    const delMensaje: HechoCorreo[] = [];
+
+    // 1. Pedido nuevo: «¿puedes …?» a un destinatario directo.
+    const pedido = RE_PEDIDO.exec(m.texto);
+    const destinatario = m.paraCorreos.map((c) => porCorreo.get(c.toLowerCase())).find((p) => p !== undefined);
+    if (pedido && (!destinatario || destinatario.id !== autorId)) {
+      const clave = claveCompromiso(m.internetMessageId);
+      delMensaje.push({
+        tipo: 'pedido',
+        ...base(clave, RE_PEDIDO),
+        asunto: asuntoBase(m.asunto),
+        titulo: tituloDesdePedido(pedido[1]!),
+        solicitanteId: autorId,
+        responsableId: destinatario?.id ?? null,
+        plazo: plazoDesdeTexto(m.texto, m.enviado),
+        monto: montoDesdeTexto(m.texto),
+        espera: esperaCorreoDesdeTexto(m.texto, 'dependencia', autorId),
+      });
+      pedidos.push({ clave, solicitanteId: autorId, responsableId: destinatario?.id ?? null, entregado: false });
+    }
+
+    if (autorId) {
+      // 2. Respuesta de quien debe hacerlo (sobre el último pedido del hilo a su cargo sin entregar).
+      const propio = [...anteriores].reverse().find((p) => p.responsableId === autorId && !p.entregado);
+      if (propio) {
+        const espera = esperaCorreoDesdeTexto(m.texto, 'bloqueo', autorId);
+        if (espera) delMensaje.push({ tipo: 'espera', ...base(propio.clave, RE_ESPERA), ...espera });
+        else if (RE_ENTREGA.test(m.texto)) {
+          delMensaje.push({ tipo: 'entrega', ...base(propio.clave, RE_ENTREGA) });
+          propio.entregado = true;
+        } else if (RE_ACEPTA.test(m.texto)) delMensaje.push({ tipo: 'aceptacion', ...base(propio.clave, RE_ACEPTA) });
+      }
+      // 3. De quien lo pidió: «recibido» tras una entrega, o insistencia.
+      const pedidoPorAutor = [...anteriores].reverse().find((p) => p.solicitanteId === autorId);
+      if (pedidoPorAutor) {
+        if (pedidoPorAutor.entregado && RE_RECIBIDO.test(m.texto)) {
+          delMensaje.push({ tipo: 'recepcion', ...base(pedidoPorAutor.clave, RE_RECIBIDO) });
+        } else if (RE_INSISTE.test(m.texto)) {
+          delMensaje.push({ tipo: 'insistencia', ...base(pedidoPorAutor.clave, RE_INSISTE) });
+        }
+      }
+    }
+    hechos.push(...delMensaje);
+  }
+  return hechos;
 }

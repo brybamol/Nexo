@@ -1,11 +1,12 @@
 // Respuestas a seguimientos y cambios de estado desde la interfaz (sin pasar por la caja de captura). Tarea 3.4.
 // Cada mutación: transacción → cargarInstantanea → motor → persistirEfectos (§4.4). La respuesta es la regla 3 de §4.2.
 import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/instantanea';
-import { ErrorDominio, noImplementado, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
+import { ErrorDominio, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
 import { efectosActualizacion } from '@/motor/actualizacion';
 import type { Efecto } from '@/motor/efectos';
+import { efectosEntrega, efectosRechazoEntrega, efectosRecepcion } from '@/motor/entregas';
 import { autorizadosParaActuar, type Razon } from '@/motor/escalamiento';
-import { nombrador, type Instantanea } from '@/motor/instantanea';
+import { nombrador, visiblePara, type Instantanea } from '@/motor/instantanea';
 import { efectosDeclararBloqueo, efectosMoverPlazo, efectosReasignar } from '@/motor/intervencion';
 import { registrarRespuesta } from '@/motor/seguimiento';
 import type { ContextoServicio } from '@/servicios/contexto';
@@ -18,6 +19,11 @@ function comprobar(inst: Instantanea, trabajoId: string, personaId: string, esta
   if (!trabajo) throw new ErrorDominio('No existe ese trabajo.');
   const persona = inst.personas.find((p) => p.id === personaId);
   if (!persona) throw new ErrorDominio(`No existe la persona ${personaId}.`);
+  // Regla 18 de docs/08: un propuesto solo lo ve (y solo lo toca) su dueño.
+  if (!visiblePara(trabajo, personaId)) {
+    const dueno = inst.personas.find((p) => p.id === trabajo.duenoPropuestaId)?.nombre ?? 'otra persona';
+    throw new ErrorDominio(`Este trabajo todavía es una propuesta de Nexo para ${dueno}.`);
+  }
   if (estado !== undefined && !ESTADOS.includes(estado)) throw new ErrorDominio(`El estado «${estado}» no es válido.`);
   return { trabajo, persona };
 }
@@ -49,7 +55,8 @@ export async function responderSeguimiento(
     }
     let efectos: Efecto[];
     if (estado || nota) {
-      efectos = efectosActualizacion(inst, plan(trabajoId, estado, nota), personaId); // ya incluye la respuesta
+      // Ya incluye la respuesta. Regla 19 de docs/08: la nota es la evidencia si pasa a resuelto.
+      efectos = efectosActualizacion(inst, plan(trabajoId, estado, nota), personaId, { texto: nota ?? '', fuente: 'interfaz' });
     } else {
       efectos = [
         ...registrarRespuesta(inst, trabajoId, personaId),
@@ -150,7 +157,9 @@ export async function obtenerPermisosActuar(ctx: ContextoServicio, personaId: st
  * Cambia el estado de un trabajo desde la interfaz. Aplica las mismas reglas que una actualización por captura:
  * responde al seguimiento si corresponde, resolver lo cierra y libera dependientes (§4.2 reglas 3 y 5). Sin cambio
  * real de estado no hace nada.
- * Reformas v2 (R6b): `evidencia` es la nota con la que se resuelve o se entrega (regla 19). Hasta R6b no se usa.
+ * Reformas v2 (R6b): `evidencia` es la nota con la que se resuelve o se entrega (regla 19 de docs/08). Sin ella,
+ * pasar a resuelto da ErrorDominio «Escribe qué entregaste o pega el enlace.»; el responsable con otro solicitante no
+ * lo resuelve: lo declara entregado; quien no puede darlo por resuelto (ni un jefe) recibe ErrorDominio.
  */
 export async function cambiarEstado(
   ctx: ContextoServicio,
@@ -159,17 +168,28 @@ export async function cambiarEstado(
   estado: EstadoTrabajo,
   evidencia?: string,
 ): Promise<void> {
-  void evidencia; // R6b: regla 19 (modoResolucion) y efectosActualizacion(…, { texto: evidencia, fuente: 'interfaz' })
   await ctx.db.transaction(async (tx) => {
     await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
     const { trabajo } = comprobar(inst, trabajoId, personaId, estado);
     if (trabajo.estado === estado) return;
-    await persistirEfectos(tx, efectosActualizacion(inst, plan(trabajoId, estado, null), personaId));
+    await persistirEfectos(
+      tx,
+      efectosActualizacion(inst, plan(trabajoId, estado, null), personaId, { texto: evidencia ?? '', fuente: 'interfaz' }),
+    );
   });
 }
 
-// ─── Entrega y recepción (docs/08 reglas 19–20). Esqueletos de R2; los implementa R6b con motor/entregas.ts ───
+// ─── Entrega y recepción (docs/08 reglas 19–20, con motor/entregas.ts) ───────
+
+async function mutar(ctx: ContextoServicio, trabajoId: string, personaId: string, calcular: (inst: Instantanea) => Efecto[]): Promise<void> {
+  await ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
+    const inst = await cargarInstantanea(tx);
+    comprobar(inst, trabajoId, personaId);
+    await persistirEfectos(tx, calcular(inst));
+  });
+}
 
 /** El responsable declara la entrega (nota o enlace). ErrorDominio «Escribe qué entregaste o pega el enlace». */
 export async function declararEntrega(
@@ -178,15 +198,17 @@ export async function declararEntrega(
   personaId: string,
   e: { nota?: string; enlace?: string },
 ): Promise<void> {
-  return noImplementado('R6b · servicios/estado-trabajos.ts · declararEntrega', ctx, trabajoId, personaId, e);
+  await mutar(ctx, trabajoId, personaId, (inst) =>
+    efectosEntrega(inst, trabajoId, personaId, { nota: e.nota ?? null, enlace: e.enlace ?? null, fuente: 'interfaz' }),
+  );
 }
 
 /** Quien lo pidió confirma que lo recibió: queda Resuelto. */
 export async function confirmarRecepcion(ctx: ContextoServicio, trabajoId: string, personaId: string, nota?: string): Promise<void> {
-  return noImplementado('R6b · servicios/estado-trabajos.ts · confirmarRecepcion', ctx, trabajoId, personaId, nota);
+  await mutar(ctx, trabajoId, personaId, (inst) => efectosRecepcion(inst, trabajoId, personaId, nota ?? '', 'interfaz'));
 }
 
 /** Quien lo pidió rechaza la entrega (motivo obligatorio). */
 export async function rechazarEntrega(ctx: ContextoServicio, trabajoId: string, personaId: string, motivo: string): Promise<void> {
-  return noImplementado('R6b · servicios/estado-trabajos.ts · rechazarEntrega', ctx, trabajoId, personaId, motivo);
+  await mutar(ctx, trabajoId, personaId, (inst) => efectosRechazoEntrega(inst, trabajoId, personaId, motivo));
 }

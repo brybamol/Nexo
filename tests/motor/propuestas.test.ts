@@ -291,6 +291,62 @@ describe('efectosRevision · confirmar (V7)', () => {
     expect(acciones(tick(enHora(final, enCR(JUE, '16:00')))).filter((a) => a.accion.trabajoIds.includes('M01'))).toEqual([]);
   });
 
+  // R6b (hueco cerrado, docs/08 §3 regla 16): la entrega de una propuesta confirmada por quien NO la pidió se trata como
+  // cualquier otra (regla 20): aviso a quien lo pidió y seguimiento `recepcion` (nivel 0 = ese aviso).
+  it('con entrega y confirma quien no lo pidió (el responsable, dueño): aviso «¿Lo recibiste?» al solicitante y seguimiento «recepcion»', () => {
+    const base = trasLectura();
+    const inst: Instantanea = {
+      ...base,
+      ahora: enCR(MIE, '08:21'),
+      trabajos: base.trabajos.map((t) => (t.id === 'M01' ? { ...t, duenoPropuestaId: 'diego-rojas' } : t)),
+      seguimientos: base.seguimientos.map((s) => (s.trabajoId === 'M01' ? { ...s, destinatarioId: 'diego-rojas' } : s)),
+    };
+    const efectos = efectosRevision(inst, 'M01', 'diego-rojas', { tipo: 'confirmar' });
+    const despues = aplicarEnMemoria(inst, efectos);
+    expect(trabajoDe(despues, 'M01')).toMatchObject({ confirmacion: 'confirmado', confirmadoPorId: 'diego-rojas', estado: 'abierto' });
+    const avisos = acciones(efectos).filter((a) => a.accion.tipo === 'aviso');
+    expect(avisos.map((a) => [a.accion.destinatarioId, a.aviso?.personaId, a.accion.trabajoIds])).toEqual([['ricardo-brenes', 'ricardo-brenes', ['M01']]]);
+    expect(avisos[0]!.aviso?.titulo).toBe('Diego Rojas entregó «Enviar las guías de entrega firmadas de los pedidos 1041 y 1042». ¿Lo recibiste?');
+    expect(idsInternosEn(`${avisos[0]!.aviso?.titulo} ${avisos[0]!.aviso?.cuerpo} ${avisos[0]!.accion.motivo}`)).toEqual([]);
+    expect(despues.seguimientos.filter((s) => s.trabajoId === 'M01' && s.tipo === 'recepcion')).toEqual([
+      expect.objectContaining({ nivel: 0, destinatarioId: 'ricardo-brenes', estado: 'pendiente', iniciadoEn: enCR(MIE, '08:21'), proximoEn: enCR(MIE, '12:21') }),
+    ]);
+    // Nivel 1: recordatorio a Ricardo pasado el intervalo; nunca escala.
+    const a1221 = tick(enHora(despues, enCR(MIE, '12:21')));
+    expect(acciones(a1221).filter((a) => a.accion.trabajoIds.includes('M01')).map((a) => [a.accion.tipo, a.accion.destinatarioId])).toEqual([
+      ['recordatorio', 'ricardo-brenes'],
+    ]);
+  });
+
+  it('con entrega y ya hay un seguimiento «recepcion» pendiente: no se repite ni el aviso ni el seguimiento', () => {
+    const base = trasLectura();
+    const conRecepcion = aplicarEnMemoria({ ...base, ahora: enCR(MIE, '08:21') }, [
+      {
+        tipo: 'crear_seguimiento',
+        seguimiento: {
+          id: 'S9',
+          trabajoId: 'M01',
+          plazoReferencia: enCR(MAR, '16:30'),
+          nivel: 0,
+          destinatarioId: 'ricardo-brenes',
+          urgente: false,
+          proximoEn: enCR(MIE, '12:21'),
+          estado: 'pendiente',
+          iniciadoEn: enCR(MIE, '08:21'),
+          escaladosA: [],
+          tipo: 'recepcion',
+        },
+      },
+    ]);
+    const inst: Instantanea = {
+      ...conRecepcion,
+      trabajos: conRecepcion.trabajos.map((t) => (t.id === 'M01' ? { ...t, duenoPropuestaId: 'diego-rojas' } : t)),
+    };
+    const efectos = efectosRevision(inst, 'M01', 'diego-rojas', { tipo: 'confirmar' });
+    expect(acciones(efectos).map((a) => a.accion.tipo)).toEqual(['revisar_propuesta']);
+    expect(deTipo(efectos, 'crear_seguimiento')).toEqual([]);
+  });
+
   it('una parte confirma M03 (dos fuentes): confirmadoPorId = persona; aviso de asignación al responsable si es otro', () => {
     const inst = { ...trasLectura(), ahora: enCR(MIE, '08:30') };
     const efectos = efectosRevision(inst, 'M03', 'andres-vargas', { tipo: 'confirmar' });

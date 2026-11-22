@@ -1,4 +1,4 @@
-// Extractor de hechos de un hilo (docs/08 §4). Esqueleto de R2; lo implementa R5.
+// Extractor de hechos de un hilo (docs/08 §4). La lectura (correo/lectura.ts) solo ve esta interfaz.
 // Solo la implementación local; la de Claude queda para después (fuera de la transacción y validada como la captura).
 import { extraerHechos } from '@/correo/extraccion';
 import type { EmpresaCorreo, HechoCorreo, Hilo } from '@/correo/tipos';

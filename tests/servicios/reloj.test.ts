@@ -54,6 +54,7 @@ describe('avanzarReloj', () => {
   it('suma los minutos, persiste la hora y devuelve ahora en ISO', async () => {
     const r = await avanzarReloj(demo.ctx, 5);
     expect(r.ahora).toBe(sumarMinutos(T0705, 5).toISOString());
+    expect(r.lectura).toBeNull(); // correo apagado (sin buzones conectados): no lee nada
     expect(await obtenerAhora(demo.ctx)).toEqual(sumarMinutos(T0705, 5));
     await avanzarReloj(demo.ctx, 30);
     expect(await obtenerAhora(demo.ctx)).toEqual(sumarMinutos(T0705, 35));

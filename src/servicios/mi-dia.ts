@@ -66,11 +66,19 @@ async function decisionesPendientesDe(ctx: ContextoServicio, personaId: string):
  * o por los que están bloqueados, sin repetir y por plazo. `avisos`: los suyos, del más reciente al más antiguo, máx. 20.
  */
 export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Promise<MiDia> {
-  const { inst, vistas } = await cargarVistasTrabajos(ctx.db);
+  const { inst, vistas } = await cargarVistasTrabajos(ctx.db, personaId); // instantánea visible para ella (regla 18)
   const yo = persona(inst.personas, personaId);
 
-  const pendientes = vistas.filter((v) => v.estado !== 'resuelto');
+  // Regla 15: una propuesta no es «lo que debo» ni «lo que espero»: va aparte, solo para su dueño.
+  const propuestas = vistas.filter((v) => v.confirmacion === 'propuesto' && v.dueno?.id === personaId);
+  const pendientes = vistas.filter((v) => v.estado !== 'resuelto' && v.confirmacion === 'confirmado');
   const debo = pendientes.filter((v) => v.responsable.id === personaId).sort(ordenDebo);
+
+  // Regla 20: lo que pidió, otra persona ya entregó y falta que ella confirme que lo recibió.
+  const porConfirmarRecibido = pendientes.filter(
+    (v) => v.entrega !== null && v.solicitadoPor?.id === personaId && v.responsable.id !== personaId,
+  );
+  const porConfirmar = new Set(porConfirmarRecibido.map((v) => v.id));
 
   const necesarios = new Set<string>();
   for (const t of debo) {
@@ -78,7 +86,7 @@ export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Pr
     if (t.bloqueadoPor) necesarios.add(t.bloqueadoPor.id);
   }
   const esperoDeOtros = pendientes.filter(
-    (v) => v.responsable.id !== personaId && (v.solicitadoPor?.id === personaId || necesarios.has(v.id)),
+    (v) => v.responsable.id !== personaId && !porConfirmar.has(v.id) && (v.solicitadoPor?.id === personaId || necesarios.has(v.id)),
   ); // `vistas` ya viene por plazo ascendente
 
   return {
@@ -88,9 +96,8 @@ export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Pr
     esperoDeOtros,
     avisos: await avisosDe(ctx, personaId),
     decisionesPendientes: await decisionesPendientesDe(ctx, personaId),
-    // Reformas v2. R6c: instantánea visible para personaId, propuestas (dueño) y entregas por confirmar (solicitante).
-    propuestas: [],
-    porConfirmarRecibido: [],
+    propuestas,
+    porConfirmarRecibido,
   };
 }
 
@@ -99,10 +106,11 @@ export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Pr
  * ya se escaló): los que Nexo le está pidiendo ahora. Del seguimiento más antiguo al más reciente.
  */
 export async function obtenerSeguimientosPendientes(ctx: ContextoServicio, personaId: string): Promise<TrabajoVista[]> {
-  const { inst, vistas } = await cargarVistasTrabajos(ctx.db);
+  const { inst, vistas } = await cargarVistasTrabajos(ctx.db, personaId);
   persona(inst.personas, personaId);
+  // Solo seguimientos de ESTADO (los de recepción y propuesta viven en porConfirmarRecibido y propuestas).
   return vistas
-    .filter((v) => v.seguimiento !== null && registrarRespuesta(inst, v.id, personaId).length > 0)
+    .filter((v) => v.seguimiento !== null && v.confirmacion === 'confirmado' && registrarRespuesta(inst, v.id, personaId).length > 0)
     .sort((a, b) => (a.seguimiento?.desde.getTime() ?? 0) - (b.seguimiento?.desde.getTime() ?? 0) || (a.id < b.id ? -1 : 1));
 }
 

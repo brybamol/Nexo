@@ -47,7 +47,7 @@ export function enlazarEsperas(compromisos: Compromiso[], empresa: EmpresaCorreo
 
 const PALABRAS_COMUNES = new Set(['re', 'rv', 'fw', 'fwd', 'de', 'del', 'la', 'el', 'en']);
 
-/** Nombres propios del asunto, sin contar la primera palabra: «Alta de TransLog en el ERP» → TransLog, ERP. */
+/** Nombres propios del asunto, sin contar la primera palabra: «Cotización cámara fría Hotel Mirador» → Hotel, Mirador. */
 export function nombresPropios(asunto: string): string[] {
   return asunto
     .split(/\s+/)

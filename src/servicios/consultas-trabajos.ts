@@ -4,6 +4,7 @@ import { asc } from 'drizzle-orm';
 import { notas, type Db } from '@/db/esquema';
 import { cargarInstantaneaVisible } from '@/db/instantanea';
 import type { Marcas, Persona } from '@/dominio/tipos';
+import { confianzaDe } from '@/motor/confianza';
 import { calcularMarcas } from '@/motor/marcas';
 import { cadenaDependientes, nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import type { ContextoServicio } from '@/servicios/contexto';
@@ -92,16 +93,28 @@ export async function cargarVistasTrabajos(db: Db, verComo: string | null = null
       notas: filasNotas
         .filter((n) => n.trabajoId === t.id)
         .map((n) => ({ en: n.en, autor: n.autorId ? (personas.get(n.autorId)?.nombre ?? n.autorId) : 'Nexo', texto: n.texto })),
-      // Reformas v2. R6c: confianza con confianzaDe (motor/confianza.ts, R3) y evidencias de inst.evidencias (regla 18).
+      // Reformas v2 (regla 18): confianza calculada; evidencias por fecha; el enlace solo para quien tiene el mensaje.
       origen: t.origen,
       confirmacion: t.confirmacion,
-      confianza: 'persona',
+      confianza: confianzaDe(t, inst.evidencias),
       dueno: t.duenoPropuestaId ? breve(persona(t.duenoPropuestaId)) : null,
       confirmadoPor: t.confirmadoPorId ? breve(persona(t.confirmadoPorId)) : null,
       entrega: t.entrega
         ? { en: t.entrega.en, por: breve(persona(t.entrega.porId)), nota: t.entrega.nota, enlace: t.entrega.enlace }
         : null,
-      evidencias: [],
+      evidencias: inst.evidencias
+        .filter((e) => e.trabajoId === t.id)
+        .sort((a, b) => a.en.getTime() - b.en.getTime() || a.id - b.id)
+        .map((e) => {
+          const autor = e.autorId ? personas.get(e.autorId) : undefined;
+          return {
+            tipo: e.tipo,
+            cita: e.cita,
+            autor: autor ? breve(autor) : null,
+            en: e.en,
+            enlace: verComo ? (e.enlaces[verComo] ?? null) : null,
+          };
+        }),
     };
   });
 

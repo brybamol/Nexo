@@ -1,10 +1,11 @@
 // Validación pura de la interpretación de la IA (§4.3 de docs/05). Tarea 2.3.
 // La IA solo propone: aquí se comprueba contra la instantánea y se decide la ÚNICA pregunta (R9).
-import { minusculaInicial } from '@/dominio/texto';
+import { UMBRAL_MISMO_HECHO } from '@/dominio/constantes';
+import { minusculaInicial, similitud } from '@/dominio/texto';
 import { resolverPlazo } from '@/dominio/tiempo';
 import type { Persona, Plan, PlazoPropuesto, Trabajo } from '@/dominio/tipos';
 import type { Interpretacion, InterpretacionDe } from '@/ia/interprete';
-import { nombrador, porId, type Instantanea } from '@/motor/instantanea';
+import { instantaneaVisible, nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import type { OpcionRespuesta } from '@/servicios/vistas';
 
 export type ResultadoValidacion =
@@ -79,7 +80,30 @@ function opcionesResponsable(inst: Instantanea, propuestoId: string, proyectoId:
   return opciones;
 }
 
-function validarTrabajoNuevo(inst: Instantanea, i: InterpretacionDe<'trabajo_nuevo'>, autorId: string): ResultadoValidacion {
+/**
+ * Regla 14a de docs/08 (la 12b aplicada a la captura): si quien escribe es parte (dueño, solicitante o responsable) de
+ * una propuesta de Nexo con el mismo responsable y un título parecido (similitud ≥ UMBRAL_MISMO_HECHO), es el mismo
+ * hecho: no se crea otro trabajo y la propuesta queda confirmada por esa persona (servicios/aplicar.ts). Gana la de
+ * mayor similitud; empate: id menor. Sobre la instantánea COMPLETA: la otra parte no ve la propuesta.
+ */
+export function propuestaMismoHecho(inst: Instantanea, titulo: string, responsableId: string, autorId: string): string | null {
+  let mejor: { id: string; s: number } | null = null;
+  for (const t of inst.trabajos) {
+    if (t.confirmacion !== 'propuesto' || t.estado === 'resuelto' || t.responsableId !== responsableId) continue;
+    if (![t.duenoPropuestaId, t.solicitadoPorId, t.responsableId].includes(autorId)) continue;
+    const s = similitud(titulo, t.titulo);
+    if (s < UMBRAL_MISMO_HECHO) continue;
+    if (!mejor || s > mejor.s || (s === mejor.s && t.id < mejor.id)) mejor = { id: t.id, s };
+  }
+  return mejor?.id ?? null;
+}
+
+function validarTrabajoNuevo(
+  inst: Instantanea,
+  i: InterpretacionDe<'trabajo_nuevo'>,
+  autorId: string,
+  completa: Instantanea = inst,
+): ResultadoValidacion {
   const proyecto = inst.proyectos.find((p) => p.id === i.proyectoId);
   if (!proyecto) return error('No reconozco el proyecto que mencionas. No creé nada.');
   const trabajos = porId(inst.trabajos);
@@ -105,6 +129,10 @@ function validarTrabajoNuevo(inst: Instantanea, i: InterpretacionDe<'trabajo_nue
   }
   const plazo = plazoValido(i.plazo, i.urgente, inst.ahora);
   if (!plazo) return error('No entendí el plazo. No creé nada.');
+
+  // Regla 14a: es una propuesta de Nexo de la que el autor es parte → duplicado (la confirma quien lo escribió).
+  const mismo = propuestaMismoHecho(completa, i.titulo, i.responsableId, autorId);
+  if (mismo) return plan({ tipo: 'duplicado', trabajoId: mismo });
 
   // R9: sin responsable seguro no hay trabajo; se propone uno y se pregunta (una sola pregunta).
   const responsable = inst.personas.find((p) => p.id === i.responsableId);
@@ -211,13 +239,16 @@ function validarDecision(inst: Instantanea, i: InterpretacionDe<'decision'>): Re
 /**
  * Comprueba que existan persona, proyecto, trabajos y repuesto; que el trabajo a actualizar no esté resuelto;
  * resuelve los plazos con inst.ahora y decide la ÚNICA pregunta (responsable no seguro → cantidad nula → nada).
+ * Reformas v2 (R6b, regla 18 de docs/08): `inst` es la instantánea completa, pero el autor solo puede citar lo que ve
+ * (una propuesta ajena «no existe» para él); la regla 14a sí mira las propuestas de las que es parte.
  */
-export function validarInterpretacion(inst: Instantanea, propuesta: Interpretacion, autorId: string): ResultadoValidacion {
-  if (!inst.personas.some((p) => p.id === autorId)) return error(`No existe la persona ${autorId}.`);
+export function validarInterpretacion(completa: Instantanea, propuesta: Interpretacion, autorId: string): ResultadoValidacion {
+  if (!completa.personas.some((p) => p.id === autorId)) return error(`No existe la persona ${autorId}.`);
+  const inst = instantaneaVisible(completa, autorId);
   const interp = conIdsInternos(inst, propuesta);
   switch (interp.tipo) {
     case 'trabajo_nuevo':
-      return validarTrabajoNuevo(inst, interp, autorId);
+      return validarTrabajoNuevo(inst, interp, autorId, completa);
     case 'actualizacion':
       return validarActualizacion(inst, interp);
     case 'duplicado': {

@@ -1,6 +1,10 @@
-// Revisión de las propuestas de Nexo (docs/08 regla 16). Esqueleto de R2; lo implementa R6b.
-// Mutación: transacción → tomarTurnoEscritura → cargarInstantanea → efectosRevision (motor/propuestas.ts) → persistirEfectos.
-import { noImplementado, type EntradaRevisionPropuesta } from '@/dominio/tipos';
+// Revisión de las propuestas de Nexo (docs/08 regla 16). Tarea R6b.
+// Mutación: transacción → tomarTurnoEscritura → cargarInstantanea (COMPLETA, no la visible) → efectosRevision
+// (motor/propuestas.ts) → persistirEfectos. La fila de `revisiones` sale del efecto `registrar_revision`.
+// No ejecuta tick: R1 aplica desde la revisión y lo hace el siguiente tick del reloj (regla 16).
+import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/instantanea';
+import { ErrorDominio, type EntradaRevisionPropuesta } from '@/dominio/tipos';
+import { efectosRevision } from '@/motor/propuestas';
 import type { ContextoServicio } from '@/servicios/contexto';
 
 /** Confirmar, corregir o descartar una propuesta. ErrorDominio si `personaId` no puede revisarla. */
@@ -10,5 +14,10 @@ export async function revisarPropuesta(
   personaId: string,
   r: EntradaRevisionPropuesta,
 ): Promise<void> {
-  return noImplementado('R6b · servicios/propuestas.ts · revisarPropuesta', ctx, trabajoId, personaId, r);
+  await ctx.db.transaction(async (tx) => {
+    await tomarTurnoEscritura(tx);
+    const inst = await cargarInstantanea(tx);
+    if (!inst.personas.some((p) => p.id === personaId)) throw new ErrorDominio(`No existe la persona ${personaId}.`);
+    await persistirEfectos(tx, efectosRevision(inst, trabajoId, personaId, r));
+  });
 }

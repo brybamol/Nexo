@@ -204,7 +204,8 @@ export interface CorreccionCorreo {
   cambios: CambiosCorreccion;
 }
 
-// ── Reformas v2: hechos del correo (docs/08 §3 reglas 11–13, §4). Los añadió R2; los usa R5 ──────────
+// ── Reformas v2: hechos del correo (docs/08 §3 reglas 11–13, §4). Los extrae correo/extraccion.ts y los convierte en
+// trabajos motor/ingesta.ts (R5). ──
 // Lo de abajo de «Modelo vivo» y `Compromiso`/`Correccion*` es el modelo aparte que retira R9.
 
 /**
@@ -286,7 +287,7 @@ export interface CompromisoConMarcas extends Compromiso {
   /** Código de la especificación (C1…C7, docs/06 §9): interno, no se muestra. */
   codigo: string;
   /**
-   * Referencia visible: clave del proyecto y número dentro del proyecto (TRANSLOG-2), o '' si no pertenece a un
+   * Referencia visible: clave del proyecto y número dentro del proyecto (MIRADOR-2), o '' si no pertenece a un
    * proyecto con nombre propio. Se fija antes de aplicar correcciones, así que no cambia si alguien descarta otro.
    */
   referencia: string;

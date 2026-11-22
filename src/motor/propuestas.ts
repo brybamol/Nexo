@@ -141,8 +141,9 @@ function cambiosReales(
  * `registrar_revision`, el cierre del seguimiento `propuesta` y los avisos que correspondan.
  *
  * Tras confirmar o corregir: aviso de asignación al responsable si no es quien revisa y el trabajo no tiene entrega;
- * si tiene entrega y quien revisa es el solicitante, abre en silencio el seguimiento `recepcion` (regla 20). R1 aplica
- * desde ese momento (lo hace `tick`). Descartar no avisa a nadie.
+ * si tiene entrega, abre el seguimiento `recepcion` (regla 20): en silencio si quien revisa es el solicitante; si no
+ * (R6b), con el aviso «¿Lo recibiste?» a quien lo pidió, como cualquier otra entrega. R1 aplica desde ese momento (lo
+ * hace `tick`). Descartar no avisa a nadie.
  */
 export function efectosRevision(inst: Instantanea, trabajoId: string, personaId: string, r: EntradaRevisionPropuesta): Efecto[] {
   const t = inst.trabajos.find((x) => x.id === trabajoId);
@@ -272,15 +273,19 @@ function trasConfirmar(inst: Instantanea, trabajoId: string, personaId: string):
     ];
   }
 
-  // Con entrega: si revisa quien lo pidió, Nexo esperará su «lo recibí» (regla 20), sin aviso (ya lo está viendo).
-  if (personaId !== t.solicitadoPorId) return [];
+  // Con entrega: Nexo esperará el «lo recibí» de quien lo pidió (regla 20). Si revisa él mismo, en silencio (ya lo está
+  // viendo). R6b: si revisa otra persona (p. ej. el responsable, dueño de la propuesta), la entrega se trata como
+  // cualquier otra: aviso «¿Lo recibiste?» a quien lo pidió (nivel 0 del seguimiento `recepcion`).
+  const solicitanteId = t.solicitadoPorId;
+  if (solicitanteId === null || solicitanteId === t.responsableId) return [];
   if (inst.seguimientos.some((s) => s.trabajoId === t.id && s.tipo === 'recepcion' && s.estado === 'pendiente')) return [];
+  const silencio = personaId === solicitanteId;
   const seguimiento: Seguimiento = {
     id: siguienteIdSeguimiento(inst),
     trabajoId: t.id,
     plazoReferencia: t.entrega.en,
     nivel: 0,
-    destinatarioId: personaId,
+    destinatarioId: solicitanteId,
     urgente: t.urgente,
     proximoEn: siguienteNivelEn(inst.ahora, t.urgente),
     estado: 'pendiente',
@@ -288,7 +293,35 @@ function trasConfirmar(inst: Instantanea, trabajoId: string, personaId: string):
     escaladosA: [],
     tipo: 'recepcion',
   };
-  return [{ tipo: 'crear_seguimiento', seguimiento }];
+  if (silencio) return [{ tipo: 'crear_seguimiento', seguimiento }];
+  const autorEntrega = nombre(inst, t.entrega.porId);
+  const detalle = [t.entrega.nota ? `«${t.entrega.nota}»` : null, t.entrega.enlace ? `enlace: ${t.entrega.enlace}` : null]
+    .filter(Boolean)
+    .join(' · ');
+  const titulo = `${autorEntrega} entregó «${t.titulo}». ¿Lo recibiste?`;
+  return [
+    {
+      tipo: 'accion',
+      accion: {
+        en: inst.ahora,
+        tipo: 'aviso',
+        motivo: `${autorEntrega} entregó ${cita}${detalle ? `: ${detalle}` : ''} y ${quien} confirmó la propuesta de Nexo: falta que ${nombre(inst, solicitanteId)}, que lo pidió, confirme que lo recibió.`,
+        hechoOrigen: `Revisión de ${cita} por ${quien}`,
+        trabajoIds: [t.id],
+        decisionId: null,
+        destinatarioId: solicitanteId,
+        capturaId: null,
+      },
+      aviso: {
+        personaId: solicitanteId,
+        en: inst.ahora,
+        titulo,
+        cuerpo: `${autorEntrega} entregó ${cita}${detalle ? `: ${detalle}` : ''}. ¿Lo recibiste? Confírmalo en Nexo o, si no está bien, rechaza la entrega con el motivo.`,
+        trabajoIds: [t.id],
+      },
+    },
+    { tipo: 'crear_seguimiento', seguimiento },
+  ];
 }
 
 // ─── Captura insegura (regla 17) ──────────────────────────────────────────────

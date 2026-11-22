@@ -62,6 +62,7 @@ describe('reiniciarDemo', () => {
     expect(inst.ahora).toEqual(enCR('2026-11-25', '07:00'));
     await persistirEfectos(ctx.db, [{ tipo: 'agregar_nota', trabajoId: 'T12', autorId: null, texto: 'x' }]);
     await avanzarReloj(ctx, 5);
-    expect((await ctx.db.select().from(trabajos)).length).toBe(30);
+    // R6a: al mover el reloj Nexo lee los 8 buzones de la semilla: los 30 de la semilla y las 2 propuestas (V1).
+    expect((await ctx.db.select().from(trabajos)).length).toBe(32);
   });
 });
