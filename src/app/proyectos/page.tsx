@@ -1,8 +1,10 @@
 // Proyectos por proximidad, cada uno leído como recorrido; las tres cifras al pie. Lee listarRecorridos y obtenerCifras.
 import { CifrasDemo } from '@/componentes/cifras-demo';
 import { FilaProyecto } from '@/componentes/proyectos/fila-proyecto';
+import { TasaCorreccion } from '@/componentes/tasa-correccion';
 import { obtenerCifras } from '@/servicios/cifras';
 import { listarRecorridos, type ProyectoRecorrido } from '@/servicios/proyectos';
+import { obtenerTasaCorreccion } from '@/servicios/tasa';
 import { obtenerContextoApp } from '@/servidor/contexto-app';
 import './proyectos.css';
 
@@ -18,7 +20,11 @@ function grupo(r: ProyectoRecorrido): 'fecha' | 'sin' | 'hecho' {
 
 export default async function PaginaProyectos() {
   const ctx = await obtenerContextoApp();
-  const [cifras, recorridos] = await Promise.all([obtenerCifras(ctx), listarRecorridos(ctx)]);
+  const [cifras, recorridos, tasa] = await Promise.all([
+    obtenerCifras(ctx),
+    listarRecorridos(ctx),
+    obtenerTasaCorreccion(ctx),
+  ]);
   return (
     <div className="proyectos-lista">
       <header className="pagina__cabecera">
@@ -50,6 +56,7 @@ export default async function PaginaProyectos() {
           Lo que Nexo coordinó esta semana
         </h2>
         <CifrasDemo cifras={cifras} />
+        <TasaCorreccion tasa={tasa} compacta />
       </section>
     </div>
   );

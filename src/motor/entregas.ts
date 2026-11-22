@@ -282,7 +282,7 @@ export function nucleoEntrega(
       accion: {
         en: ahora,
         tipo: 'registrar_entrega',
-        motivo: `${responsable} declaró entregado ${cita(x.id)}${detalle ? ` (${detalle})` : ''}: falta que ${solicitante}, que lo pidió, confirme que lo recibió (regla 20).`,
+        motivo: `${responsable} declaró entregado ${cita(x.id)}${detalle ? ` (${detalle})` : ''}: falta que ${solicitante}, que lo pidió, confirme que lo recibió.`,
         hechoOrigen: `${responsable} entregó ${cita(x.id)}`,
         trabajoIds: [x.id],
         decisionId: null,
@@ -382,7 +382,7 @@ export function nucleoRecepcion(
       accion: {
         en: ahora,
         tipo: 'confirmar_recepcion',
-        motivo: `${solicitante}, que lo pidió, confirmó que recibió ${citar(x.id)}: queda resuelto (regla 20).`,
+        motivo: `${solicitante}, que lo pidió, confirmó que recibió ${citar(x.id)}: queda resuelto.`,
         hechoOrigen: `${solicitante} confirmó que recibió ${citar(x.id)}`,
         trabajoIds: [x.id, ...r.tocados],
         decisionId: null,
@@ -477,7 +477,7 @@ export function efectosRechazoEntrega(inst: Instantanea, trabajoId: string, pers
       accion: {
         en: ahora,
         tipo: 'rechazar_entrega',
-        motivo: `${solicitante}, que lo pidió, no dio por recibido ${cita(x.id)}: «${porQue}». Vuelve a ${nombreDe(inst, x.responsableId)} (regla 20).`,
+        motivo: `${solicitante}, que lo pidió, no dio por recibido ${cita(x.id)}: «${porQue}». Vuelve a ${nombreDe(inst, x.responsableId)}.`,
         hechoOrigen,
         trabajoIds: [x.id],
         decisionId: null,

@@ -1,5 +1,7 @@
 # Nexo — Giro: coordinación entre departamentos a partir del correo
 
+> **Sustituido en parte por `docs/08-reformas-v2.md`.** El modelo de correo aparte (§6–§10: compromisos recalculados desde los correos, códigos `C1…C7` y la tabla `correcciones_correo`) ya no existe: cada pedido leído del correo es un trabajo del modelo único, con su propuesta, su confirmación y su revisión guardada en `revisiones`. Sus §6–§10 (modelo, extracción, empresa, casos e interfaz) quedan como historia: la extracción pasa a hechos (`docs/08` regla 11), la empresa y los hilos están en `docs/08` §5 y la pantalla en `docs/08` §6. Siguen vigentes la premisa, los principios, el flujo, la privacidad y Gmail (§1–§5 y §13), con los cambios que fija `docs/08`. Donde choquen, manda `docs/08`.
+
 *Fecha: 21-11-2026 · Estado: borrador para aprobar · Rama: `giro-correo` · Complementa a `03`, `04` y `05`; no los reemplaza todavía*
 
 Este documento define el giro de Nexo y el prototipo que lo demuestra. Mientras esté en borrador, `05-arquitectura-y-planes.md` sigue siendo el contrato del MVP actual; lo que aquí se añade vive en piezas nuevas (`src/correo/`, una tabla nueva y una pantalla nueva) y no cambia el comportamiento del guion de la demo.

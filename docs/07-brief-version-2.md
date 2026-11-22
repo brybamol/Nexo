@@ -1,5 +1,7 @@
 # Brief · Versión 2 de Nexo: coordinación desde el correo
 
+> **Sustituido en parte por `docs/08-reformas-v2.md`.** Lo que este brief describe del modelo de correo aparte (compromisos propios y tabla de correcciones) ya no existe: el correo alimenta al motor y sus pedidos son trabajos. Se conserva como historia del giro. Donde choquen, manda `docs/08`.
+
 *Rama: `giro-correo` · Fecha: 21-11-2026 · `main` no se tocó*
 
 ## En una frase

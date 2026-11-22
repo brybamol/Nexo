@@ -2,6 +2,8 @@
 
 *Fecha: 20-11-2026 · Estado: contrato vigente · Fuentes: `02` (plan v2), `03` (definición), `04` (empresa y casos)*
 
+> **Nota:** `docs/08-reformas-v2.md` amplía este documento (correo como fuente de trabajos, propuestas y confirmación, entrega con evidencia, tasa de corrección, 20 tablas, nuevas reglas 10 a 23 y nuevas pantallas). Donde choquen, manda `docs/08`. En particular, lo que aquí dice de los compromisos de correo (`C1`, `TRANSLOG-n`) y de la tabla `correcciones_correo` ya no existe: el correo alimenta al motor y sus pedidos son trabajos (§2.3 y §3 de `docs/08`).
+
 Este documento manda sobre el código. Si algo no está aquí, el agente pregunta al orquestador; no inventa. Los **archivos de contrato** (§4.0) quedan congelados al cerrar la tarea 1.1: cambiarlos exige permiso del orquestador.
 
 ---
@@ -47,7 +49,7 @@ Variables de entorno (`.env.example`): `ANTHROPIC_API_KEY` (opcional), `DATABASE
 
 ## 2. Árbol de archivos
 
-Cada archivo hace una cosa. Entre paréntesis, la tarea dueña (§7).
+Cada archivo hace una cosa. Entre paréntesis, la tarea dueña (§7). Los archivos que añaden las reformas v2 (`src/correo/`, `motor/{confianza,propuestas,entregas,ingesta,esperas,tasa}.ts`, `servicios/{propuestas,tasa}.ts`) y sus dueños están en `docs/08` §4 y §8.
 
 ```
 package.json · pnpm-workspace.yaml · pnpm-lock.yaml · tsconfig.json · next.config.ts · postcss.config.mjs
@@ -120,6 +122,8 @@ Ids de texto legibles donde el motor los crea o los cita; `serial` en tablas que
 
 ### 3.1 Tablas
 
+*Las reformas v2 añaden columnas a `trabajos` y `seguimientos` y las tablas `buzones`, `evidencias`, `mensajes_leidos` y `revisiones`: ver `docs/08` §2. El total son 20 tablas.*
+
 | Tabla | Columnas (tipo; clave) |
 |---|---|
 | `personas` | `id` text PK (`marcela-solis`…), `nombre` text, `rol` text, `area` text (`Gerencia`/`Oficina`/`Bodega`/`Campo`), `jefe_id` text null FK personas |
@@ -148,7 +152,7 @@ Tipos de `acciones.tipo`: `crear_trabajo`, `actualizar_trabajo`, `pedir_estado`,
 - **Relación trabajo–bloqueante**: `trabajos.bloqueado_por_id` (T04 → T31 en el guion) más `estado = 'bloqueado'`. No crea fila en `dependencias`.
 - **Fecha de solución**: `trabajos.fecha_solucion` (cuándo se espera levantar el bloqueo). En la necesidad, `necesidades_repuesto.fecha_disponible` (cuándo llega el repuesto comprado).
 - **Ahora**: `reloj.ahora`. Se lee con `obtenerAhora`; nadie usa la hora del sistema.
-- **Nombres visibles (reforma de nombres).** Los ids (`T04`, `D01`, y `C1` en el correo) son de la especificación y del código: claves de la base, del motor, de las rutas (`/trabajos/T04`) y de las pruebas. **Nunca se muestran.** Las personas ven el **título** y, como referencia secundaria, `CLAVE-número`: un trabajo es «Cableado y tablero de control» (`COLINA-5`); una decisión, «Compra de 3 compresores de 2 HP» (`COLINA-D1`); un compromiso de correo, «Revisar el contrato de TransLog» (`TRANSLOG-2`). `numero` se asigna al crear, con `siguienteNumeroTrabajo`/`siguienteNumeroDecision` sobre la instantánea leída tras `tomarTurnoEscritura`, en la misma transacción que inserta (sin duplicados; además hay `UNIQUE (proyecto_id, numero)`), y no cambia nunca. El formato vive solo en `dominio/nombres.ts`; ningún texto construye un id a mano. En frases se cita «Título» (REF); en etiquetas, Título (REF); no se repite el proyecto, que ya está en la clave. Una persona puede escribir la referencia en la captura («sigo con COLINA-4») y se resuelve como el id interno. Correo: la referencia se calcula (no se guarda) con la clave del proyecto de nombre propio (`TRANSLOG`, `NAVIDAD`) y la numeración en el orden de los códigos, antes de aplicar correcciones; un compromiso sin proyecto de nombre propio se nombra solo por su título.
+- **Nombres visibles (reforma de nombres).** Los ids (`T04`, `D01` y `M01` en el correo) son de la especificación y del código: claves de la base, del motor, de las rutas (`/trabajos/T04`) y de las pruebas. **Nunca se muestran.** Las personas ven el **título** y, como referencia secundaria, `CLAVE-número`: un trabajo es «Cableado y tablero de control» (`COLINA-5`); una decisión, «Compra de 3 compresores de 2 HP» (`COLINA-D1`); un trabajo leído del correo, «Enviar las guías de entrega firmadas de los pedidos 1041 y 1042» (`PEDIDOS-13`). `numero` se asigna al crear, con `siguienteNumeroTrabajo`/`siguienteNumeroDecision` sobre la instantánea leída tras `tomarTurnoEscritura`, en la misma transacción que inserta (sin duplicados; además hay `UNIQUE (proyecto_id, numero)`), y no cambia nunca. El formato vive solo en `dominio/nombres.ts`; ningún texto construye un id a mano. En frases se cita «Título» (REF); en etiquetas, Título (REF); no se repite el proyecto, que ya está en la clave. Una persona puede escribir la referencia en la captura («sigo con COLINA-4») y se resuelve como el id interno. Un trabajo leído del correo es un trabajo más: su id (`M01`, `M02`…) es interno y las personas ven su título y su referencia.
 
 ### 3.3 Semilla (04)
 
@@ -374,6 +378,12 @@ obtenerPermisosActuar(ctx, personaId, trabajoIds: string[]): Promise<{ personas:
 obtenerTrabajo(ctx, id: string): Promise<TrabajoVista | null>;
 listarTrabajos(ctx, f?: { proyectoId?: string; responsableId?: string }): Promise<TrabajoVista[]>;
 listarProyectos(ctx): Promise<ResumenProyecto[]>;  obtenerProyecto(ctx, id: string): Promise<ProyectoDetalle | null>;
+// proyectos.ts · proyectos como recorrido (rediseño de proyectos; no altera lo anterior)
+listarRecorridos(ctx): Promise<ProyectoRecorrido[]>;               // ResumenProyecto + secuencia de etapas y pasos, ordenados por proximidad
+obtenerRecorrido(ctx, id: string): Promise<ProyectoRecorrido | null>; // el mismo recorrido de un proyecto; null si no existe
+// motor/secuencia.ts (puro): calcularSecuencia(inst, proyectoId): Secuencia  — etapas por dependencias y bloqueos del mismo proyecto
+//   (o por días si la mayoría no espera a nadie), etapa actual, hechos/total y esperas hacia otros proyectos;
+//   ordenarPorProximidad(proyectos): primero los activos con fecha más temprana, luego los sin fecha, al final los terminados.
 listarPersonas(ctx): Promise<PersonaBreve[]>;
 // mi-dia.ts
 obtenerMiDia(ctx, personaId: string): Promise<MiDia>;  marcarAvisosLeidos(ctx, personaId: string): Promise<void>;
@@ -411,6 +421,8 @@ AccionVista { id; en; tipo; motivo; hechoOrigen; trabajoIds: string[]; trabajos:
 RespuestaPregunta { texto; tema: TemaPregunta; fuentes: { trabajoId; etiqueta }[]; datos: Record<string, unknown>; ia: MetaIA }
 Cifras { resueltosSinGerente; resueltosTotal; porcentaje /* entero */; seguimientos; preguntasRespondidas; minutosAhorrados; horasAhorradas /* 1 decimal */ }
 ```
+Los servicios y vistas de las reformas v2 (`leerCorreo`, `obtenerVistaCorreo`, `revisarPropuesta`, `declararEntrega`, `confirmarRecepcion`, `obtenerTasaCorreccion`, y los campos nuevos de `TrabajoVista` y `MiDia`) están en `docs/08` §4. Allí, `cambiarEstado` recibe además la `evidencia` (regla 19) y `listarTrabajos`/`obtenerTrabajo` admiten `verComo`.
+
 Orden de `debo`: urgente, luego atrasado, luego plazo ascendente. `esperoDeOtros`: trabajos no resueltos que la persona solicitó (de otro responsable), de los que dependen o por los que están bloqueados sus trabajos; sin repetir, por plazo. `avisos`: los de la persona, más recientes primero, máximo 20.
 
 ---
@@ -425,8 +437,8 @@ Marco común (`layout.tsx`, `export const dynamic = 'force-dynamic'`): barra sup
 |---|---|---|---|
 | `/` | Redirige a `/mi-dia` | — | — |
 | `/mi-dia` | Lo que debo (con quién lo pidió, qué bloquea, marcas, seguimiento pendiente), lo que espero de otros, qué cambió (avisos, con enlaces a trabajos) y decisiones pendientes si es decisor. Reforma de escalamiento: en «Nexo te pide» y bajo el aviso de escalamiento más reciente de cada trabajo (si no está ya en «Nexo te pide»), quien puede actuar ve **Reasignar** (selector de persona, motivo opcional), **Mover el plazo** (fecha, hora y motivo) y **Declarar bloqueo** (motivo), con confirmación ligera; el resultado se anuncia arriba de la página (`role="status"`, recibe el foco) y los errores junto al formulario (`role="alert"`) | `obtenerMiDia`, `obtenerSeguimientosPendientes`, `obtenerPermisosActuar` | `accionResponderSeguimiento`, `accionMarcarLeidos`, `accionReasignar`, `accionMoverPlazo`, `accionDeclararBloqueo` |
-| `/proyectos` | **Las tres cifras** arriba y una tarjeta por proyecto con abiertos/en curso/bloqueados/resueltos, atrasados y en riesgo | `listarProyectos`, `obtenerCifras` | — |
-| `/proyectos/[id]` | Trabajos del proyecto con estado, marcas, responsable, plazo y dependencias | `obtenerProyecto` | — |
+| `/proyectos` | Una tarjeta por proyecto, por proximidad, leído como recorrido (etapas, qué frena y qué viene). **Ya no tiene las cifras arriba:** las tres cifras quedan al pie y en Registro; la tasa de corrección está en `docs/08` §6 | `listarRecorridos`, `obtenerCifras` | — |
+| `/proyectos/[id]` | El recorrido del proyecto: etapas con sus trabajos, estado, marcas, responsable, plazo y dependencias | `obtenerRecorrido` | — |
 | `/trabajos/[id]` | Detalle: estado, marcas con causas, bloqueante y fecha de solución, notas, dependencias. Sección «Destrabar este trabajo» con las tres acciones para quien puede actuar (siempre el responsable del proyecto y el de la operación) | `obtenerTrabajo`, `obtenerPermisosActuar` | `accionResponderSeguimiento`, `accionReasignar`, `accionMoverPlazo`, `accionDeclararBloqueo` |
 | `/decisiones` | Pendientes del decisor actual arriba, luego el historial. Cada una: qué pasó, afectados, opciones A/B/C (costo, llegada, cambios de fecha, consecuencia), quién la propuso. Botones Aprobar por opción y Rechazar con motivo. Nexo no recomienda opción | `listarDecisiones` | `accionAprobar`, `accionRechazar` |
 | `/preguntar` | Campo de pregunta, respuesta con enlaces a `/trabajos/[id]` por fuente e insignia de implementación; «No lo sé» si el tema es `desconocido` | — | `accionPreguntar` |

@@ -44,8 +44,8 @@ describe('DDL sobre PGlite en memoria', () => {
 
   it('crea todas las tablas de esquema.ts', async () => {
     const esperadas = tablas.map((t) => getTableName(t)).sort();
-    // 17 del MVP + buzones, evidencias, mensajes_leidos y revisiones (reformas v2). R9 quita correcciones_correo → 20.
-    expect(esperadas.length).toBe(21);
+    // 17 del MVP + buzones, evidencias, mensajes_leidos y revisiones (reformas v2).
+    expect(esperadas.length).toBe(20);
     const reales = await tablasEnBase(c);
     for (const t of esperadas) expect(reales).toContain(t);
   });
@@ -70,6 +70,13 @@ describe('DDL sobre PGlite en memoria', () => {
     await c.ejecutarSql(DDL_CREAR);
     const filas = await c.db.select().from(esquema.reloj);
     expect(filas).toHaveLength(1);
+  });
+
+  it('una base anterior con correcciones_correo la pierde al ponerla al día', async () => {
+    await c.ejecutarSql('CREATE TABLE IF NOT EXISTS correcciones_correo (id serial PRIMARY KEY)');
+    expect(await tablasEnBase(c)).toContain('correcciones_correo');
+    await c.ejecutarSql(DDL_CREAR);
+    expect(await tablasEnBase(c)).not.toContain('correcciones_correo');
   });
 
   it('inserta y lee cada tabla con Drizzle', async () => {
@@ -209,14 +216,6 @@ describe('DDL sobre PGlite en memoria', () => {
       final: { titulo: 'Dos', responsableId: 'ana', plazo: null, proyectoId: 'P1' },
       entrada: { cita: '¿Puedes…?', deId: 'jefa', paraIds: ['ana'], enviado: en.toISOString() },
     });
-    await db.insert(esquema.correccionesCorreo).values({
-      compromisoId: 'c-h1-m1',
-      personaId: 'luis-mendez',
-      en,
-      tipo: 'corregir',
-      cambios: { estado: 'en_curso' },
-    });
-
     for (const t of tablas) {
       const filas = await db.select().from(t);
       expect(filas.length, getTableName(t)).toBeGreaterThan(0);

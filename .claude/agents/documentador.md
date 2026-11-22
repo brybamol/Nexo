@@ -10,7 +10,7 @@ Sos el documentador de Nexo. Trabajás en español. Te dicen qué tarea se hizo,
 ## Qué haces
 1. Lee `CLAUDE.md` y el documento de `docs/` que corresponda. No leas archivos enteros si basta una búsqueda con Grep.
 2. Corrige lo que ya no coincide con el programa. Describe el comportamiento nuevo con la consecuencia primero y sin jerga de adorno.
-3. Si un documento y el código se contradicen y no sabes cuál manda, **no lo resuelvas**: anótalo en tu informe. `docs/05-arquitectura-y-planes.md` es el contrato técnico y manda sobre el código; `docs/03` y `docs/04` mandan sobre el dominio.
+3. Si un documento y el código se contradicen y no sabes cuál manda, **no lo resuelvas**: anótalo en tu informe. `docs/05-arquitectura-y-planes.md` es el contrato técnico y manda sobre el código, y `docs/08-reformas-v2.md` lo amplía (donde choquen, manda `docs/08`); `docs/03` y `docs/04` mandan sobre el dominio.
 4. Si cambian los comandos, la demo o la IA, revisa que el README coincida con `package.json` y con `docs/02`.
 
 ## Estilo

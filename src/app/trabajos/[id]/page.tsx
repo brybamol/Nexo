@@ -203,7 +203,19 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
           <div>
             <dt>Seguimiento</dt>
             <dd>
-              Nivel {t.seguimiento.nivel} desde {formatearFecha(t.seguimiento.desde)}
+              {t.entrega && t.estado !== 'resuelto' && t.confirmacion === 'confirmado' ? (
+                // Con la entrega declarada, lo que Nexo espera es la RECEPCIÓN, no un estado.
+                <>
+                  Nexo espera que {otroSolicitante?.nombre ?? 'quien lo pidió'} confirme que lo recibió desde{' '}
+                  {formatearFecha(t.seguimiento.desde)}
+                </>
+              ) : t.confirmacion === 'propuesto' ? (
+                <>Propuesta por revisar desde {formatearFecha(t.seguimiento.desde)}</>
+              ) : (
+                <>
+                  Nivel {t.seguimiento.nivel} desde {formatearFecha(t.seguimiento.desde)}
+                </>
+              )}
             </dd>
           </div>
         )}

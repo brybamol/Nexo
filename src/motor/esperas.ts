@@ -1,5 +1,5 @@
 // Quién espera a quién (docs/08 regla 23). Puro.
-// Sustituye a las cadenas y cuellos de correo/modelo.ts (que retira R9).
+// Sustituye a las cadenas y cuellos de correo/modelo.ts (ya retirado).
 import type { CadenaEspera, CuelloBotella, Esperas, Trabajo } from '@/dominio/tipos';
 import type { Instantanea } from '@/motor/instantanea';
 

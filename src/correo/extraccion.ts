@@ -1,8 +1,8 @@
-// Extracción local por hilo (docs/06 §7). Determinista y deliberadamente simple: sirve para los correos de ejemplo.
+// Extracción local por hilo (docs/06 §7, docs/08 regla 11). Determinista y deliberadamente simple: sirve para los correos de ejemplo.
 // En producción la hará Claude con un esquema zod; esto quedará como respaldo. Nada se inventa: sin señal de
 // plazo, el plazo es null («no lo sé»).
 import { enCR, partesCR } from '@/dominio/tiempo';
-import type { Compromiso, EmpresaCorreo, Espera, EsperaCorreo, Evidencia, HechoCorreo, Hilo, MensajeUnido, PersonaCorreo } from '@/correo/tipos';
+import type { EmpresaCorreo, EsperaCorreo, HechoCorreo, Hilo } from '@/correo/tipos';
 import { asuntoBase } from '@/correo/union';
 import { MAX_CITA_EVIDENCIA } from '@/dominio/constantes';
 
@@ -77,7 +77,7 @@ export function montoDesdeTexto(texto: string): number | null {
 }
 
 /** «Finanzas confirme la garantía» → actor Finanzas, objeto «la garantía». «Pablo me los envíe» → objeto vacío. */
-export function esperaDesdeTexto(texto: string, tipo: Espera['tipo']): Espera | null {
+function esperaDesdeTexto(texto: string): Pick<EsperaCorreo, 'texto' | 'actor' | 'objeto'> | null {
   const m = RE_ESPERA.exec(texto);
   if (!m) return null;
   const clausula = m[1]!.trim();
@@ -90,84 +90,14 @@ export function esperaDesdeTexto(texto: string, tipo: Espera['tipo']): Espera | 
   }
   while (i < palabras.length && CLITICOS.has(palabras[i]!.toLowerCase())) i++;
   i++; // el verbo
-  return { tipo, texto: clausula, actor, objeto: palabras.slice(i).join(' '), compromisoId: null };
-}
-
-function idCompromiso(m: MensajeUnido): string {
-  const local = m.internetMessageId.replace(/^</, '').split('@')[0] ?? m.internetMessageId;
-  return `c-${local.replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}`;
+  return { texto: clausula, actor, objeto: palabras.slice(i).join(' ') };
 }
 
 function oracionCon(texto: string, re: RegExp): string {
   return oraciones(texto).find((o) => re.test(o)) ?? oraciones(texto)[0] ?? texto;
 }
 
-function evidencia(m: MensajeUnido, oracion: string, autor: PersonaCorreo | undefined): Evidencia {
-  return { cita: cita(oracion), autorId: autor?.id ?? null, en: m.enviado, mensajeId: m.internetMessageId, enlaces: m.enlaces };
-}
-
-/** Recorre el hilo en orden y devuelve sus compromisos, aún sin enlazar con otros hilos ni agrupar en proyectos. */
-export function extraerDeHilo(hilo: Hilo, empresa: EmpresaCorreo): Compromiso[] {
-  const porCorreo = new Map(empresa.personas.map((p) => [p.correo.toLowerCase(), p]));
-  const compromisos: Compromiso[] = [];
-
-  for (const m of hilo.mensajes) {
-    const autor = porCorreo.get(m.deCorreo);
-    const abiertos = compromisos.filter((c) => c.estado !== 'resuelto');
-
-    // 1. Respuesta de quien debe hacerlo: espera, entrega o aceptación.
-    const propio = autor ? [...abiertos].reverse().find((c) => c.responsableId === autor.id) : undefined;
-    if (propio) {
-      const espera = esperaDesdeTexto(m.texto, 'bloqueo');
-      if (espera) {
-        propio.estado = 'bloqueado';
-        propio.esperaA = espera;
-        propio.evidencias.push(evidencia(m, oracionCon(m.texto, RE_ESPERA), autor));
-      } else if (RE_ENTREGA.test(m.texto)) {
-        propio.estado = 'resuelto';
-        propio.resueltoEn = m.enviado;
-        propio.esperaA = null;
-        propio.evidencias.push(evidencia(m, oracionCon(m.texto, RE_ENTREGA), autor));
-      } else if (RE_ACEPTA.test(m.texto)) {
-        propio.estado = 'en_curso';
-        propio.evidencias.push(evidencia(m, oracionCon(m.texto, RE_ACEPTA), autor));
-      }
-    }
-
-    // 2. Insistencia de quien lo pidió.
-    const pedidoPorAutor = autor ? [...abiertos].reverse().find((c) => c.solicitanteId === autor.id) : undefined;
-    if (pedidoPorAutor && RE_INSISTE.test(m.texto)) {
-      pedidoPorAutor.insistencias++;
-      pedidoPorAutor.evidencias.push(evidencia(m, oracionCon(m.texto, RE_INSISTE), autor));
-    }
-
-    // 3. Pedido nuevo a un destinatario directo de la empresa.
-    const pedido = RE_PEDIDO.exec(m.texto);
-    const destinatario = m.paraCorreos.map((c) => porCorreo.get(c)).find((p) => p !== undefined);
-    if (pedido && destinatario && destinatario.id !== autor?.id) {
-      compromisos.push({
-        id: idCompromiso(m),
-        titulo: tituloDesdePedido(pedido[1]!),
-        solicitanteId: autor?.id ?? null,
-        responsableId: destinatario.id,
-        plazo: plazoDesdeTexto(m.texto, m.enviado),
-        monto: montoDesdeTexto(m.texto),
-        estado: 'abierto',
-        resueltoEn: null,
-        esperaA: esperaDesdeTexto(m.texto, 'dependencia'),
-        insistencias: 0,
-        evidencias: [evidencia(m, oracionCon(m.texto, RE_PEDIDO), autor)],
-        hiloId: hilo.id,
-        asunto: hilo.asunto,
-        proyecto: '',
-        revision: { tipo: 'propuesto', porId: null, en: null },
-      });
-    }
-  }
-  return compromisos;
-}
-
-// ── Reformas v2 (docs/08 regla 11): hechos por mensaje (sustituye a extraerDeHilo, que retira R9). ──────────
+// ── Hechos por mensaje (docs/08 regla 11) ──────────────────────────────────────────────────────────────
 
 const RE_RECIBIDO = /\b(recibido|recibidas?|recibidos|ya l[oa]s? recib[ií]|l[oa]s? recib[ií])\b/i;
 
@@ -177,7 +107,7 @@ const RE_RECIBIDO = /\b(recibido|recibidas?|recibidos|ya l[oa]s? recib[ií]|l[oa
  */
 export function esperaCorreoDesdeTexto(texto: string, clase: EsperaCorreo['clase'], quienEsperaId: string | null): EsperaCorreo | null {
   const m = RE_ESPERA.exec(texto);
-  const base = esperaDesdeTexto(texto, clase);
+  const base = esperaDesdeTexto(texto);
   if (!m || !base) return null;
   return { clase, texto: m[0].trim(), actor: base.actor, objeto: base.objeto, quienEsperaId };
 }

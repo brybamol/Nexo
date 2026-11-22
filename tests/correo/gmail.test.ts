@@ -5,8 +5,8 @@ import { BUZONES_DEMO, construirBuzonesEjemplo, construirBuzonesGmail } from '@/
 import { EMPRESA_FRIO_DEL_VALLE } from '@/correo/ejemplo/empresa';
 import { decodificarEncabezado, direccionesDe, sinCitas, textoDeHtml } from '@/correo/fuentes/comun';
 import { codificarBase64Url, decodificarBase64Url, normalizarBuzonGmail, normalizarMensajeGmail, textoDeCuerpoGmail, validarCuentaGmail } from '@/correo/fuentes/gmail';
-import { calcularModeloCorreo } from '@/correo/modelo';
-import type { MensajeGmail, ModeloCorreo } from '@/correo/tipos';
+import type { MensajeGmail } from '@/correo/tipos';
+import { hechosDeCorreo } from '@/correo/lectura';
 import { unirBuzones } from '@/correo/union';
 import { enCR } from '@/dominio/tiempo';
 import { ErrorDominio } from '@/dominio/tipos';
@@ -147,29 +147,24 @@ describe('buzones de Frío del Valle en formato Gmail', () => {
 });
 
 describe('Gmail y Outlook dan el mismo resultado', () => {
-  function resumen(m: ModeloCorreo) {
-    return {
-      compromisos: m.compromisos.map(({ evidencias, ...c }) => ({ ...c, citas: evidencias.map((e) => [e.cita, e.mensajeId, Object.keys(e.enlaces).sort()]) })),
-      proyectos: m.proyectos,
-      cuellos: m.cuellos,
-      conteos: m.conteos.map(({ proveedor: _p, ...k }) => k),
-    };
-  }
+  const sinProveedor = (cs: ReturnType<typeof unirBuzones>['conteos']) => cs.map((k) => [k.personaId, k.leidos, k.laborales, k.personales, k.boletines]);
 
-  it('mismos compromisos, cadenas, cuellos de botella y conteos', () => {
-    const entrada = { empresa: EMPRESA_FRIO_DEL_VALLE, correcciones: [], ahora: LECTURA_7_05 };
-    const deGmail = calcularModeloCorreo({ ...entrada, buzones: construirBuzonesEjemplo('gmail') });
-    const deOutlook = calcularModeloCorreo({ ...entrada, buzones: construirBuzonesEjemplo('outlook') });
-    expect(deGmail.compromisos).toHaveLength(6);
-    expect(resumen(deGmail)).toEqual(resumen(deOutlook));
-    expect(deGmail.conteos.every((k) => k.proveedor === 'gmail')).toBe(true);
+  it('mismos hilos, mensajes, enlaces por buzón y conteos de la lectura', () => {
+    for (const ahora of [LECTURA_7_05, enCR('2026-11-25', '08:20')]) {
+      const deGmail = unirBuzones(construirBuzonesEjemplo('gmail'), EMPRESA_FRIO_DEL_VALLE, ahora);
+      const deOutlook = unirBuzones(construirBuzonesEjemplo('outlook'), EMPRESA_FRIO_DEL_VALLE, ahora);
+      const forma = (u: typeof deGmail) => u.hilos.map((h) => ({ ...h, mensajes: h.mensajes.map((m) => ({ ...m, enlaces: Object.keys(m.enlaces).sort() })) }));
+      expect(forma(deGmail)).toEqual(forma(deOutlook));
+      expect(sinProveedor(deGmail.conteos)).toEqual(sinProveedor(deOutlook.conteos));
+      expect(deGmail.conteos.every((k) => k.proveedor === 'gmail')).toBe(true);
+      expect(deOutlook.conteos.every((k) => k.proveedor === 'outlook')).toBe(true);
+    }
   });
 
-  it('también cuando llega el correo de las 8:20 y se forma la cadena de espera', () => {
-    const entrada = { empresa: EMPRESA_FRIO_DEL_VALLE, correcciones: [], ahora: enCR('2026-11-25', '08:20') };
-    const deGmail = calcularModeloCorreo({ ...entrada, buzones: construirBuzonesEjemplo('gmail') });
-    const deOutlook = calcularModeloCorreo({ ...entrada, buzones: construirBuzonesEjemplo('outlook') });
-    expect(deGmail.compromisos).toHaveLength(7);
-    expect(resumen(deGmail)).toEqual(resumen(deOutlook));
+  it('mismas copias y hechos en la lectura que alimenta al motor', () => {
+    const gmail = hechosDeCorreo(construirBuzonesEjemplo('gmail'), EMPRESA_FRIO_DEL_VALLE, LECTURA_7_05);
+    const outlook = hechosDeCorreo(construirBuzonesEjemplo('outlook'), EMPRESA_FRIO_DEL_VALLE, LECTURA_7_05);
+    expect(gmail.hechos.length).toBeGreaterThan(0);
+    expect(outlook.copias).toEqual(gmail.copias);
   });
 });

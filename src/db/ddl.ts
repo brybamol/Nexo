@@ -37,7 +37,7 @@ ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS escalados_a jsonb NOT NULL DEF
  * Reformas v2 (docs/08 §2.4) sobre una base anterior: columnas nuevas con su valor por defecto (todo lo que ya había
  * queda confirmado y los seguimientos son de estado). Las cuatro tablas nuevas las crea su CREATE TABLE IF NOT EXISTS.
  * No inserta buzones: una base anterior queda sin buzones conectados («reinicia la demo»).
- * `correcciones_correo` se conserva hasta la tarea R9, que la elimina con un DROP TABLE IF EXISTS aquí.
+ * `correcciones_correo` (el modelo de correo aparte, retirado) se elimina con un DROP TABLE IF EXISTS.
  */
 const ACTUALIZAR_V2 = `
 ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmacion text NOT NULL DEFAULT 'confirmado';
@@ -45,6 +45,7 @@ ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS dueno_propuesta_id text REFERENCES
 ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmado_por_id text REFERENCES personas(id);
 ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS entrega jsonb;
 ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'estado';
+DROP TABLE IF EXISTS correcciones_correo;
 `;
 
 /** CREATE TABLE IF NOT EXISTS de todas las tablas, en orden de claves foráneas, y la puesta al día de una base anterior. */
@@ -286,14 +287,6 @@ CREATE TABLE IF NOT EXISTS revisiones (
   motivo text
 );
 
-CREATE TABLE IF NOT EXISTS correcciones_correo (
-  id serial PRIMARY KEY,
-  compromiso_id text NOT NULL,
-  persona_id text NOT NULL,
-  en timestamptz NOT NULL,
-  tipo text NOT NULL,
-  cambios jsonb NOT NULL DEFAULT '{}'::jsonb
-);
 ${ACTUALIZAR}${ACTUALIZAR_V2}`;
 
 /** DROP TABLE IF EXISTS … CASCADE de todas las tablas. */

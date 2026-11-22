@@ -1,5 +1,5 @@
 // Tipos del giro a correo (docs/06). Prototipo: todo es puro y determinista; la hora llega como argumento.
-import type { ClaseCorreo, EstadoTrabajo, ProveedorCorreo } from '@/dominio/tipos';
+import type { ClaseCorreo, ProveedorCorreo } from '@/dominio/tipos';
 
 // ── Fuentes: cada proveedor entrega su forma; un adaptador la lleva a `MensajeCorreo` ─────────────────────
 
@@ -144,76 +144,15 @@ export interface ConteoBuzon {
   boletines: number;
 }
 
-// ── Extracción ──────────────────────────────────────────────────────────────────────────────────────
-
-export interface Evidencia {
-  cita: string;
-  autorId: string | null;
-  en: Date;
-  mensajeId: string;
-  enlaces: Record<string, string>;
-}
-
-export type TipoEspera = 'dependencia' | 'bloqueo';
-
-/** Lo que dice el correo; `compromisoId` lo resuelve el enlace entre hilos (null = no se sabe de cuál depende). */
-export interface Espera {
-  tipo: TipoEspera;
-  texto: string;
-  actor: string | null;
-  objeto: string;
-  compromisoId: string | null;
-}
-
-export type TipoRevision = 'propuesto' | 'confirmado' | 'corregido';
-
-export interface Compromiso {
-  id: string;
-  titulo: string;
-  solicitanteId: string | null;
-  responsableId: string | null;
-  plazo: Date | null;
-  monto: number | null;
-  estado: EstadoTrabajo;
-  resueltoEn: Date | null;
-  esperaA: Espera | null;
-  insistencias: number;
-  evidencias: Evidencia[];
-  hiloId: string;
-  asunto: string;
-  proyecto: string;
-  revision: { tipo: TipoRevision; porId: string | null; en: Date | null };
-}
-
-// ── Correcciones (lo único que se guarda) ───────────────────────────────────────────────────────────
-
-export type TipoCorreccion = 'confirmar' | 'corregir' | 'descartar';
-
-export interface CambiosCorreccion {
-  titulo?: string;
-  responsableId?: string;
-  plazo?: string; // ISO
-  estado?: EstadoTrabajo;
-}
-
-export interface CorreccionCorreo {
-  compromisoId: string;
-  personaId: string;
-  en: Date;
-  tipo: TipoCorreccion;
-  cambios: CambiosCorreccion;
-}
-
 // ── Reformas v2: hechos del correo (docs/08 §3 reglas 11–13, §4). Los extrae correo/extraccion.ts y los convierte en
 // trabajos motor/ingesta.ts (R5). ──
-// Lo de abajo de «Modelo vivo» y `Compromiso`/`Correccion*` es el modelo aparte que retira R9.
 
 /**
  * Espera dentro de un correo. `clase`: `dependencia` si la escribe el solicitante al pedir; `bloqueo` si la escribe el
  * responsable. (Se llama `clase` y no `tipo` para poder ir dentro de un HechoCorreo con `tipo: 'espera'`.)
  */
 export interface EsperaCorreo {
-  clase: TipoEspera;
+  clase: 'dependencia' | 'bloqueo';
   /** La cláusula tal cual: «en cuanto Paola envíe la cotización». */
   texto: string;
   /** Nombre o departamento nombrado («Paola»); null si no nombra a nadie. */
@@ -270,47 +209,3 @@ export interface CopiaLeida {
 }
 
 export type { ResumenLectura } from '@/dominio/tipos';
-
-// ── Modelo vivo ─────────────────────────────────────────────────────────────────────────────────────
-
-export type CausaCorreo =
-  | { tipo: 'atrasado' }
-  | { tipo: 'espera'; compromisoId: string; motivo: 'atrasado' | 'bloqueado' | 'en_riesgo' | 'plazo_posterior' };
-
-export interface MarcasCorreo {
-  atrasado: boolean;
-  enRiesgo: boolean;
-  causas: CausaCorreo[];
-}
-
-export interface CompromisoConMarcas extends Compromiso {
-  /** Código de la especificación (C1…C7, docs/06 §9): interno, no se muestra. */
-  codigo: string;
-  /**
-   * Referencia visible: clave del proyecto y número dentro del proyecto (MIRADOR-2), o '' si no pertenece a un
-   * proyecto con nombre propio. Se fija antes de aplicar correcciones, así que no cambia si alguien descarta otro.
-   */
-  referencia: string;
-  marcas: MarcasCorreo;
-}
-
-/** Cadena de espera: del que espera (primero) al último que bloquea. */
-export interface Cadena {
-  compromisoIds: string[];
-}
-
-export interface ProyectoCorreo {
-  nombre: string;
-  compromisoIds: string[];
-  cadenas: Cadena[];
-}
-
-export interface ModeloCorreo {
-  ahora: Date;
-  empresa: EmpresaCorreo;
-  compromisos: CompromisoConMarcas[];
-  proyectos: ProyectoCorreo[];
-  conteos: ConteoBuzon[];
-  /** Personas a las que esperan cadenas de dos o más proyectos distintos, o dos o más cadenas. */
-  cuellos: { personaId: string; cadenas: number; proyectos: string[] }[];
-}

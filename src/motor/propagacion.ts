@@ -128,7 +128,7 @@ function avisosRiesgo(
       accion: {
         en: despues.ahora,
         tipo: 'aviso',
-        motivo: `R4/R5: ${enumerar}, de ${nombre}, ${ids.length === 1 ? 'pasa' : 'pasan'} a en riesgo${o.causa ? `; causa citada: ${nombres.cita(o.causa)}` : ''}.`,
+        motivo: `${enumerar}, de ${nombre}, ${ids.length === 1 ? 'pasa' : 'pasan'} a en riesgo${o.causa ? `; causa citada: ${nombres.cita(o.causa)}` : ''}.`,
         hechoOrigen: o.hecho,
         trabajoIds: ids,
         decisionId: null,
