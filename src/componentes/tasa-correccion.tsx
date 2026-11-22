@@ -1,7 +1,7 @@
-// «Cuánto se equivoca Nexo» (docs/08 regla 22 y §6). Componente de servidor, reutilizable en Correo, Registro y Proyectos.
+// «Cuánto se equivoca Nexo» (docs/08 regla 22 y §6). Componente de servidor, hoy solo se muestra en Registro.
 // Con `tasa === null` no se inventa nada: «Todavía no lo sé…».
 import type { CampoCorregible, TasaCorreccion as Tasa } from '@/dominio/tipos';
-import '@/app/correo/correo.css';
+import '@/app/conexiones/conexiones.css';
 
 const CAMPOS: { campo: CampoCorregible; etiqueta: string }[] = [
   { campo: 'titulo', etiqueta: 'título' },

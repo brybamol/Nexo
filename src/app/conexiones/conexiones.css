@@ -1,4 +1,4 @@
-/* Pantalla Correo y piezas de la fuente (docs/08 §6). Solo variables de marca de globals.css. */
+/* Pantalla Conexiones y piezas de la fuente (docs/08 §6). Solo variables de marca de globals.css. */
 
 .seccion__nota { margin: -0.5rem 0 1rem; color: var(--tinta-2); max-width: 80ch; font-size: 0.9375rem; }
 .vacio--fuente { display: flex; align-items: flex-start; gap: 0.75rem; }
@@ -44,10 +44,6 @@
 }
 .sin-convertir__pregunta { display: flex; align-items: flex-start; gap: 0.5rem; color: var(--tinta); }
 .sin-convertir__pregunta .icono { margin-top: 0.1875rem; color: var(--azul-tinta); }
-
-/* Esperas */
-.cadenas__trabajos { margin-top: 0.75rem; font-size: 0.9375rem; }
-.cadenas .lista { margin-top: 0.25rem; }
 
 /* Insignia de confianza (componentes/insignia-confianza.tsx) */
 .insignia--confianza { font-weight: 600; }

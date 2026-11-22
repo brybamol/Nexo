@@ -20,6 +20,7 @@ import { capturar } from '@/servicios/captura';
 import { obtenerCifras } from '@/servicios/cifras';
 import { listarTrabajos, obtenerTrabajo } from '@/servicios/consultas-trabajos';
 import { obtenerVistaCorreo } from '@/servicios/correo';
+import { obtenerCuellos } from '@/servicios/esperas';
 import { aprobarDecision, listarDecisiones } from '@/servicios/decisiones';
 import { confirmarRecepcion, obtenerPermisosActuar } from '@/servicios/estado-trabajos';
 import { obtenerMiDia, obtenerSeguimientosPendientes } from '@/servicios/mi-dia';
@@ -509,6 +510,8 @@ describe.each([
     const vista = await obtenerVistaCorreo(demo.ctx, MARCELA);
     expect(vista.esperas.cuellos.map((c) => [c.persona.id, c.proyectos.map((p) => p.id)])).toEqual([['lucia-mora', ['P1', 'P3']]]);
     expect(vista.esperas.cuellos[0]?.esperando).toHaveLength(6);
+    // El aviso de Proyectos usa el mismo cálculo.
+    expect(await obtenerCuellos(demo.ctx, MARCELA)).toEqual(vista.esperas.cuellos);
     expect(vista.tasa.tasa).toBe(50);
 
     const registro = await listarAcciones(demo.ctx);

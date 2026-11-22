@@ -30,7 +30,7 @@ No es un gestor de proyectos ni un tablero: es quien hace la coordinación. El g
 
 ## Capacidades y restricciones
 
-- Pantallas: `/mi-dia` (inicio), `/proyectos`, `/proyectos/[id]`, `/trabajos/[id]`, `/decisiones`, `/preguntar`, `/registro`. En todas: navegación, «ver como», reloj de la demo y caja de captura siempre visible (arriba en escritorio, fija abajo en teléfono).
+- Pantallas: `/mi-dia` (inicio), `/proyectos`, `/proyectos/[id]`, `/trabajos/[id]`, `/decisiones`, `/registro`, `/conexiones`. En todas: navegación, «ver como», reloj de la demo y el botón flotante «Cuéntale a Nexo» (abajo a la derecha), que abre el panel donde se cuenta qué pasó, se pide algo o se pregunta.
 - Vocabulario fijo: Proyecto, Trabajo, Responsable, Dependencia, Decisión, Acción. Estados solo **Abierto, En curso, Bloqueado, Resuelto**. Marcas calculadas **Atrasado** y **En riesgo**.
 - Pila: Next.js (App Router), React 19, Tailwind CSS v4, TypeScript estricto. Fuentes de marca (Space Grotesk e Inter) autoalojadas con `next/font` en el build; sin imágenes externas.
 

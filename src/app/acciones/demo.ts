@@ -11,7 +11,7 @@ export async function reiniciar(): Promise<ResultadoReloj> {
   try {
     const ctx = await obtenerContextoApp();
     await reiniciarDemo(ctx);
-    // Contador de reinicios: el layout lo usa como `key` de la caja de captura para limpiar su estado.
+    // Contador de reinicios: el layout lo usa en la `key` del panel de Nexo para limpiar su hilo.
     const almacen = await cookies();
     const anterior = Number(almacen.get('nexo-reinicio')?.value ?? '0');
     almacen.set('nexo-reinicio', String((Number.isFinite(anterior) ? anterior : 0) + 1), { path: '/', sameSite: 'lax' });

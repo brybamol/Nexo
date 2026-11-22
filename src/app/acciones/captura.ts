@@ -46,7 +46,8 @@ async function conNombres(ctx: ContextoServicio, r: ResultadoCaptura): Promise<R
 }
 
 async function terminar(ctx: ContextoServicio, r: ResultadoCaptura): Promise<EstadoFormularioCaptura> {
-  if (r.estado === 'aplicada') revalidatePath('/', 'layout');
+  // Una pregunta respondida también cuenta en las cifras de Registro (horas estimadas).
+  if (r.estado === 'aplicada' || r.estado === 'respuesta') revalidatePath('/', 'layout');
   return { resultado: await conNombres(ctx, r), error: null, trabajos: await cargarTrabajos(ctx, r) };
 }
 

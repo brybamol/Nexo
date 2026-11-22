@@ -95,7 +95,7 @@ async function resolverEnTransaccion(
       return cerrarCaptura(tx, capturaId, meta, { estado: 'ignorada', motivo: plan.motivo }, interp);
     case 'pregunta':
       // Las preguntas no llegan aquí (capturar las atiende antes); por si acaso, no se aplica nada.
-      return cerrarCaptura(tx, capturaId, meta, { estado: 'error', mensaje: 'Esto es una pregunta: hazla en Preguntar.' }, interp);
+      return cerrarCaptura(tx, capturaId, meta, { estado: 'error', mensaje: 'Entendí una pregunta, pero no pude responderla. Escríbela de nuevo.' }, interp);
     default: {
       // La decisión recién creada no está en `inst`: su nombre sale de la base, ya escrita en esta transacción.
       const nombres = r.decisionId ? await cargarNombrador(tx) : null;
