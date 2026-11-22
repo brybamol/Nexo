@@ -1,10 +1,6 @@
-'use client';
-// Oculta la caja de captura en /correo: allí nadie escribe frases, todo sale del correo (docs/06 §10).
-import { usePathname } from 'next/navigation';
+// Zona de la caja de captura. Antes se ocultaba en /correo; desde las reformas v2 (docs/08 §6) está visible en todas las pantallas.
 import type { ReactNode } from 'react';
 
 export function ZonaCaptura({ children }: { children: ReactNode }) {
-  const ruta = usePathname();
-  if (ruta === '/correo' || ruta.startsWith('/correo/')) return null;
   return <>{children}</>;
 }

@@ -80,7 +80,13 @@ Son la lógica de la etapa 3. Los tiempos son los de la demo; en un cliente real
 | 7 | 2:45 | 8:12 | Marcela Solís, gerente general | Abre "Decisiones" y aprueba la opción A | Tres opciones con costo y fechas. Al aprobar: trabajo de compra para Karla Jiménez, avisos a los afectados, marcas de riesgo retiradas y T04 con fecha de solución hoy 15:00 |
 | 8 | 3:10 | 8:13 | Marcela Solís | Pregunta: "¿Cómo vamos con los pedidos de la semana?" | Respuesta con las cifras de los 7 pedidos y enlaces a cada uno |
 | 9 | 3:35 | 8:14 | Marcela Solís | Abre la vista de proyectos y el registro | Las tres cifras y la lista de acciones de Nexo |
-| 10 | 3:50 | — | — | Cierre: "La gerente tomó una decisión. No persiguió a nadie" | — |
+| 10 | 3:50 | 8:20 | Ricardo Brenes, contabilidad y facturación | Pulsa «Siguiente evento» (llega un correo de Andrés) y abre Correo | Nexo leyó el correo de Andrés y creó solo el trabajo «Emitir la factura proforma de la cámara fría del Hotel Mirador» (PEDIDOS-14), confirmado porque lo vieron los dos buzones y dependiente de la cotización de Paola (PEDIDOS-10). Nadie escribió nada y nadie recibió un aviso |
+| 11 | 4:05 | 8:21 | Ricardo Brenes | Abre "Mi día": confirma la propuesta de las guías y pulsa «Sí, lo recibí» | La propuesta que Nexo sacó de su buzón (PEDIDOS-13, una fuente, ya entregada por Diego Rojas) queda confirmada y, al dar por recibida la entrega, Resuelta. Diego recibe el aviso de que Ricardo la recibió |
+| 12 | 4:20 | 8:22 | Esteban Castro, supervisor de campo | Abre "Mi día" y corrige el plazo de la propuesta de las fotos al jueves 26, 17:00 | La propuesta (TRIGAL-7) queda confirmada con el plazo corregido; Daniela Quesada recibe la asignación |
+| 13 | 4:35 | 8:23 | Marcela Solís | Abre Registro y Correo | Las tres cifras (7 de 9 cerrados sin la gerente, 21 seguimientos, 3,8 h estimadas), la tasa de corrección de Nexo (de 2 propuestas revisadas, 1 confirmada y 1 corregida: 50 %) y el cuello de botella: Lucía Mora |
+| 14 | 4:50 | — | — | Cierre: "La gerente tomó una decisión. No persiguió a nadie, y nadie le escribió una tarea a Nexo" | — |
+
+Los pasos 10–13 salen de las reformas v2 (`08-reformas-v2.md` §7.2): la demo arranca con los 8 buzones de la demo conectados, y al pasar a las 7:05 («+5 min») Nexo ya leyó el correo; las propuestas que sacó de él solo las ven sus dueños y no cambian nada de lo que muestran los pasos 2–9.
 
 **Las tres opciones de la decisión** (paso 7), tal como deben aparecer:
 

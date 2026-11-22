@@ -13,11 +13,15 @@ import {
 } from 'lucide-react';
 import { CifrasDemo } from '@/componentes/cifras-demo';
 import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
+import { TasaCorreccion } from '@/componentes/tasa-correccion';
 import { formatearFecha } from '@/dominio/formato';
 import type { TipoAccion } from '@/dominio/tipos';
 import { obtenerCifras } from '@/servicios/cifras';
 import { listarAcciones } from '@/servicios/registro';
+import { obtenerTasaCorreccion } from '@/servicios/tasa';
+import { listarTrabajos } from '@/servicios/consultas-trabajos';
 import { obtenerContextoApp } from '@/servidor/contexto-app';
+import '@/app/mi-dia/reformas.css';
 
 const ETIQUETAS: Record<TipoAccion, string> = {
   crear_trabajo: 'Crear trabajo',
@@ -68,7 +72,14 @@ function IconoTipo({ tipo }: { tipo: TipoAccion }) {
 
 export default async function PaginaRegistro() {
   const ctx = await obtenerContextoApp();
-  const [cifras, acciones] = await Promise.all([obtenerCifras(ctx), listarAcciones(ctx)]);
+  const [cifras, acciones, tasa, trabajos] = await Promise.all([
+    obtenerCifras(ctx),
+    listarAcciones(ctx),
+    obtenerTasaCorreccion(ctx),
+    listarTrabajos(ctx),
+  ]);
+  // Las cifras cuentan solo Resueltos (regla 21): lo entregado y sin confirmar se cuenta aparte.
+  const entregados = trabajos.filter((t) => t.entrega !== null && t.estado !== 'resuelto').length;
   return (
     <>
       <header className="pagina__cabecera">
@@ -79,6 +90,12 @@ export default async function PaginaRegistro() {
           Las tres cifras
         </h2>
         <CifrasDemo cifras={cifras} />
+        <div className="registro-tasa">
+          <TasaCorreccion tasa={tasa} compacta />
+          <p className="registro-entregados">
+            Entregados por confirmar: <strong>{entregados}</strong>. Aún no cuentan como resueltos en las cifras.
+          </p>
+        </div>
       </section>
       <section aria-labelledby="titulo-acciones" className="seccion">
         <h2 id="titulo-acciones" className="seccion__titulo">
