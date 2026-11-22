@@ -1,5 +1,7 @@
 # Brief · Versión 2 de Nexo: coordinación desde el correo
 
+> **Sustituido en parte por `docs/08-reformas-v2.md`.** Lo que este brief describe del modelo de correo aparte (compromisos propios y tabla de correcciones) ya no existe: el correo alimenta al motor y sus pedidos son trabajos. Se conserva como historia del giro. Donde choquen, manda `docs/08`.
+
 *Rama: `giro-correo` · Fecha: 21-11-2026 · `main` no se tocó*
 
 ## En una frase
@@ -38,16 +40,12 @@ Si ves datos raros al volver, para `pnpm dev` y corre `pnpm db:reset`.
 
 ## Qué mirar en la demo (5 minutos)
 
-1. **Quién espera a quién.** Hay dos proyectos:
-   - **TransLog:** Ana (Compras) → Valeria (TI) → Luis (Legal) → Carla (Finanzas) → Pablo (Finanzas).
-   - **Navidad:** Valeria (TI) → Sergio (Marketing) → Carla (Finanzas).
-
-   Nexo marca a **Carla como cuello de botella**, porque aparece en las dos cadenas.
+1. **Quién espera a quién.** A las 8:20 llega el correo de Andrés a Ricardo (la factura proforma) y Nexo lo une con la cotización que Andrés le pidió a Paola: **Andrés (Operaciones) → Ricardo (Contabilidad) → Paola (Ventas)**, en el proyecto Hotel Mirador. Con estos correos solo hay una cadena, así que todavía no hay cuello de botella.
 2. **«Ver como».** Cambia de persona arriba y verás *Te piden*, *Pediste y esperas* y *Resuelto*, cada uno con la cita del correo de donde salió.
-3. **Corregir.** Como Carla, abre C1, corrige el plazo al 27 de noviembre y guarda: deja de estar atrasado y la cadena se actualiza.
+3. **Corregir.** Como Paola, abre la cotización al Hotel Mirador, corrige el plazo al 27 de noviembre y guarda: deja de estar atrasada y la cadena se actualiza.
 4. **Buzones conectados.** Cuenta lo personal y los boletines que se descartaron, sin mostrar nunca su asunto ni su remitente.
 
-Los datos son de una empresa ficticia, **Grupo Altavista**: 7 personas en 6 departamentos y 7 hilos de correo en formato de la API de Gmail, más correos de ruido (personales, boletines, un cumpleaños y un borrador) que no deben producir nada.
+Los datos son de la única empresa de la demo, **Frío del Valle**: sus 12 personas (8 con el buzón conectado) y 7 hilos de correo en formato de la API de Gmail, más correos de ruido (personales, boletines, un cumpleaños y un borrador) que no deben producir nada.
 
 ## Qué cambió en el código
 
@@ -58,10 +56,10 @@ Los datos son de una empresa ficticia, **Grupo Altavista**: 7 personas en 6 depa
 | `docs/06-giro-correo.md` | La especificación completa: premisa, flujo, privacidad, empresa ficticia, 14 casos de control, Gmail (§13) y preguntas abiertas. **Empezar por aquí.** |
 | `src/correo/fuentes/` | Adaptadores Gmail y Outlook, que llevan cada proveedor a un mismo mensaje interno. |
 | `src/correo/` | El flujo, todo código puro: privacidad → unión de buzones → extracción → enlaces entre hilos → proyectos → marcas y cadenas. |
-| `src/correo/ejemplo/` | Grupo Altavista y sus buzones ficticios, en formato Gmail y Outlook. |
+| `src/correo/ejemplo/` | Frío del Valle y sus buzones ficticios, en formato Gmail y Outlook. |
 | `src/servicios/correo.ts`, `src/app/acciones/correo.ts` | Lectura del modelo y guardado de correcciones (Server Action). |
 | `src/app/correo/`, `src/componentes/correo/` | La pantalla `/correo` y la tarjeta de compromiso con su formulario de revisión. |
-| `tests/correo/` | 39 pruebas: casos de control, adaptador de Gmail y equivalencia Gmail = Outlook. |
+| `tests/correo/` | 45 pruebas: casos de control, adaptador de Gmail y equivalencia Gmail = Outlook. |
 
 **Modificado:**
 - `src/db/esquema.ts` y `src/db/ddl.ts`: una tabla nueva, `correcciones_correo`. **Son archivos de contrato y necesitan aprobación del equipo.**

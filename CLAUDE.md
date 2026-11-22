@@ -2,7 +2,7 @@
 
 Nexo es una plataforma web donde viven los trabajos y proyectos de una empresa, y que hace ella misma la coordinación: convierte frases en trabajos, pide estados, escala y prepara decisiones. Es un MVP de hackathon con datos ficticios, que corre en local.
 
-`docs/05-arquitectura-y-planes.md` es el contrato técnico y manda sobre el código. `docs/03-etapa-0-definicion.md` (reglas y guion) y `docs/04-empresa-y-casos-de-control.md` (empresa y casos) definen el dominio. Si algo no está en el contrato, pregunta; no lo inventes.
+`docs/05-arquitectura-y-planes.md` es el contrato técnico y manda sobre el código. `docs/08-reformas-v2.md` es el contrato de las reformas v2 (correo como fuente de trabajos, propuestas, entrega con evidencia): amplía a `docs/05` y, donde choquen, manda `docs/08`. `docs/03-etapa-0-definicion.md` (reglas y guion) y `docs/04-empresa-y-casos-de-control.md` (empresa y casos) definen el dominio. Si algo no está en el contrato, pregunta; no lo inventes.
 
 ## Vocabulario fijo
 
@@ -17,6 +17,9 @@ Nexo es una plataforma web donde viven los trabajos y proyectos de una empresa, 
 - Nada con costo se ejecuta sin aprobación humana: las compras pasan por decisiones.
 - Cada acción de Nexo queda registrada con su motivo y el hecho que la originó.
 - Si no hay dato, la respuesta dice «no lo sé». No se inventan datos.
+- Lo que Nexo infiere nace como propuesta y solo su dueño la ve hasta que se confirma.
+- «Resuelto» de un trabajo pedido por otra persona exige entrega y confirmación de recibido.
+- Las personas nunca ven ids internos ni números de regla.
 - Prohibido `Date.now()` y `new Date()` sin argumentos en la lógica (`src/motor`, `src/servicios`, `src/ia`, `src/dominio`, `src/db`). El tiempo viene del reloj de la demo (`obtenerAhora`) y la zona es Costa Rica (`src/dominio/tiempo.ts`).
 - Las mutaciones son Server Actions en `src/app/acciones/`.
 - Los archivos de contrato (§4.0 de `docs/05`) no cambian sin aprobación humana. Tampoco se cambian dependencias ni `package.json` sin aprobación.

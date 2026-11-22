@@ -1,16 +1,11 @@
 // Opciones A/B/C y decisor: R6, R7 (§4.2 regla 8). Puro. Tarea 3.3.
 // Todas las cifras salen de `repuestos` (precio, plazo de entrega) y de las necesidades y dependencias de la instantánea.
-import {
-  HORA_ENTREGA_LOCAL,
-  HORA_LLEGADA_HABITUAL,
-  HORA_PLAZO_SIN_HORA,
-  ROL_GERENTE,
-  ROL_JEFE_OPERACIONES,
-  UMBRAL_GERENTE,
-} from '@/dominio/constantes';
+import { HORA_ENTREGA_LOCAL, HORA_LLEGADA_HABITUAL, HORA_PLAZO_SIN_HORA, ROL_GERENTE, UMBRAL_GERENTE } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
+import { cantidadDeRepuesto } from '@/dominio/nombres';
 import { enCR, esDiaHabil, partesCR, siguienteDiaHabil } from '@/dominio/tiempo';
 import type { CambioFecha, LineaOpcion, OpcionCalculada, PropuestaCompra, Proveedor, Repuesto, Trabajo } from '@/dominio/tipos';
+import { responsableOperacion } from '@/motor/escalamiento';
 import type { Instantanea } from '@/motor/instantanea';
 import { desplazarCadena } from '@/motor/plazos';
 
@@ -30,20 +25,8 @@ export function llegadaHabitual(ahora: Date, r: Repuesto): Date {
   return enCR(partesCR(new Date(ahora.getTime() + r.diasHabitual * MS_DIA)).fecha, HORA_LLEGADA_HABITUAL);
 }
 
-function plural(palabra: string): string {
-  return /[aeiouáéíóú]$/i.test(palabra) ? `${palabra}s` : `${palabra}es`;
-}
-
-/** «3 compresores de 2 HP», «1 compresor de 2 HP», «20 metros de empaque de puerta». */
-export function cantidadDeRepuesto(r: Repuesto, n: number): string {
-  const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
-  if (r.unidad !== 'unidad') return `${n} ${n === 1 ? r.unidad : plural(r.unidad)} de ${nombre}`;
-  if (n === 1) return `1 ${nombre}`;
-  const corte = nombre.indexOf(' de ');
-  const cabeza = corte >= 0 ? nombre.slice(0, corte) : nombre;
-  const resto = corte >= 0 ? nombre.slice(corte) : '';
-  return `${n} ${cabeza.split(' ').map(plural).join(' ')}${resto}`;
-}
+/** «3 compresores de 2 HP»: vive en dominio/nombres.ts; se reexporta aquí por compatibilidad. */
+export { cantidadDeRepuesto };
 
 const dia = (d: Date) => formatearFecha(d).split(',')[0] ?? '';
 
@@ -88,7 +71,9 @@ function consecuencia(inst: Instantanea, lineas: LineaOpcion[], cambios: CambioF
     const cs = cambios.filter((c) => inst.trabajos.find((t) => t.id === c.trabajoId)?.proyectoId === pid);
     if (cs.length === 0) return `${nombre}: a tiempo, sin cambios de fecha`;
     const final = cs.reduce((m, c) => (c.a.getTime() > m.getTime() ? c.a : m), cs[0]!.a);
-    return `${nombre}: se atrasa hasta el ${dia(final)} (${cs.map((c) => `${c.trabajoId} al ${dia(c.a)}`).join(', ')})`;
+    const titulo = (id: string) => inst.trabajos.find((t) => t.id === id)?.titulo ?? 'otro trabajo';
+    // El proyecto ya está nombrado: basta el título de cada trabajo.
+    return `${nombre}: se atrasa hasta el ${dia(final)} (${cs.map((c) => `«${titulo(c.trabajoId)}» al ${dia(c.a)}`).join(', ')})`;
   });
   return `${partes.join('. ')}.`;
 }
@@ -142,11 +127,21 @@ export function calcularOpciones(inst: Instantanea, p: PropuestaCompra): OpcionC
   return opciones;
 }
 
-/** personaId: jefe de operaciones si el costo máximo ≤ ₡100.000; si no, gerente general. */
-export function decisorPara(inst: Instantanea, opciones: OpcionCalculada[]): string {
+/**
+ * R6 (reforma de escalamiento): el dueño del proyecto decide el gasto hasta un tope. Si el costo máximo de las opciones
+ * no supera ₡100.000, decide el responsable del proyecto de la decisión; por encima, la gerente general. Nadie aprueba
+ * su propia propuesta: si quien propone es quien debería decidir dentro del tope, decide el responsable de la
+ * operación y, si también es quien propone, la gerente general (que no tiene a nadie por encima).
+ */
+export function decisorPara(inst: Instantanea, opciones: OpcionCalculada[], proyectoId: string, proponenteId: string): string {
+  const gerente = inst.personas.find((x) => x.rol === ROL_GERENTE);
+  if (!gerente) throw new Error(`No hay nadie con el rol «${ROL_GERENTE}».`);
   const maximo = Math.max(0, ...opciones.map((o) => o.costo));
-  const rol = maximo <= UMBRAL_GERENTE ? ROL_JEFE_OPERACIONES : ROL_GERENTE;
-  const persona = inst.personas.find((x) => x.rol === rol);
-  if (!persona) throw new Error(`No hay nadie con el rol «${rol}».`);
-  return persona.id;
+  if (maximo > UMBRAL_GERENTE) return gerente.id;
+  const existe = (id: string | null | undefined): id is string => !!id && inst.personas.some((p) => p.id === id);
+  const responsable = inst.proyectos.find((p) => p.id === proyectoId)?.responsableId;
+  if (existe(responsable) && responsable !== proponenteId) return responsable;
+  const operacion = responsableOperacion(inst);
+  if (existe(operacion) && operacion !== proponenteId) return operacion;
+  return gerente.id;
 }

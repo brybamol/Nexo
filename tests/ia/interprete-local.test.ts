@@ -33,6 +33,7 @@ const PERSONAS: Persona[] = [
 type TrabajoCtx = ContextoCaptura['trabajosAbiertos'][number];
 const t = (id: string, titulo: string, proyectoId: string, responsableId: string, extra: Partial<TrabajoCtx> = {}): TrabajoCtx => ({
   id,
+  referencia: '',
   titulo,
   proyectoId,
   responsableId,
@@ -61,11 +62,11 @@ function ctxDe(autorId: string, extra: Partial<ContextoCaptura> = {}): ContextoC
     autor: { id: a.id, nombre: a.nombre, rol: a.rol, area: a.area },
     personas: PERSONAS,
     proyectos: [
-      { id: 'P1', nombre: 'Cámara fría La Colina', responsableId: 'esteban-castro' },
-      { id: 'P2', nombre: 'Mantenimiento Trigal', responsableId: 'daniela-quesada' },
-      { id: 'P3', nombre: 'Repuestos críticos', responsableId: 'lucia-mora' },
-      { id: 'P4', nombre: 'Pedidos de la semana', responsableId: 'andres-vargas' },
-      { id: 'OD', nombre: 'Operación diaria', responsableId: 'andres-vargas' },
+      { id: 'P1', clave: 'COLINA', nombre: 'Cámara fría La Colina', responsableId: 'esteban-castro' },
+      { id: 'P2', clave: 'TRIGAL', nombre: 'Mantenimiento Trigal', responsableId: 'daniela-quesada' },
+      { id: 'P3', clave: 'REPUESTOS', nombre: 'Repuestos críticos', responsableId: 'lucia-mora' },
+      { id: 'P4', clave: 'PEDIDOS', nombre: 'Pedidos de la semana', responsableId: 'andres-vargas' },
+      { id: 'OD', clave: 'DIARIA', nombre: 'Operación diaria', responsableId: 'andres-vargas' },
     ],
     trabajosAbiertos: TRABAJOS,
     repuestos: [

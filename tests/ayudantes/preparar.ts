@@ -1,4 +1,4 @@
-// Ayudantes de prueba (§6 de docs/05). Tarea 1.5.
+// Ayudantes de prueba (§6 de docs/05). Tarea 1.5; opción `correo`: reformas v2 (docs/08 §2.5, tarea R2).
 import { eq } from 'drizzle-orm';
 import { crearConexion } from '@/db/conexion';
 import { reloj } from '@/db/esquema';
@@ -22,13 +22,24 @@ export interface Demo {
   cerrar(): Promise<void>;
 }
 
+export interface OpcionesDemo {
+  /** 'HH:mm' del mié 25 (por defecto 07:05). */
+  hora?: string;
+  /**
+   * Con `true`, la semilla trae los 8 buzones conectados (BUZONES_DEMO) y Nexo lee el correo al mover el reloj.
+   * Por defecto `false`: sin buzones conectados, ninguna prueba existente lee correo (docs/08 §2.5).
+   */
+  correo?: boolean;
+}
+
 /** PGlite en memoria, DDL, semilla, intérprete Local y reloj fijado SIN tick a esa hora del mié 25 (por defecto 07:05). */
-export async function prepararDemo(opciones?: { hora?: string }): Promise<Demo> {
+export async function prepararDemo(opciones?: OpcionesDemo): Promise<Demo> {
   const hora = opciones?.hora ?? '07:05';
+  const correo = opciones?.correo ?? false;
   if (!/^\d{2}:\d{2}$/.test(hora)) throw new Error(`Hora no válida para prepararDemo: '${hora}' (se espera HH:mm).`);
   const conexion = await crearConexion({ tipo: 'pglite', dir: null });
   try {
-    await cargarSemilla(conexion.db);
+    await cargarSemilla(conexion.db, { buzones: correo });
     await conexion.db.update(reloj).set({ ahora: enCR('2026-11-25', hora) }).where(eq(reloj.id, 1));
   } catch (error) {
     await conexion.cerrar().catch(() => undefined);
@@ -49,5 +60,7 @@ export function instantaneaDesdeSemilla(): Instantanea {
     necesidades: NECESIDADES_SEMILLA,
     seguimientos: [],
     decisiones: [],
+    evidencias: [],
+    descartados: [],
   });
 }

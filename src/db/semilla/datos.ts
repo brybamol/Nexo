@@ -1,8 +1,10 @@
 // Datos de Frío del Valle (docs/04, §3.3 de docs/05) como constantes tipadas. Tarea 1.4.
 import type { notas } from '@/db/esquema';
 import { enCR } from '@/dominio/tiempo';
-import { PERSONAS, PROYECTOS, REPUESTOS } from '@/dominio/constantes';
+import { BUZONES_DEMO } from '@/correo/ejemplo/buzones';
+import { BUZONES_CONECTADOS_EN_ISO, CLAVES_PROYECTO, PERSONAS, PROYECTOS, REPUESTOS } from '@/dominio/constantes';
 import type {
+  BuzonConectado,
   Dependencia,
   EstadoTrabajo,
   EventoNuevo,
@@ -23,6 +25,9 @@ const LUN_30 = '2026-11-30';
 
 const CREADO_EN = enCR(LUN_23, '07:00');
 
+/** Cuántos trabajos lleva cada proyecto: la semilla numera en el orden de la lista (COLINA-1…7, TRIGAL-1…6…). */
+const cuentaPorProyecto = new Map<string, number>();
+
 /** Trabajo de la semilla: origen 'semilla', sin solicitante, sin bloqueo, sin repuesto propio. */
 function trabajo(
   id: string,
@@ -33,9 +38,12 @@ function trabajo(
   estado: EstadoTrabajo,
   etiqueta: string | null = null,
 ): Trabajo {
+  const numero = (cuentaPorProyecto.get(proyectoId) ?? 0) + 1;
+  cuentaPorProyecto.set(proyectoId, numero);
   return {
     id,
     proyectoId,
+    numero,
     titulo,
     responsableId,
     solicitadoPorId: null,
@@ -55,8 +63,21 @@ function trabajo(
     decisionId: null,
     creadoEn: CREADO_EN,
     resueltoEn: estado === 'resuelto' ? plazo : null,
+    // Reformas v2: lo de la semilla está confirmado por origen, sin dueño de propuesta y sin entrega.
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
   };
 }
+
+/** Los 8 buzones conectados de la demo (docs/08 §5.1), conectados el lun 23 a las 7:00. */
+export const BUZONES_SEMILLA: BuzonConectado[] = BUZONES_DEMO.map((b) => ({
+  personaId: b.personaId,
+  direccion: b.direccion,
+  proveedor: b.proveedor,
+  conectadoEn: new Date(BUZONES_CONECTADOS_EN_ISO),
+}));
 
 export const PERSONAS_SEMILLA: Persona[] = [
   { id: PERSONAS.marcela, nombre: 'Marcela Solís', rol: 'Gerente general', area: 'Gerencia', jefeId: null },
@@ -76,6 +97,7 @@ export const PERSONAS_SEMILLA: Persona[] = [
 export const PROYECTOS_SEMILLA: Proyecto[] = [
   {
     id: PROYECTOS.camaraFria,
+    clave: CLAVES_PROYECTO[PROYECTOS.camaraFria],
     nombre: 'Cámara fría La Colina',
     resultado: 'Cámara fría instalada y entregada al Supermercado La Colina',
     responsableId: PERSONAS.esteban,
@@ -84,6 +106,7 @@ export const PROYECTOS_SEMILLA: Proyecto[] = [
   },
   {
     id: PROYECTOS.trigal,
+    clave: CLAVES_PROYECTO[PROYECTOS.trigal],
     nombre: 'Mantenimiento Trigal',
     resultado: 'Mantenimiento trimestral de los 6 locales de Panadería Trigal',
     responsableId: PERSONAS.daniela,
@@ -92,6 +115,7 @@ export const PROYECTOS_SEMILLA: Proyecto[] = [
   },
   {
     id: PROYECTOS.repuestos,
+    clave: CLAVES_PROYECTO[PROYECTOS.repuestos],
     nombre: 'Repuestos críticos',
     resultado: 'Inventario conciliado y reorden de repuestos críticos aprobado',
     responsableId: PERSONAS.lucia,
@@ -100,6 +124,7 @@ export const PROYECTOS_SEMILLA: Proyecto[] = [
   },
   {
     id: PROYECTOS.pedidos,
+    clave: CLAVES_PROYECTO[PROYECTOS.pedidos],
     nombre: 'Pedidos de la semana',
     resultado: 'Los 7 pedidos de la semana entregados y facturados',
     responsableId: PERSONAS.andres,
@@ -108,6 +133,7 @@ export const PROYECTOS_SEMILLA: Proyecto[] = [
   },
   {
     id: PROYECTOS.operacionDiaria,
+    clave: CLAVES_PROYECTO[PROYECTOS.operacionDiaria],
     nombre: 'Operación diaria',
     resultado: 'Trabajos sueltos que no pertenecen a un proyecto',
     responsableId: PERSONAS.andres,

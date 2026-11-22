@@ -1,0 +1,77 @@
+/* Pantalla Correo y piezas de la fuente (docs/08 §6). Solo variables de marca de globals.css. */
+
+.seccion__nota { margin: -0.5rem 0 1rem; color: var(--tinta-2); max-width: 80ch; font-size: 0.9375rem; }
+.vacio--fuente { display: flex; align-items: flex-start; gap: 0.75rem; }
+.vacio--fuente .icono { margin-top: 0.1875rem; }
+.vacio--fuente p { max-width: 70ch; }
+.vacio--fuente strong { color: var(--tinta); }
+
+/* Buzones */
+.fuente-buzones { min-width: 52rem; }
+.fuente-buzones td:nth-child(5), .fuente-buzones td:nth-child(6) { min-width: 0; }
+.fuente-buzones th[scope="row"] { position: static; background: transparent; border-bottom: 1px solid var(--borde); font-size: 0.9375rem; color: var(--tinta); white-space: normal; padding: 0.75rem 1.25rem; vertical-align: top; }
+.fuente-buzones tbody tr:last-child th { border-bottom: 0; }
+.fuente-buzones tr[data-yo] th, .fuente-buzones tr[data-yo] td { background: var(--azul-tenue); }
+.fuente-buzones__yo { color: var(--azul-tinta); font-weight: 600; }
+.fuente-buzones__nada { color: var(--tinta-2); font-style: normal; }
+.fuente-estado { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--tinta-2); white-space: nowrap; }
+.fuente-estado[data-conectado] { color: var(--exito); font-weight: 500; }
+
+/* Qué entendió Nexo */
+.entendido { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.entendido__linea {
+  display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 0.25rem 1rem;
+  padding: 1rem 1.25rem; background: var(--blanco);
+  border: 1px solid var(--borde); border-left-width: 4px; border-radius: var(--radio-m); box-shadow: var(--sombra-1);
+}
+.entendido__linea[data-registro="nexo"] { background: var(--mint-tenue); border-color: var(--mint-borde); }
+.entendido__linea[data-registro="hecho"] { border-left-color: var(--exito-borde); }
+.entendido__hora { color: var(--tinta-2); font-size: 0.875rem; font-weight: 500; padding-top: 0.125rem; }
+.entendido__cuerpo { display: grid; gap: 0.375rem; min-width: 0; }
+.entendido__ruta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; font-size: 0.9375rem; }
+.entendido__ruta .icono { color: var(--tinta-2); width: 1em; height: 1em; }
+.entendido__resultado { display: flex; align-items: flex-start; gap: 0.5rem; font-weight: 600; font-size: 1.0625rem; line-height: 1.35; }
+.entendido__resultado .icono { margin-top: 0.1875rem; color: var(--tinta-2); }
+.entendido__linea[data-registro="hecho"] .entendido__resultado .icono { color: var(--exito); }
+.entendido__linea[data-registro="nexo"] .entendido__resultado .icono { color: var(--core-navy); }
+.entendido__cita { margin: 0; padding-left: 0.75rem; border-left: 3px solid var(--mint-borde); color: var(--tinta); font-size: 0.9375rem; max-width: 80ch; }
+.entendido__abrir { display: inline-flex; align-items: center; gap: 0.375rem; width: fit-content; min-height: 2rem; color: var(--azul-tinta); font-size: 0.9375rem; font-weight: 500; }
+
+/* Sin convertir: espera a una persona (azul) */
+.sin-convertir {
+  display: grid; gap: 0.5rem; padding: 1rem 1.25rem;
+  background: var(--azul-tenue); border: 1px solid var(--azul-borde); border-radius: var(--radio-m);
+}
+.sin-convertir__pregunta { display: flex; align-items: flex-start; gap: 0.5rem; color: var(--tinta); }
+.sin-convertir__pregunta .icono { margin-top: 0.1875rem; color: var(--azul-tinta); }
+
+/* Esperas */
+.cadenas__trabajos { margin-top: 0.75rem; font-size: 0.9375rem; }
+.cadenas .lista { margin-top: 0.25rem; }
+
+/* Insignia de confianza (componentes/insignia-confianza.tsx) */
+.insignia--confianza { font-weight: 600; }
+.insignia--confianza[data-confianza="una_fuente"] { color: var(--tinta); border-color: var(--mint-borde); background: var(--mint-tenue); }
+.insignia--confianza[data-confianza="dos_fuentes"],
+.insignia--confianza[data-confianza="persona"] { color: var(--exito); border-color: var(--exito-borde); background: var(--exito-tenue); }
+
+/* Tasa de corrección (componentes/tasa-correccion.tsx) */
+.tasa {
+  display: flex; align-items: center; gap: 1.25rem; max-width: 60rem;
+  padding: 1rem 1.25rem; background: var(--blanco);
+  border: 1px solid var(--borde); border-radius: var(--radio-m); box-shadow: var(--sombra-1);
+}
+.tasa__cifra {
+  flex: none; min-width: 5.5rem; text-align: center;
+  font-family: var(--fuente-display); font-weight: 600; font-size: 2rem; letter-spacing: -0.02em; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.tasa[data-sin-dato] .tasa__cifra { color: var(--tinta-2); }
+.tasa__texto { max-width: 60ch; }
+.tasa--compacta { display: block; padding: 0; background: none; border: 0; box-shadow: none; color: var(--tinta-2); }
+.tasa--compacta strong { color: var(--tinta); }
+
+@media (max-width: 720px) {
+  .entendido__linea { grid-template-columns: minmax(0, 1fr); }
+  .tasa { flex-direction: column; align-items: flex-start; }
+}

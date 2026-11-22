@@ -4,9 +4,9 @@
 // y la decisión está pendiente se muestran los botones). Nexo no recomienda: `opcionPropuesta` es
 // la opción que propuso el proponente.
 import { ArrowRight, Check, CircleAlert, CircleCheck, CircleX, Hourglass } from 'lucide-react';
-import Link from 'next/link';
 import { useState, useTransition, type FormEvent } from 'react';
 import { accionAprobar, accionRechazar, type ResultadoDecision } from '@/app/acciones/decisiones';
+import { EnlaceTrabajo, EnlacesTrabajos, Referencia } from '@/componentes/enlaces-trabajos';
 import { formatearFecha } from '@/dominio/formato';
 import type { LetraOpcion } from '@/dominio/tipos';
 import type { DecisionVista } from '@/servicios/vistas';
@@ -56,19 +56,23 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
   return (
     <article className="tarjeta decision" data-estado={decision.estado} aria-labelledby={idTitulo} aria-busy={pendiente}>
       <div className="decision__cabecera">
-        <span className="codigo" aria-hidden="true">
-          {decision.id}
-        </span>
+        {decision.referencia && (
+          <span className="codigo" aria-hidden="true">
+            {decision.referencia}
+          </span>
+        )}
         <h3 id={idTitulo} className="decision__titulo">
-          <span className="sr-only">{decision.id} · </span>
-          {decision.proyecto.nombre}
-          <span className="sr-only"> · {ETIQUETA_ESTADO[decision.estado]}</span>
+          {decision.titulo}
+          <span className="sr-only">
+            {decision.referencia && ` (${decision.referencia})`} · {decision.proyecto.nombre} · {ETIQUETA_ESTADO[decision.estado]}
+          </span>
         </h3>
         <span className="insignia decision__estado" data-estado={decision.estado} aria-hidden="true">
           <IconoEstado className="icono" />
           {ETIQUETA_ESTADO[decision.estado]}
         </span>
       </div>
+      <p className="decision__meta">{decision.proyecto.nombre}</p>
       <p className="decision__contexto">{decision.contexto}</p>
       <p className="decision__meta">
         Propuesta por {decision.proponente.nombre} ({decision.proponente.rol}) el{' '}
@@ -81,10 +85,8 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
           {decision.afectados.map((a, i) => (
             <span key={a.trabajoId}>
               {i > 0 && '; '}
-              <Link href={`/trabajos/${a.trabajoId}`}>
-                {a.trabajoId} {a.titulo}
-              </Link>
-              {a.responsable && ` (${a.responsable})`}
+              <EnlaceTrabajo trabajo={{ id: a.trabajoId, titulo: a.titulo, referencia: a.referencia }} />
+              {a.responsable && `, ${a.responsable}`}
             </span>
           ))}
           .
@@ -132,7 +134,19 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
                           <li key={i}>
                             {l.cantidad} × {l.proveedor === 'local' ? 'proveedor local' : 'proveedor habitual'}, llega{' '}
                             <time dateTime={l.llegada.toISOString()}>{formatearFecha(l.llegada)}</time>
-                            {l.trabajoIds.length > 0 && <> (para {l.trabajoIds.join(', ')})</>}
+                            {l.trabajoIds.length > 0 && (
+                              <>
+                                {' '}
+                                para{' '}
+                                {l.trabajoIds.map((id, k) => (
+                                  <span key={id}>
+                                    {k > 0 && '; '}
+                                    {decision.trabajos[id]?.titulo ?? 'otro trabajo'}{' '}
+                                    <Referencia valor={decision.trabajos[id]?.referencia ?? ''} />
+                                  </span>
+                                ))}
+                              </>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -153,7 +167,10 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
                         {o.cambiosFecha.map((c) => (
                           <li key={c.trabajoId} className="opcion__cambio">
                             <span>
-                              <Link href={`/trabajos/${c.trabajoId}`}>{c.trabajoId}</Link>:
+                              <EnlaceTrabajo
+                                trabajo={decision.trabajos[c.trabajoId] ?? { id: c.trabajoId, titulo: 'otro trabajo', referencia: '' }}
+                              />
+                              :
                             </span>{' '}
                             <time dateTime={c.de.toISOString()}>{formatearFecha(c.de)}</time>
                             <ArrowRight className="icono" aria-hidden="true" />
@@ -172,7 +189,7 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
                     type="button"
                     className="boton"
                     disabled={pendiente}
-                    aria-label={`Aprobar opción ${o.letra} de la decisión ${decision.id}`}
+                    aria-label={`Aprobar opción ${o.letra} de la decisión ${decision.titulo}`}
                     onClick={() => {
                       setError(null);
                       setConfirmando({ tipo: 'aprobar', letra: o.letra });
@@ -218,7 +235,7 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
               type="button"
               className="boton boton--peligro"
               disabled={pendiente}
-              aria-label={`Rechazar la decisión ${decision.id}`}
+              aria-label={`Rechazar la decisión ${decision.titulo}`}
               onClick={() => {
                 setError(null);
                 setConfirmando({ tipo: 'rechazar' });
@@ -272,12 +289,7 @@ export function TarjetaDecision({ decision, personaActualId }: { decision: Decis
               <>
                 {' '}
                 Trabajos creados:{' '}
-                {resultado.trabajosCreados.map((id, i) => (
-                  <span key={id}>
-                    {i > 0 && ', '}
-                    <Link href={`/trabajos/${id}`}>{id}</Link>
-                  </span>
-                ))}
+                <EnlacesTrabajos trabajos={resultado.trabajosCreados} />
                 .
               </>
             )}

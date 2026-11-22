@@ -2,6 +2,7 @@
 // Orden: pregunta → agradecimiento → terminación con seguimiento pendiente → trabajo nuevo SIN confirmar.
 // Regla del producto: si no se puede interpretar con seguridad, se dice (no_es_trabajo con el motivo, o
 // responsableSeguro=false para que Nexo pida confirmación); nunca se inventa un trabajo seguro.
+import { referenciasEnTexto } from '@/dominio/nombres';
 import { normalizar } from '@/dominio/texto';
 import type { ContextoCaptura, Interpretacion } from '@/ia/interprete';
 
@@ -57,6 +58,25 @@ function trabajoReferido(normal: string, ctx: ContextoCaptura): string | null {
   return mejorPuntaje > 0 && !empate ? mejor : null;
 }
 
+/**
+ * El único trabajo abierto que la frase cita por su referencia visible («sigo con COLINA-4») o, por compatibilidad,
+ * por su id interno («T04»). Varios o ninguno → null.
+ */
+function trabajoCitado(texto: string, normal: string, ctx: ContextoCaptura): string | null {
+  const ids = new Set<string>();
+  for (const ref of referenciasEnTexto(texto)) {
+    const t = ctx.trabajosAbiertos.find((x) => x.referencia === ref);
+    if (t) ids.add(t.id);
+  }
+  for (const p of palabras(normal)) {
+    const t = /^t\d{2,}$/.test(p) ? ctx.trabajosAbiertos.find((x) => x.id === p.toUpperCase()) : undefined;
+    if (t) ids.add(t.id);
+  }
+  return ids.size === 1 ? [...ids][0]! : null;
+}
+
+const RE_SIGUE = /\b(sigo|continuo|retomo|empece|empiezo|arranco|arranque|voy con|en curso)\b/;
+
 function titulo(texto: string): string {
   const limpio = texto.trim().replace(/\s+/g, ' ').replace(/[.!\s]+$/, '');
   const corto = limpio.length > 120 ? `${limpio.slice(0, 117)}...` : limpio;
@@ -77,7 +97,23 @@ export function interpretarPorHeuristicas(texto: string, ctx: ContextoCaptura): 
   }
 
   const ps = palabras(normal);
-  if (INICIOS_TERMINACION.has(ps[0]!) && ps.length <= 12) {
+  const termina = INICIOS_TERMINACION.has(ps[0]!) && ps.length <= 12;
+
+  // La frase nombra un trabajo por su referencia (COLINA-4): es una actualización de ese trabajo.
+  const citado = trabajoCitado(texto, normal, ctx);
+  if (citado) {
+    return {
+      tipo: 'actualizacion',
+      trabajoId: citado,
+      nuevoEstado: termina ? 'resuelto' : RE_SIGUE.test(normal) ? 'en_curso' : null,
+      nota: titulo(texto),
+      hayProblema: false,
+      reprogramar: [],
+      notasRelacionadas: [],
+    };
+  }
+
+  if (termina) {
     const id = trabajoReferido(normal, ctx);
     if (id) {
       return {

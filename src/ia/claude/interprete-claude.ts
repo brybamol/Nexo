@@ -3,6 +3,7 @@
 // Claude solo PROPONE: aquí no se escribe nada en la base. Cualquier fallo (red, tiempo, salida inválida,
 // respuesta sin herramienta) → respaldo Local con `respaldo: true`; nunca se inventa una interpretación.
 import Anthropic from '@anthropic-ai/sdk';
+import { idsInternosEn } from '@/dominio/nombres';
 import { esquemaEntradaClasificacion, esquemaEntradaHerramienta } from '@/ia/esquema-interpretacion';
 import type {
   ContextoCaptura,
@@ -23,6 +24,22 @@ import {
   mensajeClasificacion,
   mensajeRedaccion,
 } from '@/ia/claude/prompts';
+
+/**
+ * Hechos para redactar, sin ids internos (trabajoId, id): el modelo solo ve títulos y referencias visibles, así que no
+ * puede citarlos. Las fuentes (con sus enlaces) las arma el servicio, no el modelo.
+ */
+export function sinIdsInternos(valor: unknown): unknown {
+  if (Array.isArray(valor)) return valor.map(sinIdsInternos);
+  if (valor && typeof valor === 'object') {
+    return Object.fromEntries(
+      Object.entries(valor as Record<string, unknown>)
+        .filter(([k]) => k !== 'trabajoId' && k !== 'id')
+        .map(([k, v]) => [k, sinIdsInternos(v)]),
+    );
+  }
+  return valor;
+}
 
 export const MODELO_CAPTURA = 'claude-haiku-5-5';
 export const MODELO_PREGUNTAS = 'claude-opus-5-5';
@@ -138,7 +155,7 @@ export class InterpreteClaude implements InterpreteIA {
         max_tokens: 2048,
         system: PROMPT_SISTEMA_PREGUNTAS,
         output_config: { effort: 'low' },
-        messages: [{ role: 'user', content: mensajeRedaccion(pregunta, JSON.stringify(hechos)) }],
+        messages: [{ role: 'user', content: mensajeRedaccion(pregunta, JSON.stringify(sinIdsInternos(hechos))) }],
       });
       const texto = contenido
         .filter((b) => b.type === 'text' && typeof b.text === 'string')
@@ -146,6 +163,8 @@ export class InterpreteClaude implements InterpreteIA {
         .join('\n')
         .trim();
       if (texto === '') throw new Error('Claude devolvió una respuesta vacía');
+      // Red determinista: las personas nunca ven ids internos. Si el texto trae alguno, se usa la plantilla local.
+      if (idsInternosEn(texto).length > 0) throw new Error('Claude citó un id interno en la respuesta');
       return { valor: texto, implementacion: 'claude', modelo: MODELO_PREGUNTAS, respaldo: false };
     } catch (error) {
       registrarFallo('redactarRespuesta', MODELO_PREGUNTAS, error, this.claveApi);

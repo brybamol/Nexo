@@ -11,9 +11,13 @@ export interface ContextoCaptura {
   ahora: string;
   autor: PersonaBreve;
   personas: (PersonaBreve & { jefeId: string | null })[];
-  proyectos: { id: string; nombre: string; responsableId: string }[];
+  /** `clave`: prefijo de las referencias visibles (COLINA). */
+  proyectos: { id: string; clave: string; nombre: string; responsableId: string }[];
   trabajosAbiertos: {
+    /** Id interno (T04): es lo que la IA devuelve. */
     id: string;
+    /** Referencia visible (COLINA-4): la que escriben y leen las personas. */
+    referencia: string;
     titulo: string;
     proyectoId: string;
     responsableId: string;

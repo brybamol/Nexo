@@ -14,6 +14,7 @@ function trasC15(): Instantanea {
   const t31: Trabajo = {
     ...t24,
     id: 'T31',
+    numero: 13, // siguiente número de P4: PEDIDOS-13
     titulo: 'Resolver la vitrina dañada del pedido 1045',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'diego-rojas',
@@ -71,6 +72,8 @@ describe('efectosActualizacion · liberación', () => {
           proximoEn: enCR('2026-11-25', '13:00'),
           estado: 'pendiente',
           iniciadoEn: base.ahora,
+          escaladosA: [],
+          tipo: 'estado',
         },
       ],
     };
@@ -82,7 +85,9 @@ describe('efectosActualizacion · liberación', () => {
     expect(efectos).toContainEqual({ tipo: 'agregar_nota', trabajoId: 'T24', autorId: 'diego-rojas', texto: 'Sigo con lo demás.' });
     expect(avisosDe(efectos)).toEqual([]);
     const registro = efectos.find((e) => e.tipo === 'accion' && e.accion.tipo === 'actualizar_trabajo');
-    expect(registro?.tipo === 'accion' && registro.accion.motivo).toContain('T24 sigue bloqueado por T31');
+    expect(registro?.tipo === 'accion' && registro.accion.motivo).toContain(
+      '«Entregar pedido 1045 · vitrina · Trigal Heredia» (PEDIDOS-6) sigue bloqueado por «Resolver la vitrina dañada del pedido 1045» (PEDIDOS-13)', // T24 por T31
+    );
   });
 
   it('resolver el trabajo bloqueado sí se permite aunque el bloqueante siga abierto', () => {

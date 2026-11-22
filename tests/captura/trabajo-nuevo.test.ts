@@ -110,7 +110,7 @@ describe('C01 · José: falta el compresor de 2 HP', () => {
     const creacion = filas.find((a) => a.tipo === 'crear_trabajo');
     expect(creacion).toMatchObject({ capturaId: r.capturaId, destinatarioId: null });
     expect(creacion?.trabajoIds).toContain('T31');
-    expect(creacion?.motivo).toMatch(/T31/);
+    expect(creacion?.motivo).toContain('«Conseguir compresor de 2 HP» (COLINA-8)'); // T31
     expect(creacion?.hechoOrigen).toContain(C01);
     for (const a of filas) expect(a.capturaId).toBe(r.capturaId);
 

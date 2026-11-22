@@ -1,13 +1,15 @@
 // Qué cambió: avisos de la persona, del más reciente al más antiguo, con su motivo y enlaces a los trabajos. Tarea 4.1.
 // Cada aviso se muestra tal como lo emitió Nexo (uno por persona y hecho; puede citar trabajos de varios proyectos).
-// Props: `avisos` (AvisoVista[]). Componente de servidor.
+// Props: `avisos` (AvisoVista[]); `extra` opcional: lo que va debajo de un aviso (p. ej. las acciones del dueño del
+// resultado bajo un escalamiento). Componente de servidor.
 import { CheckCheck } from 'lucide-react';
-import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { accionMarcarLeidos } from '@/app/acciones/trabajos';
+import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { formatearFecha } from '@/dominio/formato';
 import type { AvisoVista } from '@/servicios/vistas';
 
-export function ListaAvisos({ avisos }: { avisos: AvisoVista[] }) {
+export function ListaAvisos({ avisos, extra }: { avisos: AvisoVista[]; extra?: (a: AvisoVista) => ReactNode }) {
   if (avisos.length === 0) return <p className="vacio">Sin avisos por ahora.</p>;
   const sinLeer = avisos.filter((a) => !a.leido).length;
   return (
@@ -31,17 +33,12 @@ export function ListaAvisos({ avisos }: { avisos: AvisoVista[] }) {
                 <time dateTime={a.en.toISOString()}>{formatearFecha(a.en)}</time>
               </p>
               <p className="aviso__cuerpo">{a.cuerpo}</p>
-              {a.trabajoIds.length > 0 && (
+              {a.trabajos.length > 0 && (
                 <p className="aviso__trabajos">
-                  Trabajos:{' '}
-                  {a.trabajoIds.map((id, i) => (
-                    <span key={id}>
-                      {i > 0 && ', '}
-                      <Link href={`/trabajos/${id}`}>{id}</Link>
-                    </span>
-                  ))}
+                  Trabajos: <EnlacesTrabajos trabajos={a.trabajos} />
                 </p>
               )}
+              {extra?.(a)}
             </article>
           </li>
         ))}

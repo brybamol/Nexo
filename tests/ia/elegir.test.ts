@@ -10,7 +10,7 @@ const ctx: ContextoCaptura = {
   ahora: '2026-11-25T07:05:00-06:00',
   autor: { id: 'jose-alfaro', nombre: 'José Alfaro', rol: 'Técnico', area: 'Campo' },
   personas: [],
-  proyectos: [{ id: 'P1', nombre: 'Cámara fría La Colina', responsableId: 'andres-vargas' }],
+  proyectos: [{ id: 'P1', clave: 'COLINA', nombre: 'Cámara fría La Colina', responsableId: 'andres-vargas' }],
   trabajosAbiertos: [],
   repuestos: [{ id: 'compresor-2hp', nombre: 'Compresor 2 HP', existencia: 1 }],
   seguimientosPendientesDelAutor: [],
@@ -141,9 +141,9 @@ describe('InterpreteClaude con cliente falso', () => {
 
   it('redactarRespuesta devuelve el texto de Claude; una respuesta vacía cae al respaldo', async () => {
     const hechos: HechosPregunta = { tema: 'pedidos_semana', datos: { entregados: 2 }, fuentes: [{ trabajoId: 'T19', etiqueta: '1041' }] };
-    const buena = clienteQue(async () => ({ content: [{ type: 'text', text: 'Van 2 entregados (T19).' }] }));
+    const buena = clienteQue(async () => ({ content: [{ type: 'text', text: 'Van 2 entregados (PEDIDOS-1).' }] }));
     expect(await new InterpreteClaude('k', respaldoFalso(), buena).redactarRespuesta('¿cómo vamos?', hechos)).toEqual({
-      valor: 'Van 2 entregados (T19).',
+      valor: 'Van 2 entregados (PEDIDOS-1).',
       implementacion: 'claude',
       modelo: MODELO_PREGUNTAS,
       respaldo: false,
@@ -151,5 +151,23 @@ describe('InterpreteClaude con cliente falso', () => {
 
     const vacia = clienteQue(async () => ({ content: [{ type: 'text', text: '  ' }] }));
     expect((await new InterpreteClaude('k', respaldoFalso(), vacia).redactarRespuesta('¿cómo vamos?', hechos)).respaldo).toBe(true);
+  });
+
+  it('redactarRespuesta: el modelo no recibe ids internos y, si cita uno, se usa el respaldo local', async () => {
+    const hechos: HechosPregunta = {
+      tema: 'pedidos_semana',
+      datos: { pedidos: [{ pedido: 1041, trabajoId: 'T19', referencia: 'PEDIDOS-1' }] },
+      fuentes: [{ trabajoId: 'T19', etiqueta: 'Pedido 1041 (PEDIDOS-1)' }],
+    };
+    let enviado = '';
+    const citaId = clienteQue(async (params) => {
+      enviado = JSON.stringify(params);
+      return { content: [{ type: 'text', text: 'Van 2 entregados (T19).' }] };
+    });
+    const r = await new InterpreteClaude('k', respaldoFalso(), citaId).redactarRespuesta('¿cómo vamos?', hechos);
+    expect(enviado).toContain('PEDIDOS-1');
+    expect(enviado).not.toContain('T19');
+    expect(r.respaldo).toBe(true);
+    expect(r.valor).not.toContain('T19');
   });
 });
