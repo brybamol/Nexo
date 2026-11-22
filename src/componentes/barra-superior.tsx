@@ -15,9 +15,8 @@ const ENLACES = [
   { href: '/mi-dia', texto: 'Mi día' },
   { href: '/proyectos', texto: 'Proyectos' },
   { href: '/decisiones', texto: 'Decisiones' },
-  { href: '/preguntar', texto: 'Preguntar' },
   { href: '/registro', texto: 'Registro' },
-  { href: '/correo', texto: 'Correo' },
+  { href: '/conexiones', texto: 'Conexiones' },
 ];
 
 /** Componente de servidor sin props: lee personas, persona actual y reloj. */

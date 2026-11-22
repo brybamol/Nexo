@@ -1,11 +1,9 @@
-// Proyectos por proximidad, cada uno leído como recorrido; las tres cifras al pie. Lee listarRecorridos y obtenerCifras.
-import { CifrasDemo } from '@/componentes/cifras-demo';
+// Proyectos por proximidad, cada uno leído como recorrido. Las cifras y la tasa de corrección viven solo en Registro.
+import { AvisoCuello } from '@/componentes/proyectos/aviso-cuello';
 import { FilaProyecto } from '@/componentes/proyectos/fila-proyecto';
-import { TasaCorreccion } from '@/componentes/tasa-correccion';
-import { obtenerCifras } from '@/servicios/cifras';
+import { obtenerCuellos } from '@/servicios/esperas';
 import { listarRecorridos, type ProyectoRecorrido } from '@/servicios/proyectos';
-import { obtenerTasaCorreccion } from '@/servicios/tasa';
-import { obtenerContextoApp } from '@/servidor/contexto-app';
+import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
 import './proyectos.css';
 
 const GRUPOS: { clave: 'fecha' | 'sin' | 'hecho'; titulo: string }[] = [
@@ -20,17 +18,16 @@ function grupo(r: ProyectoRecorrido): 'fecha' | 'sin' | 'hecho' {
 
 export default async function PaginaProyectos() {
   const ctx = await obtenerContextoApp();
-  const [cifras, recorridos, tasa] = await Promise.all([
-    obtenerCifras(ctx),
-    listarRecorridos(ctx),
-    obtenerTasaCorreccion(ctx),
-  ]);
+  const personaId = await personaActual();
+  const [recorridos, cuellos] = await Promise.all([listarRecorridos(ctx), obtenerCuellos(ctx, personaId)]);
   return (
     <div className="proyectos-lista">
       <header className="pagina__cabecera">
         <h1 className="pagina__titulo">Proyectos</h1>
         <p className="pagina__sub">Primero lo que vence antes. Cada fila muestra cuánto falta, por dónde va y qué lo frena.</p>
       </header>
+
+      <AvisoCuello cuellos={cuellos} />
 
       {GRUPOS.map(({ clave, titulo }) => {
         const lista = recorridos.filter((r) => grupo(r) === clave);
@@ -50,14 +47,6 @@ export default async function PaginaProyectos() {
           </section>
         );
       })}
-
-      <section className="seccion proyectos-lista__cifras" aria-labelledby="cifras-titulo">
-        <h2 className="seccion__titulo" id="cifras-titulo">
-          Lo que Nexo coordinó esta semana
-        </h2>
-        <CifrasDemo cifras={cifras} />
-        <TasaCorreccion tasa={tasa} compacta />
-      </section>
     </div>
   );
 }

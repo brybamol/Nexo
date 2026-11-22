@@ -3,7 +3,7 @@
 // persona = lo afirmó una persona o viene de la semilla (verde).
 import { ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import type { Confianza } from '@/dominio/tipos';
-import '@/app/correo/correo.css';
+import '@/app/conexiones/conexiones.css';
 
 const ROTULO_POR_DEFECTO: Record<Confianza, string> = {
   una_fuente: 'Propuesto por Nexo · una fuente',

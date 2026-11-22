@@ -148,7 +148,9 @@
   .fila-proyecto__dia { margin-top: 0; }
 }
 
-.proyectos-lista__cifras { margin-top: 3.5rem; }
+
+/* Aviso de cuello de botella, arriba de la lista */
+.avisos-cuello { display: grid; gap: 0.5rem; margin-bottom: 1.5rem; }
 
 /* ------------------------------------------------------------------ Detalle: cabecera y panorama */
 

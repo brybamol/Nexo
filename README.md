@@ -8,11 +8,12 @@ El escalamiento sigue al trabajo, no al organigrama. Si el responsable no respon
 
 Lo que hace hoy la aplicación:
 
-- **El correo alimenta al motor.** Nexo lee los buzones conectados cuando avanza el reloj de la demo (sin red: son buzones de ejemplo) y convierte cada pedido que encuentra en un trabajo, con su responsable, su plazo y la cita del correo como evidencia. Un pedido igual a un trabajo que ya existe no se duplica: solo suma su evidencia. Si una espera del correo coincide con otro trabajo, nace una dependencia o un bloqueo. Lo personal y los boletines se descartan sin guardar su contenido, y un pedido sin plazo no se convierte en trabajo: la pantalla Correo pregunta «¿Para cuándo?».
+- **El correo alimenta al motor.** Nexo lee los buzones conectados cuando avanza el reloj de la demo (sin red: son buzones de ejemplo) y convierte cada pedido que encuentra en un trabajo, con su responsable, su plazo y la cita del correo como evidencia. Un pedido igual a un trabajo que ya existe no se duplica: solo suma su evidencia. Si una espera del correo coincide con otro trabajo, nace una dependencia o un bloqueo. Lo personal y los boletines se descartan sin guardar su contenido, y un pedido sin plazo no se convierte en trabajo: la pantalla Conexiones pregunta «¿Para cuándo?».
+- **Nexo es un panel a mano.** Un botón flotante «Cuéntale a Nexo» (abajo a la derecha, con el isotipo) abre un panel donde se cuenta un problema, se pide algo o se pregunta; cada frase queda en un hilo con su tarjeta de resultado. Ya no hay caja de captura fija arriba ni pantalla Preguntar: las preguntas también se hacen en el panel.
 - **Lo que Nexo infiere es una propuesta.** Si solo uno de los dos buzones lo vio, el trabajo nace «propuesto»: solo su dueño lo ve, no avisa a nadie y espera a que lo **Confirme**, lo **Corrija** o lo **Descarte**. Si lo vieron los buzones de las dos partes, queda confirmado por dos fuentes.
 - **Resuelto exige evidencia.** Si otra persona pidió el trabajo, el responsable lo declara **entregado** (con una nota o un enlace) y quien lo pidió confirma que lo recibió; solo entonces queda Resuelto. Si no confirma, Nexo se lo recuerda, pero no escala.
-- **Cuánto se equivoca Nexo.** Cada revisión de una propuesta se guarda con lo propuesto y lo final, y de ahí sale la tasa de corrección, que se ve en Correo, Registro y Proyectos.
-- **Quién espera a quién.** Con los trabajos visibles para quien mira, la pantalla Correo muestra las cadenas de espera entre departamentos y el cuello de botella si lo hay.
+- **Cuánto se equivoca Nexo.** Cada revisión de una propuesta se guarda con lo propuesto y lo final, y de ahí sale la tasa de corrección, que se ve solo en Registro, junto a las tres cifras.
+- **Quién espera a quién.** Con los trabajos visibles para quien mira, Nexo calcula las cadenas de espera entre departamentos. Si a una persona la esperan varias, Proyectos avisa arriba de la lista: «6 personas esperan a Lucía Mora (Bodega) en Cámara fría La Colina y Repuestos críticos.» Las cadenas en sí no se dibujan en ninguna pantalla.
 - **Proyectos como recorrido.** Cada proyecto se lee como una secuencia de etapas: qué ya se hizo, qué frena y qué viene.
 - **Nombres con título y referencia.** Las personas nunca ven ids internos ni números de regla: ven el título de cada cosa y una referencia como COLINA-5.
 
@@ -67,7 +68,7 @@ No hay que instalar ni configurar ninguna base de datos. Nexo usa PGlite, una ba
 
 ### Si ya tenías una base de una versión anterior
 
-Las versiones anteriores no guardaban la clave de cada proyecto ni el número de cada trabajo (ver «Cómo se nombran los trabajos»). Al arrancar, Nexo añade esas columnas a la base de `.data/` y las rellena solo: los trabajos se numeran por proyecto en el orden de su id y las decisiones por fecha. No se borra nada, salvo la tabla `correcciones_correo` del modelo de correo anterior, que se elimina: la base queda con 20 tablas. Una base anterior queda sin buzones conectados y la pantalla Correo lo dice («Ningún buzón conectado: reinicia la demo»). Los avisos y el registro que ya estaban guardados conservan su texto viejo, con códigos como «T04»; para ver la demo con los textos nuevos, pulsa **Reiniciar demo** en la aplicación o, con `pnpm dev` parado, ejecuta `pnpm db:reset`.
+Las versiones anteriores no guardaban la clave de cada proyecto ni el número de cada trabajo (ver «Cómo se nombran los trabajos»). Al arrancar, Nexo añade esas columnas a la base de `.data/` y las rellena solo: los trabajos se numeran por proyecto en el orden de su id y las decisiones por fecha. No se borra nada, salvo la tabla `correcciones_correo` del modelo de correo anterior, que se elimina: la base queda con 20 tablas. Una base anterior queda sin buzones conectados y la pantalla Conexiones (antes Correo) lo dice («Ningún buzón conectado: reinicia la demo»). Los avisos y el registro que ya estaban guardados conservan su texto viejo, con códigos como «T04»; para ver la demo con los textos nuevos, pulsa **Reiniciar demo** en la aplicación o, con `pnpm dev` parado, ejecuta `pnpm db:reset`.
 
 ## Cómo se nombran los trabajos
 
@@ -86,18 +87,18 @@ La demo es el guion de cuatro minutos del plan (`docs/02-plan-mvp-hackathon.md`)
 
 0. Pulsa **Reiniciar demo** y acepta la confirmación. El reloj queda en mié 25 nov, 7:00, con 8 buzones conectados.
 1. Pulsa **+5 min**. El reloj queda en 7:05. Nexo lee el correo (23 copias de mensajes en 8 buzones) y pide el estado de dos trabajos atrasados.
-2. En el selector **ver como**, elige a **José Alfaro**. En la caja de captura escribe «No puedo terminar la instalación en La Colina, falta el compresor de 2 HP» y envíala. Nexo responde «Creé «Conseguir compresor de 2 HP» (COLINA-8) para Lucía Mora…» y deja bloqueado «Instalar unidad condensadora y compresor» (COLINA-4).
+2. En el selector **ver como**, elige a **José Alfaro**. Abre el botón **Cuéntale a Nexo** (abajo a la derecha) y en el panel escribe «No puedo terminar la instalación en La Colina, falta el compresor de 2 HP» y envíala. Nexo responde «Creé «Conseguir compresor de 2 HP» (COLINA-8) para Lucía Mora…» y deja bloqueado «Instalar unidad condensadora y compresor» (COLINA-4).
 3. Cambia a **Lucía Mora** y abre **Mi día**. Arriba está «Conseguir compresor de 2 HP», con su referencia COLINA-8.
 4. Pulsa **Siguiente evento**: el reloj queda en 7:35 (recordatorio a Lucía). Pulsa **Siguiente evento** otra vez: 8:05, y Lucía no respondió, así que Nexo escala a **Esteban Castro**, responsable del proyecto La Colina (no al jefe de Lucía). Cambia a Esteban: en **Mi día** verás el trabajo en «Nexo te pide», con los botones **Reasignar**, **Mover el plazo** y **Declarar bloqueo**. No los uses en el recorrido: cambiarían el guion.
 5. Cambia a **Mario Chaves** y abre **Mi día**. Un solo aviso con sus dos trabajos, de dos proyectos: «Cableado y tablero de control» (COLINA-5) y «Cambiar compresor en local Curridabat» (TRIGAL-4), con la causa «Conciliar el conteo con el sistema» (REPUESTOS-2).
-6. Cambia a **Lucía Mora** y escribe en la caja de captura «No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local». Nexo prepara la decisión «Compra de 3 compresores de 2 HP» (COLINA-D1).
-7. Cambia a **Marcela Solís** (gerente general), abre **Decisiones** y aprueba la opción A. Nexo crea «Comprar 3 compresores de 2 HP al proveedor local» (COLINA-9) para Karla.
-8. Como Marcela, escribe en **Preguntar** «¿Cómo vamos con los pedidos de la semana?». Cada pedido se cita con su referencia, por ejemplo «Pedido 1043 · Minisúper Don Beto (PEDIDOS-3)».
+6. Cambia a **Lucía Mora** y en el panel **Cuéntale a Nexo** escribe «No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local». Nexo prepara la decisión «Compra de 3 compresores de 2 HP» (COLINA-D1).
+7. Cambia a **Marcela Solís** (gerente general), abre **Decisiones** y aprueba la opción A. Nexo crea «Comprar 3 compresores de 2 HP al proveedor local» (COLINA-9) para Karla. La decisión la ven también quien la propuso, el responsable del proyecto, quienes tienen trabajos afectados y gerencia, sin poder decidir; el resto no la ve.
+8. Como Marcela, abre el panel **Cuéntale a Nexo** y pulsa la sugerencia «¿Cómo vamos con los pedidos de la semana?» (o escríbela). Cada pedido se cita con su referencia, por ejemplo «Pedido 1043 · Minisúper Don Beto (PEDIDOS-3)».
 9. Como Marcela, abre **Proyectos** y **Registro**. Las cifras en este punto son las del primer bloque de abajo.
-10. Pulsa **Siguiente evento**: el reloj salta a las 8:20 y llega un correo (el próximo mensaje, antes que el siguiente evento del motor). Cambia a **Ricardo Brenes** y abre **Correo**: un trabajo nuevo, creado solo, «lo vieron los dos buzones», que depende de la cotización de Paola.
+10. Pulsa **Siguiente evento**: el reloj salta a las 8:20 y llega un correo (el próximo mensaje, antes que el siguiente evento del motor). Cambia a **Ricardo Brenes** y abre **Conexiones**: en «Lo que Nexo leyó de tu buzón» está un trabajo nuevo, creado solo, «lo vieron los dos buzones», que depende de la cotización de Paola.
 11. Como Ricardo, abre **Mi día**. En **Propuestas de Nexo** está la de las guías de entrega: pulsa **Confirmar**. Después, en **Por confirmar recibido**, pulsa **Sí, lo recibí**. El trabajo queda Resuelto y Nexo avisa a Diego.
 12. Cambia a **Esteban Castro** y abre **Mi día**. En **Propuestas de Nexo**, pulsa **Corregir** en su propuesta y cambia el plazo al jue 26 nov, 17:00.
-13. Cambia a **Marcela Solís** y abre **Registro** (cifras y tasa de corrección de abajo) y **Correo** (el cuello de botella es Lucía Mora).
+13. Cambia a **Marcela Solís** y abre **Registro** (cifras y tasa de corrección de abajo) y **Proyectos** (el aviso de cuello de botella, arriba de la lista, es por Lucía Mora).
 
 > **Advertencias:** no pulses **Siguiente evento** después del paso 13: saltaría a las 10:00 y cambiaría las cifras. No uses **+30 min** antes del paso 10: el correo de las 8:20 se leería a otra hora. **Siguiente evento** primero procesa lo que ya venció a la hora actual, sin mover el reloj; si no hay nada vencido, salta al siguiente evento programado o al próximo correo. No lo pulses antes de la primera frase (paso 2).
 
@@ -210,7 +211,7 @@ Nadie sube cambios directamente a `main`.
 |---|---|
 | `docs/` | Plan, definición, empresa ficticia y contrato técnico (ver la lista abajo). |
 | `src/app` | Páginas de la interfaz (Next.js, App Router) y acciones del servidor en `src/app/acciones/`. |
-| `src/componentes` | Piezas de interfaz reutilizables. |
+| `src/componentes` | Piezas de interfaz reutilizables. `agente/` es el botón flotante y el panel «Cuéntale a Nexo». |
 | `src/servicios` | Casos de uso que llama la interfaz: captura, decisiones, Mi día, reloj, cifras, correo, propuestas, entregas, tasa de corrección y proyectos. |
 | `src/correo` | Lectura del correo: buzones de ejemplo de Frío del Valle, adaptadores de Gmail y Outlook, filtro de privacidad, unión de buzones y extracción de hechos. Código puro. |
 | `src/motor` | Reglas de coordinación: marcas, seguimiento, propagación, opciones y decisiones, y las de las reformas v2: confianza, propuestas, entregas, ingesta del correo, esperas, tasa y secuencia de proyectos. Es código puro, sin base de datos ni red. |
@@ -246,7 +247,7 @@ Documentos de `docs/`:
 - Solo maneja una empresa. El diseño está pensado para escritorio y proyector; en teléfono no se ha cuidado.
 - No incluye diagramas de Gantt, informes ni gráficos de gestión.
 - Los datos (personas, clientes, proveedores, precios, correos y cifras) son inventados.
-- Un pedido del correo sin plazo no se convierte en trabajo (no se inventa uno): la pantalla Correo pregunta «¿Para cuándo?».
+- Un pedido del correo sin plazo no se convierte en trabajo (no se inventa uno): la pantalla Conexiones pregunta «¿Para cuándo?».
 - Las preguntas respondidas no aparecen en el registro de acciones.
 - Con Claude, una reprogramación de una entrega a un cliente se aplica sin pasar por una decisión (la regla está pendiente de definir).
 - Las horas ahorradas son una estimación basada en minutos supuestos (10 por seguimiento y 15 por pregunta), no una medición.

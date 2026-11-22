@@ -1,0 +1,283 @@
+/* Tarjeta de decisión (componentes/tarjeta-decision.tsx y componentes/decisiones/).
+   Bloque nuevo `.dec`: no usa las reglas viejas `.decision*`, `.opcion*` ni `.opciones` de globals.css.
+   Solo variables de marca de globals.css (DESIGN.md). Registros: azul espera a una persona, verde quedó hecho. */
+
+/* ------------------------------------------------------------------ Bandeja */
+
+.decisiones > .dec + .dec { margin-top: 1rem; }
+.decisiones > .dec + .seccion__titulo,
+.decisiones > .vacio + .seccion__titulo { margin-top: 3rem; }
+
+/* ------------------------------------------------------------------ Tarjeta */
+
+.dec {
+  padding: 1.5rem;
+  background: var(--blanco);
+  border: 1px solid var(--borde); border-radius: var(--radio-l);
+  box-shadow: var(--sombra-1);
+  overflow-wrap: anywhere;
+}
+.dec[data-estado="pendiente"] { border-color: var(--azul-borde); }
+
+/* Cabecera: referencia, título y estado; debajo, en una línea, proyecto, quién propone, quién decide y cuándo. */
+.dec__titular { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.dec__ref { font-size: 0.875rem; min-width: 0; }
+.dec__titulo {
+  flex: 1 1 16rem;
+  font-family: var(--fuente-display); font-size: 1.375rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25;
+}
+.dec__estado { margin-left: auto; }
+.dec__estado[data-estado="pendiente"] { color: var(--azul-tinta); border-color: var(--azul-borde); background: var(--azul-tenue); }
+.dec__estado[data-estado="aprobada"] { color: var(--exito); border-color: var(--exito-borde); background: var(--exito-tenue); }
+.dec__estado[data-estado="rechazada"] { color: var(--critico); border-color: var(--critico-borde); background: var(--critico-tenue); }
+
+.dec__meta {
+  display: flex; flex-wrap: wrap; row-gap: 0.125rem;
+  margin-top: 0.5rem;
+  font-size: 0.9375rem; color: var(--tinta-2);
+}
+.dec__meta strong { color: var(--tinta); font-weight: 600; }
+.dec__meta > span + span::before { content: "·"; margin: 0 0.5rem; color: var(--steel-gray); }
+
+/* ------------------------------------------------------------------ Qué pasó y a quién afecta */
+
+.dec__caso { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--borde); }
+.dec__subtitulo { font-size: 1rem; font-weight: 600; }
+.dec__hechos {
+  list-style: none; margin: 0.5rem 0 0; padding: 0;
+  display: grid; gap: 0.375rem; max-width: 75ch;
+}
+.dec__hechos li { position: relative; padding-left: 1rem; }
+.dec__hechos li::before {
+  content: ""; position: absolute; left: 0.125rem; top: 0.65em;
+  width: 0.3125rem; height: 0.3125rem; border-radius: 999px; background: var(--steel-gray);
+}
+.dec__hecho-etiqueta { font-weight: 600; }
+
+/* Plegables: resumen como enlace azul con cheurón que gira al abrir. */
+.dec__afectados > summary,
+.dec__plegado > summary,
+.dec__detalle > summary {
+  display: inline-flex; align-items: center; gap: 0.375rem;
+  min-height: 2.75rem;
+  list-style: none; cursor: pointer;
+  color: var(--azul-tinta); font-weight: 600; font-size: 0.9375rem;
+}
+.dec__afectados > summary::-webkit-details-marker,
+.dec__plegado > summary::-webkit-details-marker,
+.dec__detalle > summary::-webkit-details-marker { display: none; }
+.dec__afectados > summary:hover,
+.dec__plegado > summary:hover,
+.dec__detalle > summary:hover { text-decoration: underline; text-decoration-color: var(--signal-blue); text-underline-offset: 0.2em; }
+.dec__afectados > summary .icono,
+.dec__plegado > summary .icono,
+.dec__detalle > summary .icono { transition: transform 150ms var(--salida); }
+.dec__afectados[open] > summary .icono,
+.dec__plegado[open] > summary .icono,
+.dec__detalle[open] > summary .icono { transform: rotate(180deg); }
+
+.dec__afectados { margin-top: 0.5rem; }
+.dec__afectados-grupos {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr)); gap: 1rem 2rem;
+  margin-top: 0.25rem; padding: 0.875rem 1rem;
+  background: var(--canvas-white); border: 1px solid var(--borde); border-radius: var(--radio-m);
+}
+.dec__afectados-proyecto { margin-bottom: 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--tinta); }
+
+.dec__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.375rem; font-size: 0.9375rem; }
+.dec__lista a { font-weight: 500; }
+.dec__responsable { color: var(--tinta-2); }
+
+/* ------------------------------------------------------------------ Comparación de opciones */
+
+/* Contenedor de consulta: la tabla se apila cuando su ancho no da para comparar en columnas. */
+.dec__comparar {
+  container-type: inline-size;
+  margin-top: 1.5rem;
+  border: 1px solid var(--borde-opcion); border-radius: var(--radio-m);
+  overflow: hidden;
+}
+.dec__tabla { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.9375rem; }
+.dec__esquina { width: 9.5rem; background: var(--canvas-white); }
+
+.dec__tabla th, .dec__tabla td { padding: 0.875rem 1rem; text-align: left; vertical-align: top; }
+.dec__tabla td, .dec__tabla thead th { border-left: 1px solid var(--borde); }
+.dec__tabla tbody tr, .dec__tabla tfoot tr { border-top: 1px solid var(--borde); }
+
+/* Etiqueta de fila: columna hundida a la izquierda. */
+.dec__tabla th[scope="row"] {
+  background: var(--canvas-white);
+  font-size: 0.8125rem; font-weight: 500; color: var(--tinta-2); line-height: 1.35;
+}
+.dec__tabla th.dec__fila-proyecto { font-size: 0.875rem; font-weight: 600; color: var(--tinta); }
+.dec__grupo th {
+  padding-top: 0.5rem; padding-bottom: 0.5rem;
+  background: var(--canvas-2);
+  font-size: 0.8125rem; font-weight: 600; color: var(--tinta-2);
+}
+
+/* Cabecera de cada opción. */
+.dec__opcion { border-bottom: 1px solid var(--borde-opcion); font-weight: 400; }
+.dec__opcion-nombre { display: flex; align-items: center; gap: 0.625rem; }
+.dec__letra {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2rem; height: 2rem;
+  border-radius: var(--radio-s); background: var(--canvas-2); color: var(--tinta);
+  font-family: var(--fuente-display); font-size: 1.125rem; font-weight: 600;
+}
+.dec__opcion-titulo { display: block; font-size: 1rem; font-weight: 600; color: var(--tinta); line-height: 1.3; }
+.dec__opcion-sub { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--tinta-2); line-height: 1.35; }
+.dec__marcas { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.625rem; }
+.dec__propuesta, .dec__sello {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.125rem 0.625rem; border: 1px solid var(--borde); border-radius: 999px;
+  background: var(--blanco); color: var(--tinta-2);
+  font-size: 0.8125rem; font-weight: 500; line-height: 1.35;
+}
+.dec__sello { border-color: var(--exito-borde); background: var(--exito-tenue); color: var(--exito); font-weight: 600; }
+.dec__sello .icono { width: 0.9375rem; height: 0.9375rem; }
+
+/* Datos. */
+.dec__costo {
+  display: block;
+  font-family: var(--fuente-display); font-weight: 600; font-size: 1.375rem; line-height: 1.2;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--tinta);
+  overflow-wrap: normal;
+}
+@container (min-width: 54rem) {
+  .dec__costo { font-size: 1.75rem; }
+}
+.dec__desglose { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.dec__fecha { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dec__llegadas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.dec__llegada-cuanto { display: block; font-size: 0.8125rem; color: var(--tinta-2); }
+
+.dec__efecto { display: inline-flex; align-items: flex-start; gap: 0.375rem; font-weight: 500; }
+.dec__efecto .icono { margin-top: 0.15em; }
+.dec__efecto[data-efecto="a_tiempo"] .icono { color: var(--exito); }
+.dec__efecto[data-efecto="atrasa"] { color: var(--aviso); }
+.dec__consecuencia { font-size: 0.9375rem; }
+.dec__nada { color: var(--tinta-2); }
+
+.dec__detalle > summary { min-height: 2rem; font-size: 0.875rem; margin-top: -0.25rem; }
+.dec__detalle-cuerpo { display: grid; gap: 0.375rem; margin-top: 0.25rem; }
+.dec__detalle-titulo { margin-top: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--tinta-2); }
+.dec__detalle-cuerpo .dec__lista { font-size: 0.875rem; gap: 0.5rem; }
+.dec__detalle-dato { color: var(--tinta-2); }
+.dec__cambio {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.125rem 0.375rem;
+  font-size: 0.8125rem; color: var(--tinta-2); font-variant-numeric: tabular-nums;
+}
+.dec__cambio .icono { width: 0.875rem; height: 0.875rem; }
+.dec__cambio time:last-of-type { color: var(--tinta); font-weight: 600; }
+
+/* Pie: los botones de aprobar, iguales entre sí y en la misma fila. */
+.dec__tabla tfoot tr { border-top-color: var(--borde-opcion); }
+.dec__tabla tfoot th, .dec__tabla tfoot td { padding-top: 1rem; padding-bottom: 1rem; }
+.dec__aprobar { width: 100%; }
+
+/* Columna elegida (verde, ya registrada) y columna que se está confirmando (azul, espera a la persona). */
+.dec__tabla [data-elegida] { background: var(--exito-fondo); }
+.dec__tabla [data-elegida] .dec__letra { background: var(--exito); color: var(--blanco); }
+.dec__tabla [data-confirmando] { background: var(--azul-tenue); }
+.dec__tabla [data-confirmando] .dec__letra { background: var(--signal-blue); color: var(--core-navy); }
+.dec__tabla [data-confirmando] .dec__aprobar { border-color: var(--signal-blue); background: var(--blanco); }
+
+/* Poco ancho: cada fila se vuelve un bloque y cada valor lleva la letra de su opción. */
+@container (max-width: 41.99rem) {
+  .dec__tabla, .dec__tabla thead, .dec__tabla tbody, .dec__tabla tfoot,
+  .dec__tabla tr, .dec__tabla th, .dec__tabla td { display: block; }
+  .dec__tabla td, .dec__tabla thead th { border-left: 0; }
+  .dec__esquina { display: none; }
+  .dec__tabla thead th { border-top: 1px solid var(--borde); border-bottom: 0; }
+  .dec__tabla thead th:first-of-type { border-top: 0; }
+  .dec__tabla thead tr { border-bottom: 1px solid var(--borde-opcion); }
+  .dec__tabla tbody tr, .dec__tabla tfoot tr { padding: 0.75rem 1rem; }
+  .dec__tabla tr.dec__grupo { padding: 0; }
+  .dec__grupo th { padding: 0.5rem 1rem; }
+  .dec__tabla th[scope="row"] { padding: 0 0 0.375rem; background: transparent; }
+  .dec__tabla td {
+    display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); gap: 0.625rem; align-items: start;
+    padding: 0.5rem; border-radius: var(--radio-s);
+  }
+  .dec__tabla tbody td::before {
+    content: attr(data-letra);
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.75rem; height: 1.75rem;
+    border-radius: var(--radio-s); background: var(--canvas-2); color: var(--tinta);
+    font-family: var(--fuente-display); font-weight: 600; font-size: 0.9375rem;
+  }
+  .dec__tabla tbody td[data-elegida]::before { background: var(--exito); color: var(--blanco); }
+  .dec__tabla tfoot { padding: 0; }
+  .dec__tabla tfoot tr { display: grid; gap: 0.5rem; }
+  .dec__tabla tfoot th { display: none; }
+  .dec__tabla tfoot td { display: block; padding: 0; background: transparent; }
+}
+
+/* ------------------------------------------------------------------ Decidir */
+
+.dec__confirmar {
+  margin-top: 1rem; padding: 1rem 1.25rem;
+  border: 1px solid var(--signal-blue); border-radius: var(--radio-m);
+  background: var(--azul-tenue);
+}
+.dec__confirmar p { font-weight: 600; font-size: 1.0625rem; }
+.dec__confirmar-nota { font-weight: 400; font-size: 0.9375rem; color: var(--tinta-2); }
+.dec__botones { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* Rechazar: aparte y discreto, a la derecha bajo la comparación. */
+.dec__rechazo {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem 0.75rem;
+  margin-top: 1rem;
+}
+.dec__rechazo-nota { color: var(--tinta-2); font-size: 0.9375rem; }
+.dec__rechazar { color: var(--critico); }
+.dec__rechazar:hover:not(:disabled) { color: var(--critico); background: var(--critico-tenue); border-color: var(--critico-borde); }
+.dec__rechazo-form { flex: 1 1 100%; display: grid; gap: 0.5rem; max-width: 40rem; margin-right: auto; }
+.dec__rechazo-form .dec__botones { margin-top: 0.25rem; }
+
+.dec__ajeno {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 1rem; padding: 0.75rem 1rem;
+  border: 1px solid var(--azul-borde); border-radius: var(--radio-s);
+  background: var(--azul-tenue); color: var(--tinta); font-size: 0.9375rem;
+}
+.dec__ajeno .icono { color: var(--azul-tinta); }
+
+.dec__resultado:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+
+/* ------------------------------------------------------------------ Historial: la decisión tomada, resumida */
+
+.dec__resumen {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  margin-top: 1rem; padding: 0.875rem 1rem;
+  border: 1px solid var(--borde); border-radius: var(--radio-m);
+  background: var(--canvas-white);
+}
+.dec__resumen > .icono { margin-top: 0.2em; }
+.dec__resumen[data-estado="aprobada"] { border-color: var(--exito-borde); background: var(--exito-fondo); }
+.dec__resumen[data-estado="aprobada"] > .icono { color: var(--exito); }
+.dec__resumen[data-estado="rechazada"] > .icono { color: var(--critico); }
+.dec__resumen-linea { font-weight: 600; }
+.dec__resumen-datos { display: flex; flex-wrap: wrap; align-items: baseline; row-gap: 0.125rem; margin-top: 0.25rem; color: var(--tinta-2); font-size: 0.9375rem; }
+.dec__resumen-datos > span + span::before { content: "·"; margin: 0 0.5rem; color: var(--steel-gray); }
+.dec__resumen-costo { font-family: var(--fuente-display); font-weight: 600; font-size: 1.125rem; color: var(--tinta); font-variant-numeric: tabular-nums; }
+.dec__resumen-efectos { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.dec__resumen-efectos li {
+  padding: 0.125rem 0.625rem; border: 1px solid var(--exito-borde); border-radius: 999px;
+  background: var(--blanco); color: var(--exito); font-size: 0.8125rem; font-weight: 500;
+}
+.dec__resumen-efectos li[data-efecto="atrasa"] { border-color: var(--aviso-borde); background: var(--aviso-tenue); color: var(--aviso); }
+.dec__resumen-motivo { margin-top: 0.25rem; max-width: 75ch; }
+
+.dec__plegado { margin-top: 0.5rem; }
+.dec__plegado-cuerpo > .dec__caso { margin-top: 0.25rem; }
+
+/* ------------------------------------------------------------------ Teléfono */
+
+@media (max-width: 639px) {
+  .dec { padding: 1.125rem 1rem; }
+  .dec__estado { margin-left: 0; }
+  .dec__botones .boton { flex: 1 1 100%; }
+  .dec__rechazo { justify-content: flex-start; }
+}
