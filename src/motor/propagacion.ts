@@ -1,5 +1,6 @@
 // Propagación del bloqueo y avisos agrupados: R4, R5 (§4.2 regla 4). Puro. Tarea 3.2.
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
+// Reformas v2 (docs/08 regla 15, R3): un propuesto no recibe ni genera avisos; bloquearlo no reporta faltantes.
 import { ETIQUETA_CONCILIACION } from '@/dominio/constantes';
 import { minusculaInicial } from '@/dominio/texto';
 import type { CausaRiesgo, HechoBloqueo, Marcas, Trabajo } from '@/dominio/tipos';
@@ -9,11 +10,16 @@ import { calcularMarcas } from '@/motor/marcas';
 
 export type { HechoBloqueo };
 
-/** Estado bloqueado, faltante reportado, R4 y R5. `inst` ya contiene el trabajo bloqueante. */
+/**
+ * Estado bloqueado, faltante reportado, R4 y R5. `inst` ya contiene el trabajo bloqueante.
+ * Si el bloqueado es un propuesto (regla 15), solo cambia su estado: ni faltante (pondría en riesgo a confirmados)
+ * ni avisos.
+ */
 export function efectosBloqueo(inst: Instantanea, hecho: HechoBloqueo): Efecto[] {
   const t = inst.trabajos.find((x) => x.id === hecho.trabajoBloqueadoId);
   if (!t || t.estado === 'resuelto') return [];
   const efectos: Efecto[] = [];
+  const propuesto = t.confirmacion !== 'confirmado';
 
   if (t.estado !== 'bloqueado' || t.bloqueadoPorId !== hecho.bloqueanteId || t.fechaSolucion !== null) {
     efectos.push({
@@ -23,6 +29,7 @@ export function efectosBloqueo(inst: Instantanea, hecho: HechoBloqueo): Efecto[]
       actorId: hecho.autorId,
     });
   }
+  if (propuesto) return efectos;
   const repuesto = hecho.repuestoFaltanteId ? inst.repuestos.find((r) => r.id === hecho.repuestoFaltanteId) : undefined;
   if (repuesto && repuesto.faltanteReportadoEn === null) {
     efectos.push({
@@ -47,7 +54,7 @@ export function efectosBloqueo(inst: Instantanea, hecho: HechoBloqueo): Efecto[]
   return efectos;
 }
 
-/** R4 y R5 genéricos: aviso agrupado por persona a los responsables de los trabajos que pasan a en riesgo. */
+/** R4 y R5 genéricos: aviso agrupado por persona a los responsables de los trabajos confirmados que pasan a en riesgo. */
 export function avisosPorRiesgoNuevo(antes: Instantanea, despues: Instantanea, hecho: string): Efecto[] {
   return avisosRiesgo(antes, despues, { hecho, encabezado: hecho, excluir: null, causa: null });
 }
@@ -94,7 +101,10 @@ function avisosRiesgo(
   const mDespues = calcularMarcas(despues);
   const personas = porId(despues.personas);
   const nombres = nombrador(despues);
-  const nuevos = despues.trabajos.filter((t) => mDespues.get(t.id)?.enRiesgo && !mAntes.get(t.id)?.enRiesgo);
+  // Solo confirmados: un propuesto no recibe avisos (regla 15; lo ve su dueño en Mi día).
+  const nuevos = despues.trabajos.filter(
+    (t) => t.confirmacion === 'confirmado' && mDespues.get(t.id)?.enRiesgo && !mAntes.get(t.id)?.enRiesgo,
+  );
 
   const grupos = new Map<string, Trabajo[]>();
   for (const t of nuevos) {

@@ -474,3 +474,132 @@ describe('saltar el reloj equivale a avanzar paso a paso', () => {
     expect(inst).toEqual(copia);
   });
 });
+
+// ─── Reformas v2 (docs/08 reglas 15, 20 y 21; tarea R3): tipos de seguimiento, propuestos y entregados ─────────
+
+describe('v2 · R1 omite propuestos y entregados', () => {
+  it('un trabajo entregado no recibe pedir_estado al vencer; uno propuesto tampoco', () => {
+    const inst = instantaneaDesdeSemilla();
+    const t28 = inst.trabajos.find((t) => t.id === 'T28') as Trabajo;
+    t28.entrega = { en: enCR(MIE, '11:30'), porId: 'paola-herrera', nota: 'Enviada', enlace: null, fuente: 'interfaz' };
+    const t29 = inst.trabajos.find((t) => t.id === 'T29') as Trabajo;
+    t29.confirmacion = 'propuesto';
+    t29.duenoPropuestaId = 'andres-vargas';
+    const efectos = tick(enHora(inst, enCR(MIE, '16:30')));
+    expect(sobre(efectos, 'T28')).toEqual([]);
+    expect(sobre(efectos, 'T29')).toEqual([]);
+    // Sin la entrega, sí (control).
+    t28.entrega = null;
+    expect(sobre(tick(enHora(inst, enCR(MIE, '16:30'))), 'T28').map((a) => a.accion.tipo)).toEqual(['pedir_estado', 'recordatorio']);
+  });
+
+  it('un seguimiento de estado pendiente de un trabajo entregado se cierra en el tick sin subir de nivel', () => {
+    let inst = mover(instantaneaDesdeSemilla(), enCR(MIE, '07:05')).inst; // pide T15 y T21
+    const t15 = inst.trabajos.find((t) => t.id === 'T15') as Trabajo;
+    inst = aplicarEnMemoria(inst, [
+      { tipo: 'actualizar_trabajo', trabajoId: 'T15', cambios: { entrega: { en: enCR(MIE, '07:30'), porId: t15.responsableId, nota: 'Hecho', enlace: null, fuente: 'interfaz' } }, actorId: null },
+    ]);
+    const r = mover(inst, enCR(MIE, '12:00'));
+    expect(sobre(r.efectos, 'T15')).toEqual([]);
+    expect(seguimientoDe(r.inst, 'T15').map((s) => s.estado)).toEqual(['respondido']);
+  });
+});
+
+/** T27 (de Ricardo) pedido por Andrés y entregado a las 8:20, con su seguimiento «recepcion» abierto (como lo deja R4). */
+function conRecepcion(): Instantanea {
+  const inst = enHora(instantaneaDesdeSemilla(), enCR(MIE, '08:20'));
+  const t27 = inst.trabajos.find((t) => t.id === 'T27') as Trabajo;
+  t27.solicitadoPorId = 'andres-vargas';
+  t27.entrega = { en: enCR(MIE, '08:20'), porId: 'ricardo-brenes', nota: 'Pago confirmado', enlace: null, fuente: 'interfaz' };
+  inst.seguimientos.push({
+    id: 'S1',
+    trabajoId: 'T27',
+    tipo: 'recepcion',
+    plazoReferencia: enCR(MIE, '08:20'),
+    nivel: 0,
+    destinatarioId: 'andres-vargas',
+    urgente: false,
+    proximoEn: enCR(MIE, '12:20'),
+    estado: 'pendiente',
+    iniciadoEn: enCR(MIE, '08:20'),
+    escaladosA: [],
+  });
+  return inst;
+}
+
+describe('v2 · seguimiento «recepcion» (regla 20)', () => {
+  it('pasado el intervalo de R2: un recordatorio al solicitante y se agota; nunca escala ni pide estado', () => {
+    const inst = conRecepcion();
+    expect(siguienteEvento({ ...inst, trabajos: inst.trabajos.filter((t) => t.id === 'T27') })).toEqual(enCR(MIE, '12:20'));
+    const r = mover(inst, enCR(MIE, '12:20'));
+    const sobreT27 = sobre(r.efectos, 'T27');
+    expect(sobreT27.map(resumen)).toEqual([{ tipo: 'recordatorio', a: 'andres-vargas', trabajos: ['T27'] }]);
+    expect(sobreT27[0]!.aviso?.titulo).toBe('¿Recibiste «Confirmar el pago anticipado del pedido 1047»?');
+    expect(sobreT27[0]!.aviso?.cuerpo).toContain('Ricardo Brenes');
+    expect(sobreT27[0]!.aviso?.cuerpo).toContain('PEDIDOS-9');
+    expect(seguimientoDe(r.inst, 'T27')).toMatchObject([{ tipo: 'recepcion', nivel: 1, estado: 'agotado' }]);
+    // Ni a las 15:00 ni el viernes (con el plazo de T27 ya vencido): ni escalamiento ni pedir_estado.
+    const viernes = mover(r.inst, enCR('2026-11-27', '16:00'));
+    expect(sobre(viernes.efectos, 'T27')).toEqual([]);
+  });
+
+  it('se cierra (respondido) si el trabajo se resuelve o si la entrega se rechaza (entrega = null)', () => {
+    const resuelto = aplicarEnMemoria(conRecepcion(), [{ tipo: 'actualizar_trabajo', trabajoId: 'T27', cambios: { estado: 'resuelto', resueltoEn: enCR(MIE, '09:00') }, actorId: 'andres-vargas' }]);
+    const r1 = mover(resuelto, enCR(MIE, '12:20'));
+    expect(sobre(r1.efectos, 'T27')).toEqual([]);
+    expect(seguimientoDe(r1.inst, 'T27').map((s) => s.estado)).toEqual(['respondido']);
+
+    const rechazada = aplicarEnMemoria(conRecepcion(), [{ tipo: 'actualizar_trabajo', trabajoId: 'T27', cambios: { entrega: null }, actorId: 'andres-vargas' }]);
+    const r2 = mover(rechazada, enCR(MIE, '10:00'));
+    expect(seguimientoDe(r2.inst, 'T27').map((s) => s.estado)).toEqual(['respondido']);
+    expect(sobre(r2.efectos, 'T27')).toEqual([]);
+  });
+
+  it('registrarRespuesta del responsable no cierra el «recepcion» (solo atiende seguimientos de estado)', () => {
+    const inst = conRecepcion();
+    expect(registrarRespuesta(inst, 'T27', 'ricardo-brenes')).toEqual([]);
+    expect(registrarRespuesta(inst, 'T27', 'andres-vargas')).toEqual([]);
+  });
+
+  it('un «recepcion» pendiente no impide que R1 abra el de estado si se rechaza la entrega y vence el plazo', () => {
+    const inst = aplicarEnMemoria(conRecepcion(), [{ tipo: 'actualizar_trabajo', trabajoId: 'T27', cambios: { entrega: null }, actorId: null }]);
+    const r = mover(inst, enCR(JUE, '17:00'));
+    expect(sobre(r.efectos, 'T27').map((a) => a.accion.tipo)).toEqual(['pedir_estado']);
+  });
+});
+
+describe('v2 · un propuesto no es perjudicado de nadie (regla 15)', () => {
+  /** Además de T31 (P3, Lucía), un trabajo de Trigal (P2, Daniela) bloqueado por T31, propuesto o confirmado. */
+  function conTrigal(confirmacion: 'propuesto' | 'confirmado'): Instantanea {
+    const inst = conBloqueante({ proyectoId: 'P3', responsableId: 'lucia-mora', bloquea: [] });
+    const t10 = inst.trabajos.find((t) => t.id === 'T10') as Trabajo;
+    return aplicarEnMemoria(inst, [
+      {
+        tipo: 'crear_trabajo',
+        trabajo: {
+          ...t10,
+          id: 'M01',
+          numero: 7,
+          origen: 'correo',
+          estado: 'bloqueado',
+          bloqueadoPorId: 'T31',
+          motivoBloqueo: 'Falta algo',
+          confirmacion,
+          duenoPropuestaId: confirmacion === 'propuesto' ? 'esteban-castro' : null,
+        },
+        necesidades: [],
+        actorId: null,
+      },
+    ]);
+  }
+
+  it('bloqueado por T31 y propuesto: el escalamiento va al responsable de la operación, no a Daniela', () => {
+    expect(escalamientosDe(conTrigal('propuesto')).a).toEqual(['andres-vargas']);
+    expect(escalamientosDe(conTrigal('confirmado')).a).toEqual(['daniela-quesada']); // control
+  });
+
+  it('el aviso de escalamiento no cita al propuesto entre lo que bloquea', () => {
+    const { escs } = escalamientosDe(conTrigal('propuesto'));
+    expect(escs[0]?.aviso?.cuerpo).toContain('No bloquea otros trabajos.');
+  });
+});
