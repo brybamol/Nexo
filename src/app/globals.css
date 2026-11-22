@@ -965,3 +965,30 @@ a.cadena__debe { color: var(--azul-tinta); }
 .revision__descarte { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.9375rem; }
 .buzones { min-width: 40rem; }
 .buzones td:nth-child(5) { min-width: 0; }
+
+/* Escalamiento */
+/* El dueño del resultado actúa: Reasignar, Mover el plazo, Declarar bloqueo (componentes/acciones-dueno.tsx). */
+.dueno { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.dueno__titulo { margin: 0 0 0.5rem; font-weight: 600; font-size: 0.9375rem; color: var(--tinta); }
+.dueno__botones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.dueno__botones .boton[aria-expanded="true"] { background: var(--azul-tenue); border-color: var(--signal-blue); }
+.dueno__panel {
+  margin-top: 0.5rem; padding: 1rem 1.25rem;
+  background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio-m);
+}
+.dueno__panel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.dueno__panel legend { font-weight: 600; margin-bottom: 0.625rem; }
+.dueno__campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.75rem; }
+.dueno__campo--ancho { grid-column: 1 / -1; }
+.dueno__acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.dueno__confirmar { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.dueno__confirmar p { margin: 0; font-weight: 600; }
+.dueno-resultado:empty { display: none; }
+.dueno-resultado .aviso-ok { margin: 0 0 1rem; }
+.dueno-resultado .aviso-ok:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+.enlace-boton {
+  border: 0; padding: 0; background: none; font: inherit; color: var(--azul-tinta);
+  text-decoration: underline; cursor: pointer;
+}
+.enlace-boton:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+.aviso__dueno { margin-top: 0.25rem; }

@@ -1,16 +1,21 @@
 // Detalle de un trabajo: estado, marcas con causas, bloqueante, notas, dependencias. Lee obtenerTrabajo. Tarea 1.7.
+// Reforma de escalamiento: el responsable del proyecto, quien recibió el escalamiento y el responsable de la operación
+// ven Reasignar / Mover el plazo / Declarar bloqueo (lo decide y lo vuelve a validar el servidor).
 import { ArrowLeft, Ban, Clock, Link2, Package, TriangleAlert, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AccionesDueno } from '@/componentes/acciones-dueno';
 import { BotonResponder } from '@/componentes/boton-responder';
 import { EnlaceTrabajo, EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { CodigoTrabajo, InsigniaEstado } from '@/componentes/insignia-estado';
 import { InsigniaMarcas } from '@/componentes/insignia-marcas';
 import { formatearFecha } from '@/dominio/formato';
+import { partesCR } from '@/dominio/tiempo';
 import type { CausaRiesgo } from '@/dominio/tipos';
 import type { TrabajoVista } from '@/servicios/vistas';
 import { obtenerTrabajo } from '@/servicios/consultas-trabajos';
-import { obtenerContextoApp } from '@/servidor/contexto-app';
+import { obtenerPermisosActuar } from '@/servicios/estado-trabajos';
+import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
 
 const ICONO_CAUSA = { bloqueado: Ban, atrasado: Clock, repuesto: Package, cadena: Link2 } as const;
 
@@ -34,6 +39,8 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
   const ctx = await obtenerContextoApp();
   const t = await obtenerTrabajo(ctx, id);
   if (!t) notFound();
+  const permisos = await obtenerPermisosActuar(ctx, await personaActual(), [t.id]);
+  const permiso = permisos.trabajos[t.id];
   return (
     <>
       <header className="pagina__cabecera">
@@ -146,6 +153,24 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
             Seguimiento pendiente
           </h2>
           <BotonResponder trabajoId={t.id} titulo={t.titulo} />
+        </section>
+      )}
+
+      {permiso && (
+        <section aria-labelledby="destrabar" className="seccion">
+          <h2 id="destrabar" className="seccion__titulo">
+            Destrabar este trabajo
+          </h2>
+          <AccionesDueno
+            trabajoId={t.id}
+            titulo={t.titulo}
+            razon={permiso.razon}
+            responsableId={permiso.responsableId}
+            personas={permisos.personas.map(({ id: pid, nombre, rol }) => ({ id: pid, nombre, rol }))}
+            plazoFecha={partesCR(permiso.plazo).fecha}
+            plazoHora={partesCR(permiso.plazo).hora}
+            hoy={partesCR(permisos.ahora).fecha}
+          />
         </section>
       )}
 

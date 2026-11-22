@@ -5,7 +5,7 @@
 // la numeración propia de cada proyecto:
 //   trabajo   → «Instalar unidad condensadora y compresor» (COLINA-4)
 //   decisión  → «Compra de 3 compresores de 2 HP» (COLINA-D1)
-//   compromiso de correo → «Revisar el contrato de TransLog» (TRANSLOG-2)
+//   compromiso de correo → «Enviar la cotización de la cámara fría al Hotel Mirador» (HOTEL-1)
 // Ningún texto que genere Nexo construye un id a mano: todo pasa por estas funciones.
 
 /** Lo mínimo para referenciar un trabajo en pantalla: id interno (para enlaces), título y referencia visible. */
@@ -65,7 +65,7 @@ export function tituloDecision(r: { nombre: string; unidad: string } | undefined
 
 // ─── Clave de proyecto ────────────────────────────────────────────────────────
 
-/** Clave corta a partir de un nombre propio: 'TransLog' → 'TRANSLOG'. Solo letras y números, en mayúsculas. */
+/** Clave corta a partir de un nombre propio: 'Trigal' → 'TRIGAL'. Solo letras y números, en mayúsculas. */
 export function claveDesdeNombre(nombre: string): string {
   return nombre
     .normalize('NFD')

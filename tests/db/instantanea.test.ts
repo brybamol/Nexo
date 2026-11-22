@@ -132,6 +132,7 @@ describe('cargarInstantanea', () => {
       proximoEn: AHORA,
       estado: 'pendiente',
       iniciadoEn: AHORA,
+      escaladosA: [],
     });
     await persistirEfectos(ctx.db, [10, 2, 1].map((n) => ({ tipo: 'crear_seguimiento', seguimiento: mk(n) })));
     const inst = await cargarInstantanea(ctx.db);
@@ -240,14 +241,15 @@ describe('persistirEfectos', () => {
           proximoEn: AHORA,
           estado: 'pendiente',
           iniciadoEn: AHORA,
+          escaladosA: [],
         },
       },
-      { tipo: 'actualizar_seguimiento', seguimientoId: 'S1', cambios: { nivel: 1, estado: 'respondido' } },
+      { tipo: 'actualizar_seguimiento', seguimientoId: 'S1', cambios: { nivel: 1, estado: 'respondido', escaladosA: ['lucia-mora', 'andres-vargas'] } },
     ]);
     const inst = await cargarInstantanea(ctx.db);
     expect(inst.necesidades.find((n) => n.trabajoId === 'T04')).toMatchObject({ fechaDisponible: llegada, atendida: false });
     expect(inst.necesidades.find((n) => n.trabajoId === 'T10')).toMatchObject({ fechaDisponible: null, atendida: true });
-    expect(inst.seguimientos[0]).toMatchObject({ id: 'S1', nivel: 1, estado: 'respondido', destinatarioId: 'lucia-mora' });
+    expect(inst.seguimientos[0]).toMatchObject({ id: 'S1', nivel: 1, estado: 'respondido', destinatarioId: 'lucia-mora', escaladosA: ['lucia-mora', 'andres-vargas'] });
   });
 
   it('crear_decision guarda las opciones; actualizar_decision cambia solo lo indicado', async () => {

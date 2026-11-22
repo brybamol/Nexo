@@ -17,7 +17,9 @@ export type Efecto =
   | {
       tipo: 'actualizar_trabajo';
       trabajoId: string;
-      cambios: Partial<Pick<Trabajo, 'estado' | 'plazo' | 'bloqueadoPorId' | 'motivoBloqueo' | 'fechaSolucion' | 'resueltoEn'>>;
+      cambios: Partial<
+        Pick<Trabajo, 'estado' | 'plazo' | 'bloqueadoPorId' | 'motivoBloqueo' | 'fechaSolucion' | 'resueltoEn' | 'responsableId'>
+      >;
       actorId: string | null;
     }
   | { tipo: 'agregar_nota'; trabajoId: string; autorId: string | null; texto: string }

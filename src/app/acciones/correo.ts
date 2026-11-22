@@ -15,7 +15,7 @@ function texto(formData: FormData, campo: string): string {
 }
 
 /**
- * Campos: `como` (persona de Grupo Altavista), `compromisoId`, `tipo` (confirmar | corregir | descartar) y, para
+ * Campos: `como` (persona de Frío del Valle), `compromisoId`, `tipo` (confirmar | corregir | descartar) y, para
  * corregir, `titulo`, `responsableId`, `plazo` (AAAA-MM-DDTHH:MM, hora de Costa Rica) y `estado`.
  */
 export async function accionRevisarCompromiso(formData: FormData): Promise<ResultadoCorreccion> {

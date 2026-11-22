@@ -9,7 +9,7 @@ export const HORA_PLAZO_SIN_HORA = '17:00'; // plazo sin hora = 17:00 de ese dí
 export const HORA_PLAZO_URGENTE_HOY = '12:00'; // «hoy» urgente antes de las 12:00
 
 // ─── Reglas ───────────────────────────────────────────────────────────────────
-export const UMBRAL_GERENTE = 100_000; // ₡: por encima decide la gerente general
+export const UMBRAL_GERENTE = 100_000; // ₡: tope del responsable del proyecto (R6); por encima decide la gerente general
 export const MIN_URGENTE = 30; // intervalo de seguimiento de un trabajo urgente
 export const HORAS_LABORALES_NORMAL = 4; // intervalo de seguimiento de un trabajo normal
 export const HORA_ENTREGA_LOCAL = '15:00'; // el proveedor local entrega el mismo día hábil
@@ -47,6 +47,13 @@ export type PersonaId = (typeof PERSONAS)[keyof typeof PERSONAS];
 
 /** Persona del selector «ver como» cuando no hay cookie. */
 export const PERSONA_POR_DEFECTO: PersonaId = PERSONAS.marcela;
+
+/**
+ * Responsable de la operación: dato de configuración de la empresa (no «el jefe de alguien»). Último recurso del
+ * escalamiento cuando nadie de otro proyecto sale perjudicado (R3), puede actuar sobre cualquier trabajo y decide el
+ * gasto dentro del tope cuando quien propone es el propio responsable del proyecto (R6). En la demo, Andrés Vargas.
+ */
+export const RESPONSABLE_OPERACION: PersonaId = PERSONAS.andres;
 export const COOKIE_PERSONA = 'nexo_persona';
 
 // ─── Proyectos ────────────────────────────────────────────────────────────────

@@ -70,19 +70,30 @@ describe('decisiones desde la captura (7:05, estado inicial)', () => {
     expect(await demo.ctx.db.select().from(acciones)).toHaveLength(accionesAntes);
   });
 
-  it('C06 con respuesta «20» · Karla: D01 en P3 para Andrés; A ₡84.000 hoy 15:00, B ₡78.400 sáb 28 07:00; sin C ni cambios', async () => {
+  it('C06 con respuesta «20» · Karla: D01 en P3 para Lucía (responsable de P3, dentro del tope); A ₡84.000 hoy 15:00, B ₡78.400 sáb 28 07:00; sin C ni cambios', async () => {
     const q = await capturar(demo.ctx, 'karla-jimenez', C06);
     expect(q.estado).toBe('pregunta');
     const r = await responderCaptura(demo.ctx, q.capturaId, '20');
     expect(r).toMatchObject({ estado: 'aplicada', decisionId: 'D01' });
     const d = (await cargarInstantanea(demo.ctx.db)).decisiones[0];
-    expect(d).toMatchObject({ proyectoId: 'P3', decisorId: 'andres-vargas', cantidad: 20, opcionPropuesta: null });
+    expect(d).toMatchObject({ proyectoId: 'P3', decisorId: 'lucia-mora', cantidad: 20, opcionPropuesta: null });
     expect(d?.opciones).toHaveLength(2);
     expect(d?.opciones[0]).toMatchObject({ letra: 'A', costo: 84_000, cambiosFecha: [] });
     expect(d?.opciones[0]?.lineas[0]).toMatchObject({ proveedor: 'local', cantidad: 20, precioUnitario: 4_200, llegada: enCR('2026-11-25', '15:00') });
     expect(d?.opciones[1]).toMatchObject({ letra: 'B', costo: 78_400, cambiosFecha: [] });
     expect(d?.opciones[1]?.lineas[0]).toMatchObject({ proveedor: 'habitual', cantidad: 20, precioUnitario: 3_920, llegada: enCR('2026-11-28', '07:00') });
     expect(d?.opciones[0]?.descripcion).toContain('20 metros de empaque de puerta');
-    if (r.estado === 'aplicada') expect(r.avisosA).toEqual(['andres-vargas']);
+    if (r.estado === 'aplicada') expect(r.avisosA).toEqual(['lucia-mora']);
+    // El registro dice quién decide y por qué (R6, R10).
+    const crear = (await demo.ctx.db.select().from(acciones)).find((a) => a.tipo === 'crear_decision');
+    expect(crear?.motivo).toContain('Lucía Mora');
+  });
+
+  it('C06 · si quien propone es la responsable de P3, decide el responsable de la operación (nadie aprueba su propia propuesta)', async () => {
+    const q = await capturar(demo.ctx, 'lucia-mora', C06);
+    expect(q.estado).toBe('pregunta');
+    const r = await responderCaptura(demo.ctx, q.capturaId, '20');
+    expect(r).toMatchObject({ estado: 'aplicada', decisionId: 'D01' });
+    expect((await cargarInstantanea(demo.ctx.db)).decisiones[0]).toMatchObject({ proyectoId: 'P3', proponenteId: 'lucia-mora', decisorId: 'andres-vargas' });
   });
 });

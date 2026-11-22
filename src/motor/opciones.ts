@@ -1,17 +1,11 @@
 // Opciones A/B/C y decisor: R6, R7 (§4.2 regla 8). Puro. Tarea 3.3.
 // Todas las cifras salen de `repuestos` (precio, plazo de entrega) y de las necesidades y dependencias de la instantánea.
-import {
-  HORA_ENTREGA_LOCAL,
-  HORA_LLEGADA_HABITUAL,
-  HORA_PLAZO_SIN_HORA,
-  ROL_GERENTE,
-  ROL_JEFE_OPERACIONES,
-  UMBRAL_GERENTE,
-} from '@/dominio/constantes';
+import { HORA_ENTREGA_LOCAL, HORA_LLEGADA_HABITUAL, HORA_PLAZO_SIN_HORA, ROL_GERENTE, UMBRAL_GERENTE } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
 import { cantidadDeRepuesto } from '@/dominio/nombres';
 import { enCR, esDiaHabil, partesCR, siguienteDiaHabil } from '@/dominio/tiempo';
 import type { CambioFecha, LineaOpcion, OpcionCalculada, PropuestaCompra, Proveedor, Repuesto, Trabajo } from '@/dominio/tipos';
+import { responsableOperacion } from '@/motor/escalamiento';
 import type { Instantanea } from '@/motor/instantanea';
 import { desplazarCadena } from '@/motor/plazos';
 
@@ -133,11 +127,21 @@ export function calcularOpciones(inst: Instantanea, p: PropuestaCompra): OpcionC
   return opciones;
 }
 
-/** personaId: jefe de operaciones si el costo máximo ≤ ₡100.000; si no, gerente general. */
-export function decisorPara(inst: Instantanea, opciones: OpcionCalculada[]): string {
+/**
+ * R6 (reforma de escalamiento): el dueño del proyecto decide el gasto hasta un tope. Si el costo máximo de las opciones
+ * no supera ₡100.000, decide el responsable del proyecto de la decisión; por encima, la gerente general. Nadie aprueba
+ * su propia propuesta: si quien propone es quien debería decidir dentro del tope, decide el responsable de la
+ * operación y, si también es quien propone, la gerente general (que no tiene a nadie por encima).
+ */
+export function decisorPara(inst: Instantanea, opciones: OpcionCalculada[], proyectoId: string, proponenteId: string): string {
+  const gerente = inst.personas.find((x) => x.rol === ROL_GERENTE);
+  if (!gerente) throw new Error(`No hay nadie con el rol «${ROL_GERENTE}».`);
   const maximo = Math.max(0, ...opciones.map((o) => o.costo));
-  const rol = maximo <= UMBRAL_GERENTE ? ROL_JEFE_OPERACIONES : ROL_GERENTE;
-  const persona = inst.personas.find((x) => x.rol === rol);
-  if (!persona) throw new Error(`No hay nadie con el rol «${rol}».`);
-  return persona.id;
+  if (maximo > UMBRAL_GERENTE) return gerente.id;
+  const existe = (id: string | null | undefined): id is string => !!id && inst.personas.some((p) => p.id === id);
+  const responsable = inst.proyectos.find((p) => p.id === proyectoId)?.responsableId;
+  if (existe(responsable) && responsable !== proponenteId) return responsable;
+  const operacion = responsableOperacion(inst);
+  if (existe(operacion) && operacion !== proponenteId) return operacion;
+  return gerente.id;
 }

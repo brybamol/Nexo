@@ -72,6 +72,7 @@ describe('efectosActualizacion · liberación', () => {
           proximoEn: enCR('2026-11-25', '13:00'),
           estado: 'pendiente',
           iniciadoEn: base.ahora,
+          escaladosA: [],
         },
       ],
     };

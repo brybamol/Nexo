@@ -12,7 +12,8 @@ import { capturar } from '@/servicios/captura';
 import { obtenerCifras } from '@/servicios/cifras';
 import { listarTrabajos, obtenerTrabajo } from '@/servicios/consultas-trabajos';
 import { aprobarDecision, listarDecisiones } from '@/servicios/decisiones';
-import { obtenerMiDia } from '@/servicios/mi-dia';
+import { obtenerPermisosActuar } from '@/servicios/estado-trabajos';
+import { obtenerMiDia, obtenerSeguimientosPendientes } from '@/servicios/mi-dia';
 import { preguntar } from '@/servicios/preguntar';
 import { listarProyectos } from '@/servicios/proyectos';
 import { listarAcciones } from '@/servicios/registro';
@@ -121,18 +122,24 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     expect(d.debo.find((t) => t.id === 'T15')?.marcas.atrasado).toBe(true);
   });
 
-  it('paso 4 · «Siguiente evento» ×2: 7:35 recordatorio a Lucía; 8:05 escalamiento a Andrés con el contexto (10)', async () => {
+  it('paso 4 · «Siguiente evento» ×2: 7:35 recordatorio a Lucía; 8:05 escalamiento a Esteban, dueño de La Colina, con el contexto y las tres acciones (10)', async () => {
     let r = await irAlSiguienteEvento(demo.ctx);
     expect(new Date(r.ahora)).toEqual(hora('07:35'));
     expect(resumen(r.acciones)).toEqual([['recordatorio', 'lucia-mora', ['T31']]]);
 
     r = await irAlSiguienteEvento(demo.ctx);
     expect(new Date(r.ahora)).toEqual(hora('08:05'));
-    expect(resumen(r.acciones)).toEqual([['escalamiento', 'andres-vargas', ['T31']]]);
-    const andres = await obtenerMiDia(demo.ctx, 'andres-vargas');
-    const esc = andres.avisos.find((a) => a.tipoAccion === 'escalamiento');
-    // Bloquea T04, T05, T06 y T07: citados por título y referencia.
+    expect(resumen(r.acciones)).toEqual([['escalamiento', 'esteban-castro', ['T31']]]);
+    const esteban = await obtenerMiDia(demo.ctx, 'esteban-castro');
+    const esc = esteban.avisos.find((a) => a.tipoAccion === 'escalamiento');
+    // Quién lo pidió, qué bloquea (T04, T05, T06 y T07, por título y referencia) y desde cuándo.
     for (const texto of ['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05']) expect(esc?.cuerpo).toContain(texto);
+    // Y lo que puede hacer: Esteban ve T31 en «Nexo te pide» y puede reasignar, mover el plazo o declarar bloqueo.
+    for (const texto of ['reasignarlo', 'mover el plazo', 'declararlo bloqueado']) expect(esc?.cuerpo).toContain(texto);
+    expect((await obtenerSeguimientosPendientes(demo.ctx, 'esteban-castro')).map((t) => t.id)).toEqual(['T31']);
+    expect(Object.keys((await obtenerPermisosActuar(demo.ctx, 'esteban-castro', ['T31'])).trabajos)).toEqual(['T31']);
+    // El jefe directo de Lucía ya no recibe nada por jerarquía.
+    expect((await obtenerMiDia(demo.ctx, 'andres-vargas')).avisos.some((a) => a.tipoAccion === 'escalamiento')).toBe(false);
     expect(await seguimientos()).toBe(10);
   });
 
@@ -240,6 +247,7 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     const tiempos = registro.map((a) => a.en.getTime());
     expect(tiempos).toEqual([...tiempos].sort((a, b) => b - a));
     expect(registro.filter((a) => a.tipo === 'escalamiento' && a.destinatario?.id === MARCELA)).toEqual([]);
+    expect(registro.filter((a) => a.tipo === 'escalamiento').map((a) => a.destinatario?.id)).toEqual(['esteban-castro']);
     const cuenta = (tipo: string) => registro.filter((a) => a.tipo === tipo).length;
     expect({
       pedir_estado: cuenta('pedir_estado'),

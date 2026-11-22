@@ -1,4 +1,4 @@
-// Correo (docs/06 §10): lo que Nexo reconstruyó de los buzones de Grupo Altavista, sin que nadie creara tareas.
+// Correo (docs/06 §10): lo que Nexo reconstruyó de los buzones de Frío del Valle, sin que nadie creara tareas.
 // Tiene su propio «ver como» (?como=<id>) porque las personas no son las de Frío del Valle.
 import { ArrowRight, Inbox, ShieldCheck, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
@@ -150,7 +150,7 @@ export default async function PaginaCorreo({ searchParams }: { searchParams: Pro
   return (
     <>
       <header className="pagina__cabecera">
-        <h1 className="pagina__titulo">Correo · Grupo Altavista</h1>
+        <h1 className="pagina__titulo">Correo · Frío del Valle</h1>
         <p className="pagina__sub">
           Nadie creó estas tareas: Nexo las sacó de los correos de cada buzón conectado y une lo que ve cada departamento.{' '}
           <time dateTime={modelo.ahora.toISOString()}>{formatearFecha(modelo.ahora)}</time>.
@@ -162,7 +162,7 @@ export default async function PaginaCorreo({ searchParams }: { searchParams: Pro
         </p>
       </header>
 
-      <nav aria-label="Ver como (Grupo Altavista)" className="ver-como">
+      <nav aria-label="Ver como (Frío del Valle)" className="ver-como">
         <span className="etiqueta-campo">Ver como</span>
         <ul className="ver-como__lista">
           {modelo.empresa.personas.map((p) => (

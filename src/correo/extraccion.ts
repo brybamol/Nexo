@@ -22,6 +22,7 @@ const RE_FECHA = new RegExp(
   'i',
 );
 const RE_MANANA = /ma[ñn]ana\s+antes\s+de\s+las\s+(\d{1,2}):(\d{2})/i;
+const RE_HOY = /\bhoy\s+antes\s+de\s+las\s+(\d{1,2}):(\d{2})/i;
 const CLITICOS = new Set(['me', 'nos', 'te', 'se', 'le', 'les', 'lo', 'la', 'los', 'las']);
 
 export function oraciones(texto: string): string[] {
@@ -55,6 +56,8 @@ export function plazoDesdeTexto(texto: string, enviado: Date): Date | null {
     const hora = `${manana[1]!.padStart(2, '0')}:${manana[2]}`;
     return enCR(diaSiguiente(fechaEnvio), hora);
   }
+  const hoy = RE_HOY.exec(texto);
+  if (hoy) return enCR(fechaEnvio, `${hoy[1]!.padStart(2, '0')}:${hoy[2]}`);
   const f = RE_FECHA.exec(texto);
   if (f) {
     const dia = f[1]!.padStart(2, '0');

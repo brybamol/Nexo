@@ -197,6 +197,7 @@ export const seguimientos = pgTable('seguimientos', {
   proximoEn: fecha('proximo_en').notNull(),
   estado: text('estado').$type<EstadoSeguimiento>().notNull(),
   iniciadoEn: fecha('iniciado_en').notNull(),
+  escaladosA: jsonb('escalados_a').$type<string[]>().notNull().default([]),
 });
 
 export const decisiones = pgTable('decisiones', {

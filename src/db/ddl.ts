@@ -30,6 +30,7 @@ UPDATE decisiones AS d SET numero = s.base + s.n FROM (
     COALESCE((SELECT max(y.numero) FROM decisiones AS y WHERE y.proyecto_id = x.proyecto_id), 0) AS base
   FROM decisiones AS x WHERE x.numero IS NULL
 ) AS s WHERE d.id = s.id;
+ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS escalados_a jsonb NOT NULL DEFAULT '[]'::jsonb;
 `;
 
 /** CREATE TABLE IF NOT EXISTS de todas las tablas, en orden de claves foráneas, y la puesta al día de una base anterior. */
@@ -155,7 +156,8 @@ CREATE TABLE IF NOT EXISTS seguimientos (
   urgente boolean NOT NULL DEFAULT false,
   proximo_en timestamptz NOT NULL,
   estado text NOT NULL,
-  iniciado_en timestamptz NOT NULL
+  iniciado_en timestamptz NOT NULL,
+  escalados_a jsonb NOT NULL DEFAULT '[]'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS decisiones (

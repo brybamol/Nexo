@@ -108,13 +108,14 @@ describe('seguimientos pendientes', () => {
     expect(await obtenerSeguimientosPendientes(demo.ctx, 'lucia-mora')).toEqual([]);
   });
 
-  it('T31 pendiente: Lucía lo ve; Andrés (jefe) solo cuando ya se le escaló', async () => {
+  it('T31 pendiente: Lucía lo ve; Esteban (responsable de La Colina) solo cuando ya se le escaló; Andrés (jefe de Lucía) nunca', async () => {
     demo = await prepararDemo();
     await capturar(demo.ctx, 'jose-alfaro', C01);
     expect(ids(await obtenerSeguimientosPendientes(demo.ctx, 'lucia-mora'))).toContain('T31');
+    expect(ids(await obtenerSeguimientosPendientes(demo.ctx, 'esteban-castro'))).not.toContain('T31');
+    await avanzarReloj(demo.ctx, 60); // 8:05: escalamiento a Esteban
+    expect(ids(await obtenerSeguimientosPendientes(demo.ctx, 'esteban-castro'))).toContain('T31');
     expect(ids(await obtenerSeguimientosPendientes(demo.ctx, 'andres-vargas'))).not.toContain('T31');
-    await avanzarReloj(demo.ctx, 60); // 8:05: escalamiento a Andrés
-    expect(ids(await obtenerSeguimientosPendientes(demo.ctx, 'andres-vargas'))).toContain('T31');
   });
 });
 

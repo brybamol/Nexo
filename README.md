@@ -2,7 +2,9 @@
 
 ## Qué es Nexo
 
-Nexo es una plataforma web donde viven los trabajos y proyectos de una empresa, y que hace ella misma la coordinación. Convierte una frase en un trabajo con responsable y plazo, pide el estado cuando vence el plazo, avisa a quien está afectado, escala si nadie responde y prepara las decisiones con costo para la gerencia. Las personas hacen el trabajo y deciden; nadie hace de mensajero.
+Nexo es una plataforma web donde viven los trabajos y proyectos de una empresa, y que hace ella misma la coordinación. Convierte una frase en un trabajo con responsable y plazo, pide el estado cuando vence el plazo, avisa a quien está afectado, escala si nadie responde y prepara las decisiones con costo. Las personas hacen el trabajo y deciden; nadie hace de mensajero.
+
+El escalamiento sigue al trabajo, no al organigrama. Si el responsable no responde, Nexo acude al responsable del proyecto, que puede reasignar el trabajo, mover el plazo o declararlo bloqueado desde la interfaz. Si tampoco actúa, acude a los responsables de los otros proyectos perjudicados y, si no hay ninguno, al responsable de la operación. El responsable del proyecto decide los gastos de hasta ₡100.000; por encima decide la gerente general, y nadie aprueba su propia propuesta.
 
 La prueba que la distingue de un gestor de proyectos (Asana, Monday, Notion): si un jefe todavía tiene que abrir la herramienta, leer el estado y perseguir a alguien, es un gestor de proyectos. Si la plataforma persigue, avisa y escala, y el jefe solo decide, es lo que Nexo busca ser.
 
@@ -77,7 +79,7 @@ La demo es el guion de cuatro minutos del plan (`docs/02-plan-mvp-hackathon.md`)
 3. En el selector **ver como**, elige a **José Alfaro**. En la caja de captura escribe «No puedo terminar la instalación en La Colina, falta el compresor de 2 HP» y envíala. Nexo responde «Creé «Conseguir compresor de 2 HP» (COLINA-8) para Lucía Mora…» y deja bloqueado «Instalar unidad condensadora y compresor» (COLINA-4).
 4. Cambia a **Lucía Mora** y abre **Mi día**. Arriba está «Conseguir compresor de 2 HP», con su referencia COLINA-8.
 5. Pulsa **Siguiente evento**. El reloj queda en 7:35.
-6. Pulsa **Siguiente evento**. El reloj queda en 8:05.
+6. Pulsa **Siguiente evento**. El reloj queda en 8:05. Lucía no respondió, así que Nexo escala a **Esteban Castro**, responsable del proyecto La Colina (no al jefe de Lucía). Si cambias a Esteban, en **Mi día** verás el trabajo en «Nexo te pide» con quién lo pidió, qué bloquea y desde cuándo, y los botones **Reasignar**, **Mover el plazo** y **Declarar bloqueo**. No los uses en el recorrido: cambiarían el guion.
 7. Cambia a **Mario Chaves** y abre **Mi día**. Un solo aviso, «2 trabajos en riesgo», cita «Cableado y tablero de control» (COLINA-5) y «Cambiar compresor en local Curridabat» (TRIGAL-4), y la causa: «Conciliar el conteo con el sistema» (REPUESTOS-2).
 8. Pulsa **+5 min**. El reloj queda en 8:10.
 9. Cambia a **Lucía Mora** y escribe en la caja de captura «No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local». Nexo prepara la decisión «Compra de 3 compresores de 2 HP» (COLINA-D1).

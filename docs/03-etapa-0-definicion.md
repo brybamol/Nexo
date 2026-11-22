@@ -52,10 +52,10 @@ Son la lógica de la etapa 3. Los tiempos son los de la demo; en un cliente real
 |---|---|---|
 | R1 | **Seguimiento por plazo** | Al vencer el plazo de un trabajo sin resolver, Nexo pide el estado a su responsable |
 | R2 | **Recordatorio** | Un trabajo urgente sin respuesta en 30 minutos recibe un recordatorio. Uno normal, en 4 horas laborales |
-| R3 | **Escalamiento** | Pasado otro intervalo igual sin respuesta, Nexo escala al jefe directo del responsable, con quién lo pidió, qué bloquea y desde cuándo. Se repite hacia arriba una vez más como máximo |
+| R3 | **Escalamiento** | El camino sigue al trabajo, no a los cargos. Pasado otro intervalo igual sin respuesta, Nexo escala al **responsable del proyecto** del trabajo (el dueño del resultado), con quién lo pidió, qué bloquea, desde cuándo y lo que puede hacer: reasignarlo, mover el plazo o declararlo bloqueado. Si tampoco actúa (o es el mismo responsable del trabajo), el segundo y último nivel va a quienes salen perjudicados: los responsables de los **otros proyectos** con trabajos en riesgo o bloqueados por ese trabajo, uno por persona; si no hay ninguno, al **responsable de la operación**. Nunca al propio responsable ni dos veces a la misma persona. El jefe directo no interviene |
 | R4 | **Propagación** | Cuando un trabajo queda bloqueado, Nexo marca "en riesgo" los que dependen de él, en cadena, y los que necesitan el mismo repuesto sin existencia o reportado como faltante |
 | R5 | **Un aviso por persona** | Si un mismo hecho afecta a varios trabajos de una persona, recibe un solo aviso agrupado |
-| R6 | **Costo** | Toda compra, gasto o cambio de fecha comprometida con un cliente es una decisión. Hasta ₡100.000 decide el jefe de operaciones; por encima, la gerente general |
+| R6 | **Costo** | Toda compra, gasto o cambio de fecha comprometida con un cliente es una decisión. Si el costo máximo de sus opciones no supera ₡100.000, decide el **responsable del proyecto** de la decisión; por encima, la gerente general. Nadie aprueba su propia propuesta: si quien propone es quien debería decidir, sube un nivel (dentro del tope, al responsable de la operación; si también es quien propone, a la gerente general) |
 | R7 | **Decisión preparada** | Una decisión llega con: qué pasó, a quién afecta, de dos a tres opciones con costo y consecuencia en fechas, y quién la propuso |
 | R8 | **Después de decidir** | Al aprobar, Nexo crea el trabajo de ejecución con responsable y plazo, actualiza las fechas afectadas, quita las marcas de riesgo y avisa a los afectados. Al rechazar, avisa a quien la propuso con el motivo |
 | R9 | **Sin responsable no hay trabajo** | Si Nexo no puede deducir el responsable, propone uno y lo pregunta. Hace una sola pregunta por captura |
@@ -74,7 +74,7 @@ Son la lógica de la etapa 3. Los tiempos son los de la demo; en un cliente real
 | 1 | 0:00 | — | — | Diapositiva del problema | — |
 | 2 | 0:20 | 7:05 | José Alfaro, técnico | Escribe: "No puedo terminar la instalación en La Colina, falta el compresor de 2 HP" | Trabajo nuevo en el proyecto La Colina, responsable Lucía Mora, plazo hoy 12:00, urgente. El trabajo T04 pasa a Bloqueado |
 | 3 | 1:00 | 7:06 | Lucía Mora, supervisora de bodega | Abre "Mi día" | El trabajo nuevo arriba, con quién lo pidió y qué bloquea. También su trabajo atrasado T15 |
-| 4 | 1:30 | 7:35 → 8:05 | (botón del reloj) | Se adelanta el reloj dos veces | Recordatorio a Lucía; después, escalamiento a Andrés Vargas con el contexto |
+| 4 | 1:30 | 7:35 → 8:05 | (botón del reloj) | Se adelanta el reloj dos veces | Recordatorio a Lucía; después, escalamiento a Esteban Castro, responsable de La Colina, con quién lo pidió, qué bloquea y desde cuándo, y las tres acciones que puede hacer: reasignar, mover el plazo o declarar bloqueo. El jefe directo de Lucía no recibe nada |
 | 5 | 1:50 | 8:06 | Mario Chaves, técnico | Abre "Mi día" | Un solo aviso para dos proyectos: T05 (La Colina) y T11 (Trigal) están en riesgo por el mismo compresor. Nexo cita la causa: el conteo sin conciliar (T15) |
 | 6 | 2:15 | 8:10 | Lucía Mora | Escribe: "No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local" | Nexo reconoce que tiene costo y crea una decisión para la gerente general |
 | 7 | 2:45 | 8:12 | Marcela Solís, gerente general | Abre "Decisiones" y aprueba la opción A | Tres opciones con costo y fechas. Al aprobar: trabajo de compra para Karla Jiménez, avisos a los afectados, marcas de riesgo retiradas y T04 con fecha de solución hoy 15:00 |
@@ -113,6 +113,7 @@ La tercera cifra se muestra con la palabra "estimado" en pantalla. Si el jurado 
 - **En el guion, la compra aprobada no desbloquea T04 al instante:** le pone fecha de solución. T04 vuelve a En curso cuando llega el compresor.
 - **Estados y marcas** quedan fijados como en la sección 2.
 - **Umbral de costo** fijado en ₡100.000 (regla R6).
+- **Reforma de escalamiento** (aprobada por el dueño del producto después de la versión 2): el escalamiento (R3) y el decisor del gasto (R6) siguen al trabajo y a su proyecto, no al organigrama. Quien recibe un escalamiento, y siempre el responsable del proyecto y el responsable de la operación, puede reasignar el trabajo, mover su plazo o declararlo bloqueado desde la interfaz. La gerente solo aparece en decisiones por encima del tope. Las cifras del guion no cambian.
 
 ---
 

@@ -1,24 +1,28 @@
-// Seguimiento y escalamiento: R1, R2, R3 (§4.2 reglas 2–3 de docs/05). Puro: instantánea → efectos. Tarea 3.1.
+// Seguimiento y escalamiento: R1, R2, R3 (§4.2 reglas 2–3 de docs/05). Puro: instantánea → efectos. Tarea 3.1;
+// camino del escalamiento según la reforma de escalamiento (motor/escalamiento.ts).
 //
-// Modelo: un seguimiento guarda el ÚLTIMO nivel hecho (`nivel`) y cuándo toca el siguiente (`proximoEn`).
+// Modelo: un seguimiento guarda el ÚLTIMO nivel hecho (`nivel`), cuándo toca el siguiente (`proximoEn`) y a quiénes
+// ya se escaló (`escaladosA`).
 //   nivel 0 = solicitud de estado (R1, o el aviso de asignación de un urgente creado por captura)
 //   nivel 1 = recordatorio al responsable (R2)
-//   nivel 2 = escalamiento a su jefe directo (R3)
-//   nivel 3 = escalamiento al jefe del jefe (R3, «una vez más como máximo») → `agotado`
-// Cada nivel se programa desde el anterior PROGRAMADO (no desde la hora del tick), así que saltar el reloj
-// produce los mismos niveles y el mismo estado final que avanzar paso a paso. Cuando ya no queda nivel
-// posible (sin jefe, o tras el nivel 3) el seguimiento pasa a `agotado` en ese mismo paso.
+//   nivel 2 = escalamiento 1: al responsable del proyecto (o, si es el mismo responsable, directo al paso 2)
+//   nivel 3 = escalamiento 2: a los perjudicados de otros proyectos o, sin ellos, al responsable de la operación
+// El jefe directo (`jefeId`) ya no interviene. Cada nivel se programa desde el anterior PROGRAMADO (no desde la hora
+// del tick), así que saltar el reloj produce los mismos niveles y el mismo estado final que avanzar paso a paso.
+// Cuando ya no queda nadie a quien escalar, el seguimiento pasa a `agotado` en ese mismo paso.
 import { HORAS_LABORALES_NORMAL, MIN_URGENTE } from '@/dominio/constantes';
 import { formatearFecha } from '@/dominio/formato';
+import { enumerar } from '@/dominio/nombres';
 import { sumarHorasLaborales, sumarMinutos } from '@/dominio/tiempo';
 import { ErrorDominio, type NivelSeguimiento, type Seguimiento, type TipoAccion, type Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
-import { cadenaDependientes, dependientesDirectos, nombrador, porId, siguienteIdSeguimiento, type Instantanea } from '@/motor/instantanea';
+import { pasosEscalamiento, queBloquea, type Destino } from '@/motor/escalamiento';
+import { nombrador, porId, siguienteIdSeguimiento, type Instantanea } from '@/motor/instantanea';
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
 /** Instante del siguiente nivel: urgente 30 min; normal 4 horas laborales. */
-function siguienteNivelEn(desde: Date, urgente: boolean): Date {
+export function siguienteNivelEn(desde: Date, urgente: boolean): Date {
   return urgente ? sumarMinutos(desde, MIN_URGENTE) : sumarHorasLaborales(desde, HORAS_LABORALES_NORMAL);
 }
 
@@ -29,29 +33,8 @@ function nombre(inst: Instantanea, personaId: string | null): string {
   return inst.personas.find((p) => p.id === personaId)?.nombre ?? personaId;
 }
 
-function jefeDe(inst: Instantanea, personaId: string | null): string | null {
-  if (!personaId) return null;
-  return inst.personas.find((p) => p.id === personaId)?.jefeId ?? null;
-}
-
-/** Qué bloquea un trabajo: los trabajos bloqueados por él y sus dependientes directos, con sus cadenas; sin resueltos. */
-function queBloquea(inst: Instantanea, t: Trabajo): string[] {
-  const trabajos = porId(inst.trabajos);
-  const directos = [
-    ...inst.trabajos.filter((x) => x.bloqueadoPorId === t.id).map((x) => x.id),
-    ...dependientesDirectos(inst, t.id),
-  ];
-  const vistos = new Set<string>([t.id]);
-  const res: string[] = [];
-  for (const d of directos) {
-    for (const id of [d, ...cadenaDependientes(inst, d)]) {
-      if (vistos.has(id)) continue;
-      vistos.add(id);
-      if (trabajos.get(id)?.estado !== 'resuelto') res.push(id);
-    }
-  }
-  return res;
-}
+/** Lo que el dueño del resultado puede hacer desde Nexo (regla 2 de la reforma). */
+const PUEDE_ACTUAR = 'Desde Nexo puedes reasignarlo, mover el plazo o declararlo bloqueado.';
 
 /** «desde cuándo»: un urgente creado por captura cuenta desde su creación; uno por R1, desde que venció. */
 function desdeTexto(s: Seguimiento, t: Trabajo): string {
@@ -68,11 +51,12 @@ function efectoAccion(
   hechoOrigen: string,
   titulo: string,
   cuerpo: string,
+  trabajosAviso: string[] = [t.id],
 ): Efecto {
   return {
     tipo: 'accion',
     accion: { en: inst.ahora, tipo, motivo, hechoOrigen, trabajoIds: [t.id], decisionId: null, destinatarioId, capturaId: null },
-    aviso: { personaId: destinatarioId, en: inst.ahora, titulo, cuerpo, trabajoIds: [t.id] },
+    aviso: { personaId: destinatarioId, en: inst.ahora, titulo, cuerpo, trabajoIds: trabajosAviso },
   };
 }
 
@@ -90,6 +74,7 @@ function solicitar(inst: Instantanea, t: Trabajo): Efecto[] {
     proximoEn: siguienteNivelEn(t.plazo, t.urgente),
     estado: 'pendiente',
     iniciadoEn: inst.ahora,
+    escaladosA: [],
   };
   const plazo = formatearFecha(t.plazo);
   const cita = nombrador(inst).cita(t.id);
@@ -113,16 +98,15 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
   const programado = s.proximoEn;
   const proximoEn = siguienteNivelEn(programado, s.urgente);
   const responsable = t.responsableId;
-  const jefe = jefeDe(inst, responsable);
-  const jefe2 = jefeDe(inst, jefe);
   const actualizar = (cambios: Partial<Seguimiento>): Efecto => ({ tipo: 'actualizar_seguimiento', seguimientoId: s.id, cambios });
   const desde = desdeTexto(s, t);
   const nombres = nombrador(inst);
   const cita = nombres.cita(t.id);
   const hecho = `Sin respuesta sobre ${cita} desde ${desde}`;
+  const pasos = pasosEscalamiento(inst, t, s);
 
   if (s.nivel === 0) {
-    const siguiente = jefe ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
+    const siguiente = pasos.length > 0 ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
     return [
       actualizar({ nivel: 1, destinatarioId: responsable, ...siguiente }),
       efectoAccion(
@@ -139,26 +123,56 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
   }
 
   const nivelNuevo = (s.nivel + 1) as NivelSeguimiento;
-  const destinatario = s.nivel === 1 ? jefe : s.nivel === 2 ? jefe2 : null;
-  if (!destinatario) return [actualizar({ estado: 'agotado' })];
+  const paso = s.nivel <= 2 ? pasos[0] : undefined;
+  if (!paso || paso.length === 0 || nivelNuevo > 3) return [actualizar({ estado: 'agotado' })];
 
-  const queda = nivelNuevo === 2 && jefe2 ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
+  // Tras este paso, ¿queda otro? Solo si este era el del dueño del resultado y el nivel 3 aún cabe.
+  const escaladosA = [...s.escaladosA, ...paso.map((d) => d.personaId)];
+  const queda = nivelNuevo === 2 && pasos.length > 1 ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
   const solicitante = t.solicitadoPorId ? `Lo pidió ${nombre(inst, t.solicitadoPorId)}. ` : '';
   const bloquea = queBloquea(inst, t);
   const bloqueaTexto = bloquea.length > 0 ? `Bloquea: ${nombres.citas(bloquea)}. ` : 'No bloquea otros trabajos. ';
-  const previo = nivelNuevo === 3 ? ` Ya se escaló a ${nombre(inst, jefe)} sin respuesta.` : '';
+  const previo = s.escaladosA.length > 0 ? ` Ya se escaló a ${enumerar(s.escaladosA.map((p) => nombre(inst, p)))} sin respuesta.` : '';
+  const tras = s.nivel === 1 ? 'el recordatorio' : 'el primer escalamiento';
+  const proyectoDe = (id: string | null) => inst.proyectos.find((p) => p.id === id)?.nombre ?? '';
+
+  /** Por qué le llega a cada destino: en el motivo (registro) y en el aviso (qué puede hacer). */
+  const porQue = (d: Destino): { motivo: string; aviso: string } => {
+    switch (d.razon) {
+      case 'proyecto':
+        return {
+          motivo: `responsable del proyecto «${proyectoDe(d.proyectoId)}», dueño del resultado`,
+          aviso: `Te llega porque eres responsable del proyecto «${proyectoDe(d.proyectoId)}».`,
+        };
+      case 'perjudicado':
+        return {
+          motivo: `responsable de «${proyectoDe(d.proyectoId)}», que tiene ${nombres.citas(d.trabajoIds)} en riesgo o bloqueados por él`,
+          aviso: `Te llega porque afecta a tu proyecto «${proyectoDe(d.proyectoId)}»: ${nombres.citas(d.trabajoIds)}.`,
+        };
+      case 'operacion':
+        return {
+          motivo: 'responsable de la operación (nadie de otro proyecto sale perjudicado)',
+          aviso: 'Te llega porque eres responsable de la operación y nadie más puede destrabarlo.',
+        };
+    }
+  };
+
   return [
-    actualizar({ nivel: nivelNuevo, destinatarioId: destinatario, ...queda }),
-    efectoAccion(
-      inst,
-      'escalamiento',
-      destinatario,
-      t,
-      `${cita}, de ${nombre(inst, responsable)}, sigue sin respuesta tras el ${nivelNuevo === 2 ? 'recordatorio' : 'primer escalamiento'}: escalamiento ${nivelNuevo - 1} a ${nombre(inst, destinatario)} (R3).`,
-      hecho,
-      `«${t.titulo}» sin respuesta de ${nombre(inst, responsable)}`,
-      `${cita}, a cargo de ${nombre(inst, responsable)}, sigue sin respuesta desde ${desde}. ${solicitante}${bloqueaTexto}Plazo: ${formatearFecha(t.plazo)}.${previo}`,
-    ),
+    actualizar({ nivel: nivelNuevo, destinatarioId: paso[0]!.personaId, escaladosA, ...queda }),
+    ...paso.map((d) => {
+      const r = porQue(d);
+      return efectoAccion(
+        inst,
+        'escalamiento',
+        d.personaId,
+        t,
+        `${cita}, de ${nombre(inst, responsable)}, sigue sin respuesta tras ${tras}: escalamiento ${nivelNuevo - 1} a ${nombre(inst, d.personaId)}, ${r.motivo} (R3).`,
+        hecho,
+        `«${t.titulo}» sin respuesta de ${nombre(inst, responsable)}`,
+        `${cita}, a cargo de ${nombre(inst, responsable)}, sigue sin respuesta desde ${desde}. ${solicitante}${bloqueaTexto}Plazo: ${formatearFecha(t.plazo)}.${previo} ${r.aviso} ${PUEDE_ACTUAR}`,
+        [t.id, ...d.trabajoIds],
+      );
+    }),
   ];
 }
 
@@ -259,25 +273,23 @@ export function iniciarSeguimientoUrgente(inst: Instantanea, trabajoId: string):
     proximoEn: siguienteNivelEn(t.creadoEn, true),
     estado: 'pendiente',
     iniciadoEn: t.creadoEn,
+    escaladosA: [],
   };
   return [{ tipo: 'crear_seguimiento', seguimiento }];
 }
 
 /**
  * Respuesta de `personaId` sobre `trabajoId`: cierra (`respondido`) los seguimientos pendientes del trabajo si la
- * persona es el responsable o alguien de la cadena a quien ya se escaló, y registra el evento `respuesta_seguimiento`
- * (actor = la persona). Devuelve [] si no hay seguimiento pendiente o la persona no es de la cadena.
+ * persona es el responsable o alguien a quien ya se escaló ese seguimiento (`escaladosA`), y registra el evento
+ * `respuesta_seguimiento` (actor = la persona). Devuelve [] si no hay seguimiento pendiente o la persona no es del camino.
  */
 export function registrarRespuesta(inst: Instantanea, trabajoId: string, personaId: string): Efecto[] {
   const t = inst.trabajos.find((x) => x.id === trabajoId);
   if (!t) return [];
-  const jefe = jefeDe(inst, t.responsableId);
-  const jefe2 = jefeDe(inst, jefe);
   const efectos: Efecto[] = [];
   for (const s of inst.seguimientos) {
     if (s.trabajoId !== trabajoId || s.estado !== 'pendiente') continue;
-    const cadena = [t.responsableId, s.nivel >= 2 ? jefe : null, s.nivel >= 3 ? jefe2 : null];
-    if (!cadena.includes(personaId)) continue;
+    if (personaId !== t.responsableId && !s.escaladosA.includes(personaId)) continue;
     efectos.push(
       { tipo: 'actualizar_seguimiento', seguimientoId: s.id, cambios: { estado: 'respondido' } },
       {

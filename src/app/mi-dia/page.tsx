@@ -1,16 +1,41 @@
 // Lo que debo, lo que espero de otros, qué cambió y decisiones pendientes. Lee obtenerMiDia. Tarea 4.1.
 // Orden: (1) lo que Nexo me pide ahora, (2) mis avisos, (3) lo que debo, (4) lo que espero de otros.
+// Reforma de escalamiento: quien puede actuar sobre un trabajo (responsable del proyecto, a quien se escaló,
+// responsable de la operación) ve Reasignar / Mover el plazo / Declarar bloqueo en «Nexo te pide» y bajo el aviso de
+// escalamiento (si el trabajo no está ya en «Nexo te pide»).
 import { BellRing, Scale } from 'lucide-react';
 import Link from 'next/link';
+import { AccionesDueno, ResultadoAcciones } from '@/componentes/acciones-dueno';
 import { BotonResponder } from '@/componentes/boton-responder';
 import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { ListaAvisos } from '@/componentes/lista-avisos';
 import { IsotipoNexo } from '@/componentes/marca/logo-nexo';
 import { TarjetaTrabajo } from '@/componentes/tarjeta-trabajo';
 import { formatearFecha } from '@/dominio/formato';
+import { partesCR } from '@/dominio/tiempo';
+import { obtenerPermisosActuar, type PermisosActuar } from '@/servicios/estado-trabajos';
 import { obtenerMiDia, obtenerSeguimientosPendientes } from '@/servicios/mi-dia';
-import type { TrabajoVista } from '@/servicios/vistas';
+import type { AvisoVista, TrabajoVista } from '@/servicios/vistas';
 import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
+
+/** Las tres acciones del dueño del resultado para `trabajoId`, o nada si la persona no puede actuar sobre él. */
+function Acciones({ trabajoId, titulo, permisos }: { trabajoId: string; titulo: string; permisos: PermisosActuar }) {
+  const p = permisos.trabajos[trabajoId];
+  if (!p) return null;
+  const plazo = partesCR(p.plazo);
+  return (
+    <AccionesDueno
+      trabajoId={trabajoId}
+      titulo={titulo}
+      razon={p.razon}
+      responsableId={p.responsableId}
+      personas={permisos.personas.map(({ id, nombre, rol }) => ({ id, nombre, rol }))}
+      plazoFecha={plazo.fecha}
+      plazoHora={plazo.hora}
+      hoy={partesCR(permisos.ahora).fecha}
+    />
+  );
+}
 
 /** Tarjeta del trabajo más lo que la tarjeta base no cuenta: quién lo pidió y qué arrastra. */
 function Cuenta({ n }: { n: number }) {
@@ -38,6 +63,29 @@ export default async function PaginaMiDia() {
   const personaId = await personaActual();
   const [dia, pedidos] = await Promise.all([obtenerMiDia(ctx, personaId), obtenerSeguimientosPendientes(ctx, personaId)]);
 
+  // Escalamientos recibidos: el trabajo escalado es el primero del aviso. Solo el más reciente de cada trabajo lleva
+  // las acciones, y no si el trabajo ya está en «Nexo te pide» (ahí ya las tiene).
+  const enPedidos = new Set(pedidos.map((t) => t.id));
+  const avisoConAcciones = new Map<number, string>();
+  const vistos = new Set<string>();
+  for (const a of dia.avisos) {
+    const id = a.trabajoIds[0];
+    if (a.tipoAccion !== 'escalamiento' || !id || enPedidos.has(id) || vistos.has(id)) continue;
+    vistos.add(id);
+    avisoConAcciones.set(a.id, id);
+  }
+  const permisos = await obtenerPermisosActuar(ctx, personaId, [...enPedidos, ...avisoConAcciones.values()]);
+  const extraAviso = (a: AvisoVista) => {
+    const id = avisoConAcciones.get(a.id);
+    const ref = id ? a.trabajos.find((t) => t.id === id) : undefined;
+    if (!id || !ref) return null;
+    return (
+      <div className="aviso__dueno">
+        <Acciones trabajoId={id} titulo={ref.titulo} permisos={permisos} />
+      </div>
+    );
+  };
+
   return (
     <>
       <header className="pagina__cabecera">
@@ -48,6 +96,7 @@ export default async function PaginaMiDia() {
         </p>
       </header>
 
+      <ResultadoAcciones>
       <div className="mi-dia">
         <section aria-labelledby="md-pide" className="seccion mi-dia__pide">
           <h2 id="md-pide" className="seccion__titulo">
@@ -71,6 +120,7 @@ export default async function PaginaMiDia() {
                     </p>
                   )}
                   <BotonResponder trabajoId={t.id} titulo={t.titulo} />
+                  <Acciones trabajoId={t.id} titulo={t.titulo} permisos={permisos} />
                 </li>
               ))}
             </ul>
@@ -100,7 +150,7 @@ export default async function PaginaMiDia() {
             <h2 id="md-cambio" className="seccion__titulo">
               Qué cambió
             </h2>
-            <ListaAvisos avisos={dia.avisos} />
+            <ListaAvisos avisos={dia.avisos} extra={extraAviso} />
           </section>
         </div>
 
@@ -134,6 +184,7 @@ export default async function PaginaMiDia() {
           )}
         </section>
       </div>
+      </ResultadoAcciones>
     </>
   );
 }

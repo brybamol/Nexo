@@ -1,62 +1,56 @@
-// Las tres cifras y una tarjeta por proyecto. Lee listarProyectos y obtenerCifras. Tarea 1.7.
-import Link from 'next/link';
+// Proyectos por proximidad, cada uno leído como recorrido; las tres cifras al pie. Lee listarRecorridos y obtenerCifras.
 import { CifrasDemo } from '@/componentes/cifras-demo';
-import { Referencia } from '@/componentes/enlaces-trabajos';
-import { formatearFecha } from '@/dominio/formato';
+import { FilaProyecto } from '@/componentes/proyectos/fila-proyecto';
 import { obtenerCifras } from '@/servicios/cifras';
-import { listarProyectos } from '@/servicios/proyectos';
+import { listarRecorridos, type ProyectoRecorrido } from '@/servicios/proyectos';
 import { obtenerContextoApp } from '@/servidor/contexto-app';
+import './proyectos.css';
+
+const GRUPOS: { clave: 'fecha' | 'sin' | 'hecho'; titulo: string }[] = [
+  { clave: 'fecha', titulo: 'Por entregar' },
+  { clave: 'sin', titulo: 'Sin fecha de entrega' },
+  { clave: 'hecho', titulo: 'Terminados' },
+];
+
+function grupo(r: ProyectoRecorrido): 'fecha' | 'sin' | 'hecho' {
+  return r.terminado ? 'hecho' : r.fecha ? 'fecha' : 'sin';
+}
 
 export default async function PaginaProyectos() {
   const ctx = await obtenerContextoApp();
-  const [cifras, proyectos] = await Promise.all([obtenerCifras(ctx), listarProyectos(ctx)]);
+  const [cifras, recorridos] = await Promise.all([obtenerCifras(ctx), listarRecorridos(ctx)]);
   return (
-    <>
+    <div className="proyectos-lista">
       <header className="pagina__cabecera">
         <h1 className="pagina__titulo">Proyectos</h1>
+        <p className="pagina__sub">Primero lo que vence antes. Cada fila muestra cuánto falta, por dónde va y qué lo frena.</p>
       </header>
-      <section aria-label="Las tres cifras">
+
+      {GRUPOS.map(({ clave, titulo }) => {
+        const lista = recorridos.filter((r) => grupo(r) === clave);
+        if (lista.length === 0) return null;
+        return (
+          <section key={clave} className="seccion" aria-labelledby={`grupo-${clave}`}>
+            <h2 className="seccion__titulo" id={`grupo-${clave}`}>
+              {titulo} <span className="seccion__cuenta">{lista.length}</span>
+            </h2>
+            <ol className="filas-proyecto">
+              {lista.map((r) => (
+                <li key={r.id}>
+                  <FilaProyecto r={r} />
+                </li>
+              ))}
+            </ol>
+          </section>
+        );
+      })}
+
+      <section className="seccion proyectos-lista__cifras" aria-labelledby="cifras-titulo">
+        <h2 className="seccion__titulo" id="cifras-titulo">
+          Lo que Nexo coordinó esta semana
+        </h2>
         <CifrasDemo cifras={cifras} />
       </section>
-      <ul className="lista lista--dos proyectos">
-        {proyectos.map((p) => (
-          <li key={p.id} className="tarjeta proyecto">
-            <h2>
-              <Link href={`/proyectos/${p.id}`}>{p.nombre}</Link> <Referencia valor={p.clave} />
-            </h2>
-            <p className="proyecto__meta">
-              Responsable: {p.responsable.nombre}
-              {p.fecha && <> · Fecha: {formatearFecha(p.fecha)}</>}
-            </p>
-            <dl className="conteos">
-              <div>
-                <dt>Abiertos</dt>
-                <dd>{p.abiertos}</dd>
-              </div>
-              <div>
-                <dt>En curso</dt>
-                <dd>{p.enCurso}</dd>
-              </div>
-              <div data-alerta={p.bloqueados > 0 ? 'bloqueado' : undefined}>
-                <dt>Bloqueados</dt>
-                <dd>{p.bloqueados}</dd>
-              </div>
-              <div>
-                <dt>Resueltos</dt>
-                <dd>{p.resueltos}</dd>
-              </div>
-              <div data-alerta={p.atrasados > 0 ? 'atrasado' : undefined}>
-                <dt>Atrasados</dt>
-                <dd>{p.atrasados}</dd>
-              </div>
-              <div data-alerta={p.enRiesgo > 0 ? 'riesgo' : undefined}>
-                <dt>En riesgo</dt>
-                <dd>{p.enRiesgo}</dd>
-              </div>
-            </dl>
-          </li>
-        ))}
-      </ul>
-    </>
+    </div>
   );
 }

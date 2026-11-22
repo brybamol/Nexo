@@ -71,7 +71,7 @@ En producción, la clasificación la hará la IA con estas mismas categorías, y
 type ClasePrivacidad = 'laboral' | 'personal' | 'boletin';
 interface Compromiso {
   id: string;               // estable: sale del internetMessageId del pedido
-  titulo: string;           // «Revisar el contrato de TransLog»
+  titulo: string;           // «Confirmar el pago anticipado del pedido 1047 de La Colina»
   solicitanteId: string;    // quien pidió
   responsableId: string;    // quien debe hacerlo
   plazo: Date | null;       // null = no lo sé
@@ -109,60 +109,67 @@ El prototipo usa un intérprete local determinista: lo bastante bueno para los c
 
 **Proyecto:** compromisos unidos por esperas o por un nombre propio común en sus asuntos (sin contar la primera palabra) forman un proyecto; su nombre es ese nombre propio.
 
-## 8. Empresa ficticia: Grupo Altavista
+## 8. Empresa: Frío del Valle
 
-Corporativo de 320 empleados con oficinas en San José; la demo usa 7 personas y el dominio `altavista.cr`. Contactos externos de trabajo: `translog.cr` (proveedor de logística). "Hoy" es el del reloj de la demo: **miércoles 25 de noviembre de 2026, 7:00**.
+Hay una sola empresa en la demo: Frío del Valle (`docs/04`). En el correo usa sus 12 personas, con los mismos ids que la semilla y la dirección `nombre.apellido@friodelvalle.cr` sin tildes. Dominios laborales externos: `lacolina.cr`, `panaderiatrigal.cr`, `hotelmirador.cr` (clientes) y `refrigeracioncentral.cr`, `repuestosya.cr` (proveedores). "Hoy" es el del reloj de la demo: **miércoles 25 de noviembre de 2026, 7:00**. La empresa de ejemplo anterior, que tenía sus propias personas, desapareció (`docs/08` §5).
 
-| Persona | Rol | Departamento | Jefe |
-|---|---|---|---|
-| Roberto Solano | Gerente general | Gerencia | — |
-| Ana Rodríguez | Jefa de compras | Compras | Roberto Solano |
-| Luis Méndez | Abogado corporativo | Legal | Roberto Solano |
-| Carla Fernández | Tesorera | Finanzas | Roberto Solano |
-| Pablo Rojas | Analista financiero | Finanzas | Carla Fernández |
-| Sergio Vargas | Gerente de marketing | Marketing | Roberto Solano |
-| Valeria Castro | Líder de TI | TI | Roberto Solano |
+| Persona | Rol | Departamento | Jefe | Buzón |
+|---|---|---|---|---|
+| Marcela Solís | Gerente general | Gerencia | — | conectado |
+| Andrés Vargas | Jefe de operaciones | Operaciones | Marcela Solís | conectado |
+| Ricardo Brenes | Contabilidad y facturación | Contabilidad | Marcela Solís | conectado |
+| Paola Herrera | Ejecutiva de ventas | Ventas | Andrés Vargas | conectado |
+| Sofía Navarro | Servicio al cliente | Servicio al cliente | Andrés Vargas | conectado |
+| Karla Jiménez | Encargada de compras | Compras | Andrés Vargas | conectado |
+| Lucía Mora | Supervisora de bodega | Bodega | Andrés Vargas | conectado |
+| Diego Rojas | Bodeguero y despacho | Bodega | Lucía Mora | sin conectar |
+| Esteban Castro | Supervisor de campo | Campo | Andrés Vargas | conectado |
+| José Alfaro | Técnico | Campo | Esteban Castro | sin conectar |
+| Daniela Quesada | Técnica | Campo | Esteban Castro | sin conectar |
+| Mario Chaves | Técnico | Campo | Esteban Castro | sin conectar |
+
+Los 8 buzones conectados son todos Gmail (`BUZONES_DEMO`). Los mensajes de quienes no tienen buzón existen, pero Nexo solo los ve cuando están en el buzón de alguien conectado.
 
 ### Hilos laborales
 
 | Hilo | Mensajes |
 |---|---|
-| H1 · Revisión contrato TransLog | mié 18 nov Ana → Luis (cc Roberto): pide revisar el contrato antes del 4 dic. · vie 20 nov Luis → Ana: lo revisa en cuanto Finanzas confirme la garantía. |
-| H2 · Garantía de cumplimiento TransLog | mar 17 nov Ana → Carla: pide gestionar la garantía bancaria antes del 30 nov (₡25.000.000). · mar 24 nov Carla → Ana: el banco pide estados auditados; la solicita en cuanto Pablo se los envíe. |
-| H3 · Estados financieros auditados 2025 | mar 24 nov Carla → Pablo: pide los estados mañana antes de las 10:00. |
-| H4 · Alta de TransLog en el ERP | vie 20 nov Ana → Valeria: pide darlo de alta antes del 7 dic, cuando firmen el contrato con TransLog. |
-| H5 · Presupuesto campaña Navidad | lun 16 nov Sergio → Carla: pide aprobar el presupuesto (₡18.000.000) antes del vie 20 nov. · sáb 21 nov Sergio → Carla (cc Roberto): «seguimos sin la aprobación». |
-| H6 · Bases legales promoción Navidad | mar 17 nov Sergio → Luis: pide revisarlas antes del 24 nov. · sáb 21 nov Luis → Sergio: te adjunto las bases; quedan listas. |
-| H7 · Landing campaña Navidad | jue 19 nov Valeria → Sergio: pide los textos finales antes del 26 nov. · mar 24 nov Sergio → Valeria: se los pasa cuando Finanzas apruebe el presupuesto. |
+| H1 · Pago anticipado pedido 1047 | lun 23 nov 9:00 Andrés → Ricardo (cc Paola): pide confirmar el pago anticipado del pedido 1047 de La Colina antes del 26 nov. |
+| H2 · Cotización cámara fría Hotel Mirador | mar 24 nov 15:00 Andrés → Paola: pide enviar la cotización al Hotel Mirador, mañana antes de las 12:00 (llega solo en HTML). |
+| H3 · Guías de entrega pedidos 1041 y 1042 | lun 23 nov 15:00 Ricardo → Diego: pide las guías firmadas antes del 27 nov. · mar 24 nov 16:30 Diego → Ricardo: te adjunto las guías firmadas. |
+| H4 · Fotos mantenimiento Trigal Heredia y Alajuela | mar 24 nov 17:00 Esteban → Daniela: pide las fotos antes del 27 nov. |
+| H5 · Factura proforma Hotel Mirador | **mié 25 nov 8:20** Andrés → Ricardo: pide emitir la factura proforma antes del 27 nov, en cuanto Paola envíe la cotización. Llega durante la demo. |
+| H6 · Reorden de repuestos críticos | mar 24 nov 10:00 Lucía → Karla: pide cotizar el reorden con dos proveedores antes del 27 nov. |
+| H7 · Reprogramar entrega 1043 Don Beto | mar 24 nov 16:00 Diego → Sofía: pide reprogramar la entrega con el cliente (sin plazo). |
 
 ### Ruido (no debe producir nada)
 
-Ana recibe el estado de cuenta de su tarjeta (personal). Carla recibe un correo familiar (personal). Luis y Valeria reciben boletines con `List-Unsubscribe`. Sergio invita a todos al cumpleaños de Pablo (laboral, sin compromisos). Roberto tiene un borrador sin enviar que pide algo a Carla (no se lee). En formato Gmail, el boletín de licencias está en Promociones, el de Luis en Notificaciones, y el correo de Ana a Valeria llega solo en HTML.
+Karla recibe el estado de cuenta de su tarjeta y Sofía un correo familiar (personales). Lucía recibe un boletín de ofertas de compresores y Ricardo el boletín tributario, ambos con `List-Unsubscribe` (aunque uno pida «¿Puedes aprovechar…?»). Paola invita a todos al cumpleaños de Diego (laboral, sin compromisos). Marcela tiene un borrador sin enviar que pide algo a Ricardo (no se lee). En formato Gmail, el boletín de ofertas está en Promociones, el tributario en Notificaciones, y el correo de Andrés a Paola llega solo en HTML.
 
 ## 9. Casos de control
 
-Los códigos se asignan por la fecha del pedido y no cambian aunque alguien descarte uno.
+Los códigos se asignan por la fecha del pedido y no cambian aunque alguien descarte uno. Los casos se miden a las **7:05** (todo lo enviado hasta entonces) salvo que se diga otra hora.
 
 | Caso | Se espera |
 |---|---|
-| CC1 | 7 compromisos (C1–C7); ninguno sale del ruido. |
-| CC2 | C1 «Aprobar el presupuesto de la campaña de Navidad»: Sergio → Carla, vie 20 nov 17:00, ₡18.000.000, **Abierto**, **Atrasado**, 1 insistencia. |
-| CC3 | C2 «Gestionar la garantía bancaria de cumplimiento con el banco»: Ana → Carla, lun 30 nov 17:00, ₡25.000.000, **Bloqueado**, espera a C7. Sin marcas a las 7:00. |
-| CC4 | C3 «Revisar las bases legales de la promoción de Navidad»: Sergio → Luis, **Resuelto** el sáb 21 nov. |
-| CC5 | C4 «Revisar el contrato de TransLog»: Ana → Luis, vie 4 dic 17:00, **Bloqueado**, espera a C2, **En riesgo** (C2 bloqueado). |
-| CC6 | C5 «Enviar los textos finales de la campaña de Navidad»: Valeria → Sergio, jue 26 nov 17:00, **Bloqueado**, espera a C1, **En riesgo** (C1 atrasado). |
-| CC7 | C6 «Dar de alta a TransLog como proveedor en el ERP»: Ana → Valeria, lun 7 dic 17:00, **Abierto**, depende de C4, **En riesgo**. |
-| CC8 | C7 «Enviar los estados financieros auditados 2025 firmados»: Carla → Pablo, mié 25 nov 10:00, **Abierto**. A las 10:00 pasa a **Atrasado** y C2 queda **En riesgo** por esa causa. |
-| CC9 | Proyectos: **TransLog** (C2, C4, C6, C7) y **Navidad** (C1, C3, C5). Cadenas: Ana (Compras) → Valeria (TI) → Luis (Legal) → Carla (Finanzas) → Pablo (Finanzas); Valeria (TI) → Sergio (Marketing) → Carla (Finanzas). Cuello de botella: Carla, en las dos cadenas. |
-| CC10 | Unión: los mensajes internos aparecen en 2 o más buzones y cuentan una sola vez. En Gmail cada copia tiene otro `id` y otro `threadId`, y el hilo se une igual por `In-Reply-To`/`References`. |
-| CC11 | Privacidad: 2 personales y 2 boletines descartados (aunque el correo personal y un boletín contienen «¿puedes…?»); el cumpleaños no produce compromisos; ninguna vista muestra asunto ni remitente de lo descartado; el borrador de Roberto no se lee. |
-| CC12 | Correcciones: Carla corrige el plazo de C1 al 27 nov → C1 deja de estar atrasado y C5 deja de estar en riesgo; Luis descarta C3 → desaparece de todas las vistas y los demás códigos no cambian; Pablo confirma C7 → «Confirmado por Pablo Rojas». Solo quien pidió o quien responde puede corregir. |
+| CC1 | 6 compromisos (C1–C6) a las 7:05; ninguno sale del ruido. A las 8:20 llega H5 y aparece C7. |
+| CC2 | C1 «Confirmar el pago anticipado del pedido 1047 de La Colina»: Andrés → Ricardo, jue 26 nov 17:00, **Abierto**, sin marcas. |
+| CC3 | C2 «Enviar las guías de entrega firmadas de los pedidos 1041 y 1042»: Ricardo → Diego, **Resuelto** el mar 24 nov 16:30 (la entrega de Diego es la evidencia). |
+| CC4 | C4 «Enviar la cotización de la cámara fría al Hotel Mirador»: Andrés → Paola, mié 25 nov 12:00, **Abierto**. A las 12:00 pasa a **Atrasado**. |
+| CC5 | C5 «Reprogramar la entrega 1043 con el cliente»: Diego → Sofía, **sin plazo** («no lo sé»; Nexo no lo inventa). |
+| CC6 | C7 «Emitir la factura proforma de la cámara fría del Hotel Mirador» (8:20): Andrés → Ricardo, vie 27 nov 17:00, depende de C4. A las 12:00, con C4 atrasado, queda **En riesgo**. |
+| CC7 | Cadena de espera: Andrés (Operaciones) → Ricardo (Contabilidad) → Paola (Ventas), en el proyecto Hotel Mirador. |
+| CC8 | Cuello de botella: con mensajes de prueba que añaden una segunda cadena que termina en Paola, ella es el final de dos cadenas en dos proyectos. Con los correos de ejemplo no hay cuello. |
+| CC9 | Unión: los mensajes internos aparecen en 2 o más buzones y cuentan una sola vez. En Gmail cada copia tiene otro `id` y otro `threadId`, y el hilo se une igual por `In-Reply-To`/`References`. |
+| CC10 | Privacidad: 2 personales y 2 boletines descartados (aunque el correo familiar y un boletín contienen «¿puedes…?»); el cumpleaños no produce compromisos; ninguna vista muestra asunto ni remitente de lo descartado; el borrador de Marcela no se lee. |
+| CC11 | Conteos de la lectura de las 7:05 (leídos/de trabajo/personales/boletines): Marcela 1/1/0/0, Andrés 3/3/0/0, Ricardo 5/4/0/1, Paola 3/3/0/0, Sofía 3/2/1/0, Karla 3/2/1/0, Lucía 3/2/0/1, Esteban 2/2/0/0: 23 copias, 19 de trabajo. |
+| CC12 | Correcciones: Paola corrige el plazo de C4 al 27 nov → C4 deja de estar atrasado y C7 deja de estar en riesgo; Ricardo descarta C2 → desaparece de todas las vistas y los demás códigos no cambian; Esteban confirma C6 → «Confirmado por Esteban Castro». Solo quien pidió o quien responde puede corregir. |
 | CC13 | Gmail y Outlook: los mismos correos en formato Gmail y en formato Graph dan los mismos compromisos, cadenas, cuellos de botella y conteos. |
 | CC14 | Cuentas: una cuenta `@gmail.com` o de otro dominio se rechaza al conectar. |
 
 ## 10. Interfaz del prototipo
 
-Una pantalla nueva, **Correo** (`/correo`), con su propio «ver como» para las personas de Grupo Altavista (`?como=<id>`), porque no comparten personas con Frío del Valle:
+Una pantalla nueva, **Correo** (`/correo`), con su propio «ver como» para las personas de Frío del Valle (`?como=<id>`):
 
 1. **Te piden**: compromisos donde eres responsable.
 2. **Pediste y esperas**: compromisos que pediste.
@@ -236,7 +243,7 @@ El permiso para leer el contenido es `https://www.googleapis.com/auth/gmail.read
 **Para arrancar:**
 - un proyecto en Google Cloud con la API de Gmail activada;
 - un cliente OAuth web con redirección a `/api/auth/google/callback`;
-- una cuenta de Google Workspace de prueba con 3–7 usuarios para recrear a Grupo Altavista con correo real.
+- una cuenta de Google Workspace de prueba con 3–7 usuarios para recrear a Frío del Valle con correo real.
 
 Las claves van en `.env.local`, que nunca se sube.
 

@@ -43,8 +43,8 @@ describe('referencias', () => {
   });
 
   it('clave desde un nombre propio', () => {
-    expect(claveDesdeNombre('TransLog')).toBe('TRANSLOG');
-    expect(claveDesdeNombre('Navidad')).toBe('NAVIDAD');
+    expect(claveDesdeNombre('Trigal')).toBe('TRIGAL');
+    expect(claveDesdeNombre('Mirador')).toBe('MIRADOR');
     expect(claveDesdeNombre('Cámara')).toBe('CAMARA');
   });
 });

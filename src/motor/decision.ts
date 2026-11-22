@@ -1,7 +1,7 @@
 // Decisiones: crear, aplicar (R8) y rechazar (§4.2 regla 9). Puro. Tarea 3.3.
 // Nada con costo se ejecuta al crear (R6): la decisión se prepara y espera aprobación.
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
-import { HORA_PLAZO_SIN_HORA, ROL_COMPRAS, ROL_SERVICIO_CLIENTE } from '@/dominio/constantes';
+import { HORA_PLAZO_SIN_HORA, ROL_COMPRAS, ROL_SERVICIO_CLIENTE, UMBRAL_GERENTE } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
 import { citaConReferencia, enumerar, referenciaDecision, referenciaTrabajo, tituloDecision } from '@/dominio/nombres';
 import { minusculaInicial } from '@/dominio/texto';
@@ -96,7 +96,7 @@ export function efectosDecisionNueva(
   const corregida = aplicarEnMemoria(inst, efectos);
   const opciones = calcularOpciones(corregida, p);
   if (opciones.length === 0) return [];
-  const decisorId = decisorPara(corregida, opciones);
+  const decisorId = decisorPara(corregida, opciones, proyectoId, proponenteId);
   const id = siguienteIdDecision(inst);
   const numero = siguienteNumeroDecision(inst, proyectoId);
   const trabajos = porId(inst.trabajos);
@@ -166,12 +166,20 @@ export function efectosDecisionNueva(
   });
   const resumenOpciones = opciones.map((o) => `${o.letra} ${formatearColones(o.costo)}`).join(', ');
   const decisor = nombreDe(inst, decisorId);
+  const tope = formatearColones(UMBRAL_GERENTE);
+  const responsableProyecto = inst.proyectos.find((x) => x.id === proyectoId)?.responsableId;
+  const porQueDecide =
+    Math.max(0, ...opciones.map((o) => o.costo)) > UMBRAL_GERENTE
+      ? `supera el tope de ${tope}`
+      : decisorId === responsableProyecto
+        ? `no supera el tope de ${tope} y es responsable del proyecto`
+        : `no supera el tope de ${tope}, pero quien propone es el responsable del proyecto y nadie aprueba su propia propuesta`;
   efectos.push({
     tipo: 'accion',
     accion: {
       en: inst.ahora,
       tipo: 'crear_decision',
-      motivo: `Tiene costo (R6): decide ${decisor}. Opciones: ${resumenOpciones}.`,
+      motivo: `Tiene costo (R6): decide ${decisor} (${porQueDecide}). Opciones: ${resumenOpciones}.`,
       hechoOrigen: hecho,
       trabajoIds: afectados,
       decisionId: id,

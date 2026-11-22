@@ -96,8 +96,11 @@ describe('calcularOpciones · compresores (C11 / E4)', () => {
     });
   });
 
-  it('decisor: gerente general si alguna opción supera ₡100.000', () => {
-    expect(decisorPara(inst, opciones)).toBe('marcela-solis');
+  it('decisor: gerente general si alguna opción supera ₡100.000 (C11 en La Colina, propone Lucía)', () => {
+    expect(decisorPara(inst, opciones, 'P1', 'lucia-mora')).toBe('marcela-solis');
+    // Por encima del tope da igual quién proponga o de qué proyecto sea: la gerente, que no tiene nivel por encima.
+    expect(decisorPara(inst, opciones, 'P1', 'esteban-castro')).toBe('marcela-solis');
+    expect(decisorPara(inst, opciones, 'P1', 'marcela-solis')).toBe('marcela-solis');
   });
 
   it('con la cantidad o la existencia corregida, C desaparece si solo queda un trabajo sin cubrir', () => {
@@ -123,7 +126,22 @@ describe('calcularOpciones · empaques (C06 con respuesta 20)', () => {
     expect(opciones[0]?.lineas[0]).toMatchObject({ proveedor: 'local', cantidad: 20, precioUnitario: 4_200, llegada: enCR('2026-11-25', '15:00') });
     expect(opciones[1]).toMatchObject({ letra: 'B', costo: 78_400, cambiosFecha: [] });
     expect(opciones[1]?.lineas[0]).toMatchObject({ precioUnitario: 3_920, llegada: enCR('2026-11-28', '07:00') });
-    expect(decisorPara(inst, opciones)).toBe('andres-vargas');
+    // R6 reformada: el máximo (₡84.000) no supera el tope → decide la responsable del proyecto (P3, Lucía Mora).
+    expect(decisorPara(inst, opciones, 'P3', 'karla-jimenez')).toBe('lucia-mora');
+  });
+
+  it('nadie aprueba su propia propuesta: sube al responsable de la operación y, si también propone, a la gerente', () => {
+    expect(decisorPara(inst, opciones, 'P3', 'lucia-mora')).toBe('andres-vargas'); // Lucía es la responsable de P3
+    expect(decisorPara(inst, opciones, 'P4', 'andres-vargas')).toBe('marcela-solis'); // Andrés: P4 y la operación
+    expect(decisorPara(inst, opciones, 'OD', 'lucia-mora')).toBe('andres-vargas'); // Operación diaria es de Andrés
+    expect(decisorPara(inst, opciones, 'P1', 'karla-jimenez')).toBe('esteban-castro');
+  });
+
+  it('el tope es inclusivo: ₡100.000 exactos los decide el responsable del proyecto', () => {
+    const justo = opciones.map((o, i) => ({ ...o, costo: i === 0 ? 100_000 : 50_000 }));
+    expect(decisorPara(inst, justo, 'P2', 'mario-chaves')).toBe('daniela-quesada');
+    const encima = opciones.map((o, i) => ({ ...o, costo: i === 0 ? 100_001 : 50_000 }));
+    expect(decisorPara(inst, encima, 'P2', 'mario-chaves')).toBe('marcela-solis');
   });
 
   it('después de las 15:00 el proveedor local entrega el siguiente día hábil', () => {

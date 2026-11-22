@@ -61,6 +61,11 @@ export function causaCitada(inst: Instantanea, repuestoId: string): string | nul
 
 // ─── Interno ──────────────────────────────────────────────────────────────────
 
+/** Por qué un trabajo está en riesgo, en una frase («depende de «…» (COLINA-4), bloqueado»). La usan los avisos. */
+export function explicarRiesgo(causas: CausaRiesgo[], inst: Instantanea): string {
+  return porQue(causas, inst);
+}
+
 function porQue(causas: CausaRiesgo[], inst: Instantanea): string {
   const repuestos = porId(inst.repuestos);
   const nombres = nombrador(inst);

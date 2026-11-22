@@ -22,6 +22,7 @@ const seguimiento: Seguimiento = {
   proximoEn: AHORA,
   estado: 'pendiente',
   iniciadoEn: AHORA,
+  escaladosA: [],
 };
 
 const decision: Decision = {

@@ -24,7 +24,7 @@ export class ErrorDominio extends Error {
 export type EstadoTrabajo = 'abierto' | 'en_curso' | 'bloqueado' | 'resuelto';
 export type Area = 'Gerencia' | 'Oficina' | 'Bodega' | 'Campo';
 export type OrigenTrabajo = 'semilla' | 'captura' | 'decision';
-export type NivelSeguimiento = 0 | 1 | 2 | 3; // 0 solicitud, 1 recordatorio, 2 escalamiento 1, 3 escalamiento 2
+export type NivelSeguimiento = 0 | 1 | 2 | 3; // 0 solicitud, 1 recordatorio, 2 escalamiento 1, 3 escalamiento 2 (ver motor/escalamiento.ts)
 export type EstadoSeguimiento = 'pendiente' | 'respondido' | 'agotado';
 export type EstadoDecision = 'pendiente' | 'aprobada' | 'rechazada';
 export type LetraOpcion = 'A' | 'B' | 'C';
@@ -57,7 +57,8 @@ export type TipoEvento =
   | 'decision_creada'
   | 'decision_aprobada'
   | 'decision_rechazada'
-  | 'respuesta_seguimiento';
+  | 'respuesta_seguimiento'
+  | 'responsable_cambiado'; // reforma de escalamiento: el dueño del resultado reasigna un trabajo
 
 // ─── Marcas (calculadas, nunca guardadas) ─────────────────────────────────────
 
@@ -163,6 +164,8 @@ export interface Seguimiento {
   proximoEn: Date;
   estado: EstadoSeguimiento;
   iniciadoEn: Date;
+  /** Personas a las que ya se escaló este seguimiento, en orden (reforma de escalamiento): nunca se repiten. */
+  escaladosA: string[];
 }
 
 export type CambioFecha = { trabajoId: string; de: Date; a: Date };

@@ -145,7 +145,10 @@ export async function persistirEfectos(db: Db, efectos: Efecto[]): Promise<{ acc
         const [antes] = await db.select().from(trabajos).where(eq(trabajos.id, e.trabajoId));
         if (!antes) throw new ErrorDominio(`No existe el trabajo ${e.trabajoId}.`);
         await db.update(trabajos).set(e.cambios).where(eq(trabajos.id, e.trabajoId));
-        const { estado, plazo } = e.cambios;
+        const { estado, plazo, responsableId } = e.cambios;
+        if (responsableId !== undefined && responsableId !== antes.responsableId) {
+          await evento('responsable_cambiado', e.actorId, e.trabajoId, { de: antes.responsableId, a: responsableId });
+        }
         if (estado !== undefined && estado !== antes.estado) {
           await evento('estado_cambiado', e.actorId, e.trabajoId, { de: antes.estado, a: estado });
         }

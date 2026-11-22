@@ -77,7 +77,7 @@ async function aplicarBloqueo(): Promise<void> {
     },
     {
       tipo: 'crear_seguimiento',
-      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora },
+      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora, escaladosA: [] },
     },
   ]);
 }

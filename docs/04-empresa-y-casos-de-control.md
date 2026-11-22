@@ -31,7 +31,9 @@ Este documento es la fuente de los datos de ejemplo (etapa 1) y el examen de la 
 | Daniela Quesada | Técnica | Campo | Esteban Castro |
 | Mario Chaves | Técnico | Campo | Esteban Castro |
 
-La columna "Jefe directo" es la cadena de escalamiento de la regla R3.
+La columna "Jefe directo" es el organigrama de la empresa. **Ya no rige el escalamiento** (reforma de escalamiento): Nexo no sube por los cargos, sino que acude al responsable del proyecto del trabajo y, si hace falta, a los responsables de los otros proyectos perjudicados (R3). El dato se conserva (lo usa la captura para proponer un responsable, R9).
+
+**Responsable de la operación: Andrés Vargas.** Es un dato de configuración de la empresa (`RESPONSABLE_OPERACION` en `src/dominio/constantes.ts`), no «el jefe de alguien»: es el último recurso del escalamiento cuando nadie de otro proyecto sale perjudicado, puede actuar sobre cualquier trabajo (reasignar, mover el plazo, declarar bloqueo) y decide el gasto dentro del tope cuando quien propone es el propio responsable del proyecto (R6).
 
 ### Repuestos
 
@@ -165,7 +167,7 @@ Cada frase se escribe en la caja de captura con la persona indicada. La etapa 2 
 | C03 | Diego Rojas | "Mae, el cliente de Don Beto no estaba, me devolví con los congeladores" | **Actualización** de T21 con nota. No crea trabajo: T22 ya existe. Avisa a Sofía Navarro |
 | C04 | Paola Herrera | "Hay que mandarle la cotización de la cámara fría al Hotel Mirador hoy" | **Duplicado** de T28. No crea trabajo y lo muestra |
 | C05 | Sofía Navarro | "La Colina pregunta si se puede adelantar la entrega de las vitrinas al jueves" | **Trabajo nuevo** en P4: responder al cliente sobre adelantar el pedido 1047. Responsable Andrés Vargas, plazo hoy. Relacionado con T26 y T27 |
-| C06 | Karla Jiménez | "El proveedor subió el precio de los empaques un 12 %, ¿compramos igual?" | **Decisión** con costo en P3. Nexo hace una pregunta: cuántos metros se van a comprar |
+| C06 | Karla Jiménez | "El proveedor subió el precio de los empaques un 12 %, ¿compramos igual?" | **Decisión** con costo en P3. Nexo hace una pregunta: cuántos metros se van a comprar. Con «20» (₡84.000, dentro del tope) decide **Lucía Mora**, responsable de Repuestos críticos (R6) |
 | C07 | Esteban Castro | "Gracias a todos, buen trabajo ayer" | **No es trabajo.** No crea nada |
 | C08 | Mario Chaves | "Ocupo una escalera de 6 metros para el jueves en Curridabat" | **Trabajo nuevo** en P2: conseguir la escalera. Responsable Lucía Mora, plazo jueves 26 a las 7:00. Relacionado con T11 |
 | C09 | Ricardo Brenes | "Todavía no entra el pago de La Colina por las vitrinas" | **Actualización** de T27 con nota. No crea trabajo. Avisa a Andrés Vargas, responsable de P4, de que T26 depende de ese pago |
@@ -208,7 +210,8 @@ Empieza con la frase C01 a las 7:05.
 |---|---|---|
 | mié 7:05 | Se crea el trabajo urgente para Lucía Mora | Avisarle |
 | mié 7:35 | Sin respuesta | Enviarle un recordatorio |
-| mié 8:05 | Sin respuesta | Escalar a Andrés Vargas con: quién lo pidió (José Alfaro), qué bloquea (T04 y su cadena) y desde cuándo |
+| mié 8:05 | Sin respuesta | Escalar a **Esteban Castro**, responsable de La Colina (el proyecto del trabajo), con: quién lo pidió (José Alfaro), qué bloquea (T04 y su cadena), desde cuándo y las tres acciones que puede hacer (reasignar, mover el plazo, declarar bloqueo). Andrés Vargas, jefe directo de Lucía, no recibe nada |
+| mié 8:35 | Sin respuesta | Segundo y último nivel: la cadena de T04 es toda de La Colina, así que nadie de otro proyecto sale perjudicado y Nexo acude al responsable de la operación, Andrés Vargas. Después, el seguimiento se agota. La gerente no aparece |
 
 ### E3 · Propagación entre proyectos (R4 y R5)
 Empieza con la frase C01 a las 7:05.
@@ -248,5 +251,6 @@ Empieza después de E3, con la frase C11 a las 8:10.
 - Nombres de personas, clientes y de la empresa.
 - La industria: si el equipo conoce mejor otra, se cambian los proyectos y repuestos manteniendo la misma estructura (un recurso escaso compartido por dos proyectos y un dato que solo sabe una persona).
 - Los precios y el umbral de ₡100.000.
+- Quién es el responsable de la operación (`RESPONSABLE_OPERACION`).
 
 Lo que no conviene cambiar: el número de trabajos, la cadena de dependencias de P1 y que Mario Chaves tenga trabajos afectados en dos proyectos. De eso dependen el guion y los escenarios E3 y E4.

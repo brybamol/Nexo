@@ -2,7 +2,7 @@
 // ejemplo con la hora del reloj de la demo, y registra correcciones validadas.
 import { asc } from 'drizzle-orm';
 import { correccionesCorreo } from '@/db/esquema';
-import { EMPRESA_ALTAVISTA } from '@/correo/ejemplo/empresa';
+import { EMPRESA_FRIO_DEL_VALLE } from '@/correo/ejemplo/empresa';
 import { construirBuzonesEjemplo } from '@/correo/ejemplo/buzones';
 import { calcularModeloCorreo } from '@/correo/modelo';
 import type {
@@ -33,16 +33,16 @@ export async function obtenerModeloCorreo(ctx: ContextoServicio): Promise<Modelo
     tipo: f.tipo,
     cambios: f.cambios,
   }));
-  return calcularModeloCorreo({ empresa: EMPRESA_ALTAVISTA, buzones: construirBuzonesEjemplo(), correcciones, ahora });
+  return calcularModeloCorreo({ empresa: EMPRESA_FRIO_DEL_VALLE, buzones: construirBuzonesEjemplo(), correcciones, ahora });
 }
 
 export function personasCorreo(): PersonaCorreo[] {
-  return EMPRESA_ALTAVISTA.personas;
+  return EMPRESA_FRIO_DEL_VALLE.personas;
 }
 
-/** Id válido de Grupo Altavista, o null. */
+/** Id válido de Frío del Valle, o null. */
 export function personaCorreoValida(id: string | undefined | null): PersonaCorreo | null {
-  return EMPRESA_ALTAVISTA.personas.find((p) => p.id === id) ?? null;
+  return EMPRESA_FRIO_DEL_VALLE.personas.find((p) => p.id === id) ?? null;
 }
 
 export interface VistaPersonaCorreo {
@@ -59,7 +59,7 @@ function porUrgencia(a: CompromisoConMarcas, b: CompromisoConMarcas): number {
 
 export function vistaPersonaCorreo(modelo: ModeloCorreo, personaId: string): VistaPersonaCorreo {
   const persona = personaCorreoValida(personaId);
-  if (!persona) throw new ErrorDominio('Esa persona no es de Grupo Altavista.');
+  if (!persona) throw new ErrorDominio('Esa persona no es de Frío del Valle.');
   const activos = modelo.compromisos.filter((c) => c.estado !== 'resuelto');
   return {
     persona,
@@ -81,7 +81,7 @@ export interface EntradaCorreccion {
 /** Solo quien pidió o quien responde puede confirmar, corregir o descartar. La hora es la del reloj de la demo. */
 export async function registrarCorreccion(ctx: ContextoServicio, entrada: EntradaCorreccion): Promise<void> {
   const persona = personaCorreoValida(entrada.personaId);
-  if (!persona) throw new ErrorDominio('Esa persona no es de Grupo Altavista.');
+  if (!persona) throw new ErrorDominio('Esa persona no es de Frío del Valle.');
   if (!TIPOS.includes(entrada.tipo)) throw new ErrorDominio('La corrección debe ser confirmar, corregir o descartar.');
 
   const modelo = await obtenerModeloCorreo(ctx);
@@ -100,7 +100,7 @@ export async function registrarCorreccion(ctx: ContextoServicio, entrada: Entrad
       cambios.titulo = titulo;
     }
     if (e.responsableId && e.responsableId !== c.responsableId) {
-      if (!personaCorreoValida(e.responsableId)) throw new ErrorDominio('El responsable debe ser alguien de Grupo Altavista.');
+      if (!personaCorreoValida(e.responsableId)) throw new ErrorDominio('El responsable debe ser alguien de Frío del Valle.');
       cambios.responsableId = e.responsableId;
     }
     if (e.plazo) {

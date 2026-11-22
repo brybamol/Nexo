@@ -94,6 +94,7 @@ describe('R1 · solicitud de estado al vencer el plazo', () => {
         proximoEn: enCR(MIE, '11:00'), // mar 17:00 + 4 h laborales = mié 11:00
         estado: 'pendiente',
         iniciadoEn: enCR(MIE, '07:05'),
+        escaladosA: [],
       },
       expect.objectContaining({ id: 'S2', trabajoId: 'T21', nivel: 0, proximoEn: enCR(MIE, '11:00') }),
     ]);
@@ -132,7 +133,7 @@ describe('R1 · solicitud de estado al vencer el plazo', () => {
 });
 
 describe('R2 · recordatorio a las 4 horas laborales (trabajo normal)', () => {
-  it('T29 vence mié 16:00 → recordatorio jue 10:00 (cruza el fin de jornada) → Marcela jue 14:00 y se agota', () => {
+  it('T29 vence mié 16:00 → recordatorio jue 10:00 (cruza el fin de jornada) y se agota: Andrés es responsable de P4 y de la operación', () => {
     let { inst } = mover(instantaneaDesdeSemilla(), enCR(MIE, '16:00'));
     expect(seguimientoDe(inst, 'T29')[0]?.proximoEn).toEqual(enCR(JUE, '10:00'));
     expect(sobre(mover(inst, enCR(JUE, '09:59')).efectos, 'T29')).toEqual([]);
@@ -140,23 +141,23 @@ describe('R2 · recordatorio a las 4 horas laborales (trabajo normal)', () => {
     const r1 = mover(inst, enCR(JUE, '10:00'));
     expect(sobre(r1.efectos, 'T29').map(resumen)).toEqual([{ tipo: 'recordatorio', a: 'andres-vargas', trabajos: ['T29'] }]);
     inst = r1.inst;
-    expect(seguimientoDe(inst, 'T29')[0]).toMatchObject({ nivel: 1, proximoEn: enCR(JUE, '14:00'), estado: 'pendiente' });
-
-    // Andrés solo tiene un jefe (Marcela): un escalamiento y se agota.
-    const r2 = mover(inst, enCR(JUE, '14:00'));
-    expect(sobre(r2.efectos, 'T29').map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'marcela-solis', trabajos: ['T29'] }]);
-    expect(seguimientoDe(r2.inst, 'T29')[0]).toMatchObject({ nivel: 2, destinatarioId: 'marcela-solis', estado: 'agotado' });
+    // Andrés es el responsable del trabajo, de su proyecto (P4) y de la operación, y T29 no deja a nadie en riesgo:
+    // no queda a quién escalar (nunca al propio responsable, ni a la gerente por jerarquía): se agota tras el recordatorio.
+    expect(seguimientoDe(inst, 'T29')[0]).toMatchObject({ nivel: 1, estado: 'agotado', escaladosA: [] });
+    expect(sobre(mover(inst, enCR(JUE, '14:00')).efectos, 'T29')).toEqual([]);
   });
 
-  it('T15 (vencido el mar 17:00) recuerda el mié 11:00 y escala a Andrés a las 15:00 y a Marcela el jue 9:00', () => {
+  it('T15 (vencido el mar 17:00) recuerda el mié 11:00 y escala a las 15:00 directo a Andrés: Lucía es la responsable de P3 y nadie de otro proyecto sale perjudicado', () => {
     const r = pasoAPaso(instantaneaDesdeSemilla(), enCR(JUE, '09:00'));
     expect(sobre(r.efectos, 'T15').map((a) => [a.accion.tipo, a.accion.destinatarioId, a.accion.en])).toEqual([
       ['pedir_estado', 'lucia-mora', enCR(MIE, '07:00')],
       ['recordatorio', 'lucia-mora', enCR(MIE, '11:00')],
       ['escalamiento', 'andres-vargas', enCR(MIE, '15:00')],
-      ['escalamiento', 'marcela-solis', enCR(JUE, '09:00')],
     ]);
-    expect(seguimientoDe(r.inst, 'T15')[0]).toMatchObject({ nivel: 3, estado: 'agotado' });
+    expect(seguimientoDe(r.inst, 'T15')[0]).toMatchObject({ nivel: 2, destinatarioId: 'andres-vargas', estado: 'agotado', escaladosA: ['andres-vargas'] });
+    const esc = sobre(r.efectos, 'T15').find((a) => a.accion.tipo === 'escalamiento');
+    expect(esc?.aviso?.cuerpo).toContain('responsable de la operación');
+    expect(esc?.accion.motivo).toContain('responsable de la operación');
   });
 });
 
@@ -174,6 +175,7 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
         proximoEn: enCR(MIE, '07:35'),
         estado: 'pendiente',
         iniciadoEn: enCR(MIE, '07:05'),
+        escaladosA: [],
       },
     ]);
     expect(iniciarSeguimientoUrgente(inst, 'T31')).toEqual([]); // ya tiene uno pendiente
@@ -182,7 +184,7 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
     expect(tick(inst)).toEqual([]);
   });
 
-  it('7:35 recordatorio a Lucía → 8:05 escalamiento a Andrés con quién, qué bloquea y desde cuándo → 8:35 Marcela → agotado', () => {
+  it('7:35 recordatorio a Lucía → 8:05 Esteban (responsable de La Colina) con quién, qué bloquea, desde cuándo y qué puede hacer → 8:35 Andrés (responsable de la operación) → agotado', () => {
     let inst = trasC01();
     expect(siguienteEvento(inst)).toEqual(enCR(MIE, '07:35'));
 
@@ -193,21 +195,33 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
 
     r = mover(inst, enCR(MIE, '08:05'));
     const [esc] = acciones(r.efectos);
-    expect(acciones(r.efectos).map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'andres-vargas', trabajos: ['T31'] }]);
+    expect(acciones(r.efectos).map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'esteban-castro', trabajos: ['T31'] }]);
     // Bloquea T04, T05, T06 y T07: citados por título y referencia.
     for (const texto of [...['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05'], 'Lucía Mora']) expect(esc?.aviso?.cuerpo).toContain(texto);
-    expect(esc?.aviso).toMatchObject({ personaId: 'andres-vargas', trabajoIds: ['T31'], en: enCR(MIE, '08:05') });
-    expect(esc?.accion.motivo).toContain('Andrés Vargas');
+    // Dice por qué le llega (es el dueño del resultado) y ofrece las tres acciones de la regla 2.
+    for (const texto of ['Cámara fría La Colina', 'reasignarlo', 'mover el plazo', 'declararlo bloqueado']) expect(esc?.aviso?.cuerpo).toContain(texto);
+    expect(esc?.aviso?.cuerpo).not.toContain('Andrés');
+    expect(esc?.aviso).toMatchObject({ personaId: 'esteban-castro', trabajoIds: ['T31'], en: enCR(MIE, '08:05') });
+    expect(esc?.accion.motivo).toContain('Esteban Castro');
+    expect(esc?.accion.motivo).toContain('responsable del proyecto');
     expect(esc?.accion.hechoOrigen).toContain('7:05');
     inst = r.inst;
-    expect(seguimientoDe(inst, 'T31')[0]).toMatchObject({ nivel: 2, destinatarioId: 'andres-vargas', estado: 'pendiente' });
+    expect(seguimientoDe(inst, 'T31')[0]).toMatchObject({ nivel: 2, destinatarioId: 'esteban-castro', estado: 'pendiente', escaladosA: ['esteban-castro'] });
     expect(siguienteEvento(inst)).toEqual(enCR(MIE, '08:35'));
 
+    // Nadie de OTRO proyecto tiene trabajos en riesgo o bloqueados por T31 (su cadena es de La Colina): el último
+    // recurso es el responsable de la operación.
     r = mover(inst, enCR(MIE, '08:35'));
-    expect(acciones(r.efectos).map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'marcela-solis', trabajos: ['T31'] }]);
-    expect(acciones(r.efectos)[0]?.aviso?.cuerpo).toContain('Ya se escaló a Andrés Vargas');
+    expect(acciones(r.efectos).map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'andres-vargas', trabajos: ['T31'] }]);
+    expect(acciones(r.efectos)[0]?.aviso?.cuerpo).toContain('Ya se escaló a Esteban Castro');
+    expect(acciones(r.efectos)[0]?.aviso?.cuerpo).toContain('responsable de la operación');
     inst = r.inst;
-    expect(seguimientoDe(inst, 'T31')[0]).toMatchObject({ nivel: 3, destinatarioId: 'marcela-solis', estado: 'agotado' });
+    expect(seguimientoDe(inst, 'T31')[0]).toMatchObject({
+      nivel: 3,
+      destinatarioId: 'andres-vargas',
+      estado: 'agotado',
+      escaladosA: ['esteban-castro', 'andres-vargas'],
+    });
 
     // No hay más niveles: una hora después, nada nuevo sobre T31.
     expect(sobre(mover(inst, enCR(MIE, '09:35')).efectos, 'T31')).toEqual([]);
@@ -216,6 +230,115 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
   it('el siguiente nivel se programa desde el anterior programado, no desde la hora del tick', () => {
     const r = mover(trasC01(), enCR(MIE, '07:50'));
     expect(seguimientoDe(r.inst, 'T31')[0]).toMatchObject({ nivel: 1, proximoEn: enCR(MIE, '08:05') });
+  });
+});
+
+/**
+ * Como trasC01, pero el trabajo urgente T31 (creado a las 7:05) se pone en `proyectoId` a cargo de `responsableId` y
+ * bloquea los trabajos de `bloquea`. Sirve para recorrer el camino del escalamiento con otros dueños y perjudicados.
+ */
+function conBloqueante(o: { proyectoId: string; responsableId: string; bloquea: string[] }): Instantanea {
+  const base = mover(instantaneaDesdeSemilla(), enCR(MIE, '07:05')).inst;
+  const numero = Math.max(...base.trabajos.filter((t) => t.proyectoId === o.proyectoId).map((t) => t.numero), 0) + 1;
+  const t31: Trabajo = {
+    ...(base.trabajos.find((t) => t.id === 'T04') as Trabajo),
+    id: 'T31',
+    numero,
+    proyectoId: o.proyectoId,
+    titulo: 'Conseguir lo que falta',
+    responsableId: o.responsableId,
+    solicitadoPorId: 'jose-alfaro',
+    plazo: enCR(MIE, '12:00'),
+    estado: 'abierto',
+    urgente: true,
+    repuestoId: null,
+    cantidadRepuesto: null,
+    origen: 'captura',
+    capturaId: 1,
+    creadoEn: enCR(MIE, '07:05'),
+    resueltoEn: null,
+  };
+  const conT31 = aplicarEnMemoria(base, [
+    { tipo: 'crear_trabajo', trabajo: t31, necesidades: [], actorId: 'jose-alfaro' },
+    ...o.bloquea.map(
+      (id): Efecto => ({ tipo: 'actualizar_trabajo', trabajoId: id, cambios: { estado: 'bloqueado', bloqueadoPorId: 'T31', motivoBloqueo: 'Falta algo' }, actorId: 'jose-alfaro' }),
+    ),
+  ]);
+  return aplicarEnMemoria(conT31, iniciarSeguimientoUrgente(conT31, 'T31'));
+}
+
+/** Escalamientos sobre T31 de 7:35 a 9:35 («Siguiente evento» paso a paso), con el estado final de su seguimiento. */
+function escalamientosDe(inst: Instantanea) {
+  const r = pasoAPaso(inst, enCR(MIE, '09:35'));
+  const escs = sobre(r.efectos, 'T31').filter((a) => a.accion.tipo === 'escalamiento');
+  return { escs, a: escs.map((a) => a.accion.destinatarioId), seguimiento: seguimientoDe(r.inst, 'T31')[0], inst: r.inst };
+}
+
+describe('reforma · el escalamiento sigue al trabajo, no a los cargos', () => {
+  it('nivel 1 al responsable del proyecto; nivel 2 a los responsables de OTROS proyectos perjudicados, uno por persona', () => {
+    // T31 de Repuestos críticos (P3, Lucía) a cargo de Diego; bloquea COLINA-4 (P1) y TRIGAL-3 (P2).
+    const { escs, a, seguimiento, inst } = escalamientosDe(conBloqueante({ proyectoId: 'P3', responsableId: 'diego-rojas', bloquea: ['T04', 'T10'] }));
+    expect(a).toEqual(['lucia-mora', 'esteban-castro', 'daniela-quesada']);
+    expect(escs.map((e) => e.accion.en)).toEqual([enCR(MIE, '08:05'), enCR(MIE, '08:35'), enCR(MIE, '08:35')]);
+    expect(seguimiento).toMatchObject({ nivel: 3, estado: 'agotado', escaladosA: ['lucia-mora', 'esteban-castro', 'daniela-quesada'] });
+    // Cada perjudicado recibe un solo aviso con SUS trabajos (R5); la acción es sobre T31.
+    const aEsteban = escs.find((e) => e.accion.destinatarioId === 'esteban-castro');
+    expect(aEsteban?.accion.trabajoIds).toEqual(['T31']);
+    expect(aEsteban?.aviso?.trabajoIds).toEqual(['T31', 'T04', 'T05', 'T06', 'T07']);
+    expect(aEsteban?.aviso?.cuerpo).toContain('Ya se escaló a Lucía Mora');
+    expect(aEsteban?.aviso?.cuerpo).toContain('«Instalar unidad condensadora y compresor» (COLINA-4)');
+    const aDaniela = escs.find((e) => e.accion.destinatarioId === 'daniela-quesada');
+    expect(aDaniela?.aviso?.trabajoIds).toEqual(['T31', 'T10', 'T13']);
+    expect(aDaniela?.accion.motivo).toContain('Mantenimiento Trigal');
+    // Ni Andrés (jefe de Lucía y responsable de la operación: hay perjudicados) ni Marcela.
+    expect(a).not.toContain('andres-vargas');
+    expect(a).not.toContain('marcela-solis');
+    // Mientras el seguimiento sigue pendiente, quien recibió el escalamiento puede responder y cerrarlo.
+    const a0805 = pasoAPaso(conBloqueante({ proyectoId: 'P3', responsableId: 'diego-rojas', bloquea: ['T04', 'T10'] }), enCR(MIE, '08:05')).inst;
+    expect(registrarRespuesta(a0805, 'T31', 'lucia-mora')).toHaveLength(2);
+    expect(registrarRespuesta(a0805, 'T31', 'daniela-quesada')).toEqual([]); // aún no se le escaló
+    expect(tick(inst)).toEqual([]);
+  });
+
+  it('los trabajos del MISMO proyecto no hacen perjudicado a su responsable: solo cuentan los otros proyectos', () => {
+    // T31 de La Colina (Esteban) a cargo de Lucía; bloquea COLINA-4 y TRIGAL-3: nivel 1 Esteban, nivel 2 solo Daniela.
+    const { a } = escalamientosDe(conBloqueante({ proyectoId: 'P1', responsableId: 'lucia-mora', bloquea: ['T04', 'T10'] }));
+    expect(a).toEqual(['esteban-castro', 'daniela-quesada']);
+  });
+
+  it('si el responsable del proyecto es el del trabajo, el primer escalamiento salta a los perjudicados y no hay más niveles', () => {
+    // T31 de P3 a cargo de Lucía, que también es la responsable de P3.
+    const { escs, a, seguimiento } = escalamientosDe(conBloqueante({ proyectoId: 'P3', responsableId: 'lucia-mora', bloquea: ['T04', 'T10'] }));
+    expect(a).toEqual(['esteban-castro', 'daniela-quesada']);
+    expect(escs.every((e) => e.accion.en.getTime() === enCR(MIE, '08:05').getTime())).toBe(true);
+    expect(seguimiento).toMatchObject({ nivel: 2, estado: 'agotado', escaladosA: ['esteban-castro', 'daniela-quesada'] });
+  });
+
+  it('sin perjudicados, el salto va al responsable de la operación', () => {
+    const { a, seguimiento, escs } = escalamientosDe(conBloqueante({ proyectoId: 'P3', responsableId: 'lucia-mora', bloquea: [] }));
+    expect(a).toEqual(['andres-vargas']);
+    expect(escs[0]?.aviso?.cuerpo).toContain('responsable de la operación');
+    expect(seguimiento).toMatchObject({ nivel: 2, estado: 'agotado', escaladosA: ['andres-vargas'] });
+  });
+
+  it('nunca al propio responsable del trabajo: si el perjudicado es él, se pasa al responsable de la operación', () => {
+    // T31 de P3 (Lucía) a cargo de Esteban; bloquea COLINA-4, cuyo proyecto es de Esteban.
+    const { a } = escalamientosDe(conBloqueante({ proyectoId: 'P3', responsableId: 'esteban-castro', bloquea: ['T04'] }));
+    expect(a).toEqual(['lucia-mora', 'andres-vargas']);
+  });
+
+  it('nunca dos veces a la misma persona: en Operación diaria el responsable del proyecto es el de la operación', () => {
+    // T31 de Operación diaria (Andrés) a cargo de Lucía, sin perjudicados: un solo escalamiento, a Andrés, y se agota.
+    const { a, seguimiento } = escalamientosDe(conBloqueante({ proyectoId: 'OD', responsableId: 'lucia-mora', bloquea: [] }));
+    expect(a).toEqual(['andres-vargas']);
+    expect(seguimiento).toMatchObject({ nivel: 2, estado: 'agotado', escaladosA: ['andres-vargas'] });
+  });
+
+  it('el jefe directo no interviene: ningún escalamiento sigue `jefeId`', () => {
+    // Mismo caso que el anterior con jefes inventados: el camino no cambia.
+    const inst = conBloqueante({ proyectoId: 'P3', responsableId: 'diego-rojas', bloquea: ['T04', 'T10'] });
+    const otrosJefes = { ...inst, personas: inst.personas.map((p) => ({ ...p, jefeId: p.id === 'marcela-solis' ? null : 'marcela-solis' })) };
+    expect(escalamientosDe(otrosJefes).a).toEqual(escalamientosDe(inst).a);
   });
 });
 
@@ -235,12 +358,14 @@ describe('respuesta y resolución detienen el seguimiento', () => {
     expect(registrarRespuesta(despues, 'T31', 'lucia-mora')).toEqual([]); // ya no hay pendiente
   });
 
-  it('solo cierra quien está en la cadena ya alcanzada (responsable, o el jefe tras escalarle)', () => {
+  it('solo cierra quien está en el camino ya alcanzado (responsable, o a quien ya se escaló)', () => {
     const inst = trasC01();
-    expect(registrarRespuesta(inst, 'T31', 'andres-vargas')).toEqual([]); // aún no se le escaló
+    expect(registrarRespuesta(inst, 'T31', 'esteban-castro')).toEqual([]); // aún no se le escaló
+    expect(registrarRespuesta(inst, 'T31', 'andres-vargas')).toEqual([]);
     expect(registrarRespuesta(inst, 'T31', 'jose-alfaro')).toEqual([]);
     const a0805 = mover(mover(inst, enCR(MIE, '07:35')).inst, enCR(MIE, '08:05')).inst;
-    expect(registrarRespuesta(a0805, 'T31', 'andres-vargas')).toHaveLength(2);
+    expect(registrarRespuesta(a0805, 'T31', 'andres-vargas')).toEqual([]); // el jefe directo de Lucía ya no está en el camino
+    expect(registrarRespuesta(a0805, 'T31', 'esteban-castro')).toHaveLength(2);
   });
 
   it('un trabajo resuelto no genera más seguimiento y su seguimiento pendiente se cierra', () => {
@@ -320,14 +445,16 @@ describe('saltar el reloj equivale a avanzar paso a paso', () => {
     const t31 = sobre(salto.efectos, 'T31').map((a) => [a.accion.tipo, a.accion.destinatarioId]);
     expect(t31).toEqual([
       ['recordatorio', 'lucia-mora'],
+      ['escalamiento', 'esteban-castro'],
       ['escalamiento', 'andres-vargas'],
-      ['escalamiento', 'marcela-solis'],
       ['pedir_estado', 'lucia-mora'], // vence su plazo de las 12:00 y vuelve a empezar
       ['recordatorio', 'lucia-mora'],
+      ['escalamiento', 'esteban-castro'],
       ['escalamiento', 'andres-vargas'],
-      ['escalamiento', 'marcela-solis'],
     ]);
-    // Nunca más de un escalamiento por nivel y seguimiento, y como máximo dos niveles de jefes.
+    // La gerente no aparece en el seguimiento: solo decide gastos por encima del tope.
+    expect(acciones(salto.efectos).some((a) => a.accion.destinatarioId === 'marcela-solis')).toBe(false);
+    // Nunca más de un escalamiento por nivel y seguimiento, y como máximo dos niveles tras el recordatorio.
     for (const s of salto.inst.seguimientos) expect(s.nivel).toBeLessThanOrEqual(3);
     expect(tick(salto.inst)).toEqual([]);
   });
