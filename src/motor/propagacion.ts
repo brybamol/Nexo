@@ -4,7 +4,7 @@ import { ETIQUETA_CONCILIACION } from '@/dominio/constantes';
 import { minusculaInicial } from '@/dominio/texto';
 import type { CausaRiesgo, HechoBloqueo, Marcas, Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
-import { porId, type Instantanea } from '@/motor/instantanea';
+import { nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import { calcularMarcas } from '@/motor/marcas';
 
 export type { HechoBloqueo };
@@ -36,12 +36,12 @@ export function efectosBloqueo(inst: Instantanea, hecho: HechoBloqueo): Efecto[]
   const despues = aplicarEnMemoria(inst, efectos);
   const autor = inst.personas.find((p) => p.id === hecho.autorId)?.nombre ?? hecho.autorId;
   const motivo = minusculaInicial(hecho.motivo);
-  let encabezado = `${autor} reportó que ${t.id} «${t.titulo}» quedó bloqueado: ${motivo}.`;
+  const nombres = nombrador(despues);
+  let encabezado = `${autor} reportó que ${nombres.cita(t.id)} quedó bloqueado: ${motivo}.`;
   const causa = repuesto ? causaCitada(inst, repuesto.id) : null;
   if (repuesto && causa) {
-    const c = inst.trabajos.find((x) => x.id === causa) as Trabajo;
     const atrasada = calcularMarcas(inst).get(causa)?.atrasado ? ', atrasado' : '';
-    encabezado += ` El sistema decía que había ${repuesto.existencia} en existencia, pero el conteo no está conciliado: ${c.id} «${c.titulo}»${atrasada}.`;
+    encabezado += ` El sistema decía que había ${repuesto.existencia} en existencia, pero el conteo no está conciliado: ${nombres.cita(causa)}${atrasada}.`;
   }
   efectos.push(...avisosRiesgo(inst, despues, { hecho: hecho.descripcion, encabezado, excluir: hecho.autorId, causa }));
   return efectos;
@@ -52,7 +52,7 @@ export function avisosPorRiesgoNuevo(antes: Instantanea, despues: Instantanea, h
   return avisosRiesgo(antes, despues, { hecho, encabezado: hecho, excluir: null, causa: null });
 }
 
-/** 'T15' si hay un trabajo no resuelto con etiqueta de conciliación y el repuesto tenía existencia > 0. */
+/** Id interno del trabajo (T15) si hay uno no resuelto con etiqueta de conciliación y el repuesto tenía existencia > 0. */
 export function causaCitada(inst: Instantanea, repuestoId: string): string | null {
   const r = inst.repuestos.find((x) => x.id === repuestoId);
   if (!r || r.existencia <= 0) return null;
@@ -63,16 +63,18 @@ export function causaCitada(inst: Instantanea, repuestoId: string): string | nul
 
 function porQue(causas: CausaRiesgo[], inst: Instantanea): string {
   const repuestos = porId(inst.repuestos);
+  const nombres = nombrador(inst);
+  const de = (id: string | undefined) => (id ? nombres.cita(id) : 'otro trabajo');
   const partes = causas.map((c) => {
     switch (c.tipo) {
       case 'repuesto':
         return `necesita ${minusculaInicial(repuestos.get(c.repuestoId ?? '')?.nombre ?? c.repuestoId ?? 'un repuesto')}`;
       case 'bloqueado':
-        return `depende de ${c.trabajoId}, bloqueado`;
+        return `depende de ${de(c.trabajoId)}, bloqueado`;
       case 'atrasado':
-        return `depende de ${c.trabajoId}, atrasado`;
+        return `depende de ${de(c.trabajoId)}, atrasado`;
       case 'cadena':
-        return `depende de ${c.trabajoId}, en riesgo`;
+        return `depende de ${de(c.trabajoId)}, en riesgo`;
     }
   });
   return [...new Set(partes)].join('; ');
@@ -85,8 +87,8 @@ function avisosRiesgo(
 ): Efecto[] {
   const mAntes = calcularMarcas(antes);
   const mDespues = calcularMarcas(despues);
-  const proyectos = porId(despues.proyectos);
   const personas = porId(despues.personas);
+  const nombres = nombrador(despues);
   const nuevos = despues.trabajos.filter((t) => mDespues.get(t.id)?.enRiesgo && !mAntes.get(t.id)?.enRiesgo);
 
   const grupos = new Map<string, Trabajo[]>();
@@ -100,17 +102,18 @@ function avisosRiesgo(
     const ids = ts.map((t) => t.id);
     const lineas = ts.map((t) => {
       const m = mDespues.get(t.id) as Marcas;
-      return `${t.id} «${t.titulo}» (${proyectos.get(t.proyectoId)?.nombre ?? t.proyectoId}): ${porQue(m.causas, despues)}.`;
+      return `${nombres.cita(t.id)}: ${porQue(m.causas, despues)}.`;
     });
     const cuerpo = `${o.encabezado} Quedan en riesgo: ${lineas.join(' ')}`;
     const nombre = personas.get(personaId)?.nombre ?? personaId;
-    const enumerar = ids.length === 1 ? ids[0] : `${ids.slice(0, -1).join(', ')} y ${ids[ids.length - 1]}`;
+    const enumerar = nombres.citas(ids);
+    const titulo = ids.length === 1 ? `«${ts[0]!.titulo}» en riesgo` : `${ids.length} trabajos en riesgo`;
     efectos.push({
       tipo: 'accion',
       accion: {
         en: despues.ahora,
         tipo: 'aviso',
-        motivo: `R4/R5: ${enumerar} de ${nombre} ${ids.length === 1 ? 'pasa' : 'pasan'} a en riesgo${o.causa ? `; causa citada: ${o.causa}` : ''}.`,
+        motivo: `R4/R5: ${enumerar}, de ${nombre}, ${ids.length === 1 ? 'pasa' : 'pasan'} a en riesgo${o.causa ? `; causa citada: ${nombres.cita(o.causa)}` : ''}.`,
         hechoOrigen: o.hecho,
         trabajoIds: ids,
         decisionId: null,
@@ -120,7 +123,7 @@ function avisosRiesgo(
       aviso: {
         personaId,
         en: despues.ahora,
-        titulo: `${enumerar} en riesgo`,
+        titulo,
         cuerpo,
         trabajoIds: ids,
       },

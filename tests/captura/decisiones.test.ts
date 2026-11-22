@@ -32,7 +32,7 @@ describe('decisiones desde la captura (7:05, estado inicial)', () => {
       ['C', 1_220_000],
     ]);
     expect(d?.opciones[1]?.cambiosFecha.length).toBeGreaterThan(0);
-    expect(d?.contexto).toContain('T15');
+    expect(d?.contexto).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
     expect(d?.afectados.trabajoIds).toEqual(expect.arrayContaining(['T04', 'T05', 'T06', 'T07', 'T10', 'T11', 'T13']));
     expect((await demo.ctx.db.select().from(trabajos)).length).toBe(30);
     if (r.estado === 'aplicada') expect(r.avisosA).toEqual(['marcela-solis']);
@@ -61,7 +61,7 @@ describe('decisiones desde la captura (7:05, estado inicial)', () => {
     const r = await capturar(demo.ctx, 'lucia-mora', C11);
     expect(r.estado).toBe('error');
     if (r.estado === 'error') {
-      expect(r.mensaje).toContain('D01');
+      expect(r.mensaje).toContain('«Compra de 3 compresores de 2 HP» (COLINA-D1)'); // D01
       expect(r.mensaje).toContain('No creé nada');
     }
     const inst = await cargarInstantanea(demo.ctx.db);

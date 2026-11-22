@@ -3,7 +3,7 @@
 import { formatearFecha } from '@/dominio/formato';
 import type { PlanActualizacion, Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
-import { dependientesDirectos, porId, type Instantanea } from '@/motor/instantanea';
+import { dependientesDirectos, nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import { registrarRespuesta } from '@/motor/seguimiento';
 
 const ESTADO_TEXTO: Record<Trabajo['estado'], string> = {
@@ -42,6 +42,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
   if (!x) return [];
   const autor = personas.get(autorId)?.nombre ?? autorId;
   const ahora = inst.ahora;
+  const { cita } = nombrador(inst);
 
   const efectos: Efecto[] = [];
   const tocados: string[] = [x.id];
@@ -59,7 +60,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
     for (const depId of dependientesDirectos(inst, t.id)) {
       const d = trabajos.get(depId);
       if (!d || d.estado === 'resuelto') continue;
-      avisos.agregar(d.responsableId, [d.id], `${t.id} «${t.titulo}» ${como}: ${d.id} «${d.titulo}» puede avanzar.`);
+      avisos.agregar(d.responsableId, [d.id], `${cita(t.id)} ${como}: ${cita(d.id)} puede avanzar.`);
     }
   };
 
@@ -70,7 +71,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
   const sigueBloqueado = pedido !== null && pedido !== 'resuelto' && bloqueante !== undefined && bloqueante.estado !== 'resuelto';
   const nuevo = sigueBloqueado ? null : pedido;
   if (sigueBloqueado && bloqueante) {
-    cambiosTexto.push(`${x.id} sigue bloqueado por ${bloqueante.id} «${bloqueante.titulo}»: no cambió su estado`);
+    cambiosTexto.push(`${cita(x.id)} sigue bloqueado por ${cita(bloqueante.id)}: no cambió su estado`);
   }
   if (nuevo) {
     const saleDeBloqueo = x.estado === 'bloqueado';
@@ -84,7 +85,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
       },
       actorId: autorId,
     });
-    cambiosTexto.push(`${x.id} pasó a ${ESTADO_TEXTO[nuevo]}`);
+    cambiosTexto.push(`${cita(x.id)} pasó a ${ESTADO_TEXTO[nuevo]}`);
     if (nuevo === 'resuelto') liberar(x, 'quedó resuelto');
     else if (saleDeBloqueo) liberar(x, 'ya no está bloqueado');
 
@@ -99,14 +100,14 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
           cambios: { estado: 'en_curso', bloqueadoPorId: null, motivoBloqueo: null, fechaSolucion: null },
           actorId: autorId,
         });
-        avisos.agregar(t.responsableId, [t.id], `${x.id} «${x.titulo}» quedó resuelto: ${t.id} «${t.titulo}» ya no está bloqueado.`);
+        avisos.agregar(t.responsableId, [t.id], `${cita(x.id)} quedó resuelto: ${cita(t.id)} ya no está bloqueado.`);
         for (const n of inst.necesidades) {
           if (x.repuestoId && n.trabajoId === t.id && n.repuestoId === x.repuestoId && !n.atendida) {
             efectos.push({ tipo: 'actualizar_necesidad', trabajoId: t.id, repuestoId: n.repuestoId, cambios: { atendida: true } });
           }
         }
         tocar(t.id);
-        cambiosTexto.push(`${t.id} vuelve a en curso`);
+        cambiosTexto.push(`${cita(t.id)} vuelve a en curso`);
         liberar(t, 'ya no está bloqueado');
       }
     }
@@ -125,7 +126,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
   // Nota en el propio trabajo.
   if (plan.nota) {
     efectos.push({ tipo: 'agregar_nota', trabajoId: x.id, autorId, texto: plan.nota });
-    cambiosTexto.push(`nota en ${x.id}`);
+    cambiosTexto.push(`nota en ${cita(x.id)}`);
   }
 
   // Regla 6: nota con problema.
@@ -135,7 +136,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
       if (dep.trabajoId !== x.id) continue;
       const p = trabajos.get(dep.dependeDeId);
       if (!p || p.estado === 'resuelto') continue;
-      avisos.agregar(p.responsableId, [x.id, p.id], `${autor} reportó un problema en ${x.id} «${x.titulo}», que depende de ${p.id} «${p.titulo}»${detalle}`);
+      avisos.agregar(p.responsableId, [x.id, p.id], `${autor} reportó un problema en ${cita(x.id)}, que depende de ${cita(p.id)}${detalle}`);
     }
     for (const depId of dependientesDirectos(inst, x.id)) {
       const d = trabajos.get(depId);
@@ -145,7 +146,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
       avisos.agregar(
         responsableProyecto,
         [x.id, d.id],
-        `${autor} reportó un problema en ${x.id} «${x.titulo}»; de él depende ${d.id} «${d.titulo}»${detalle}`,
+        `${autor} reportó un problema en ${cita(x.id)}; de él depende ${cita(d.id)}${detalle}`,
       );
     }
   }
@@ -156,12 +157,12 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
     if (!t || t.plazo.getTime() === r.plazo.getTime()) continue;
     efectos.push({ tipo: 'actualizar_trabajo', trabajoId: t.id, cambios: { plazo: r.plazo }, actorId: autorId });
     tocar(t.id);
-    cambiosTexto.push(`plazo de ${t.id} a ${formatearFecha(r.plazo)}`);
+    cambiosTexto.push(`plazo de ${cita(t.id)} a ${formatearFecha(r.plazo)}`);
     if (t.responsableId !== autorId) {
       avisos.agregar(
         t.responsableId,
         [t.id],
-        `${autor} movió el plazo de ${t.id} «${t.titulo}» de ${formatearFecha(t.plazo)} a ${formatearFecha(r.plazo)}.`,
+        `${autor} movió el plazo de ${cita(t.id)} de ${formatearFecha(t.plazo)} a ${formatearFecha(r.plazo)}.`,
       );
     }
   }
@@ -170,10 +171,10 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
   for (const n of plan.notasRelacionadas) {
     efectos.push({ tipo: 'agregar_nota', trabajoId: n.trabajoId, autorId, texto: n.nota });
     tocar(n.trabajoId);
-    cambiosTexto.push(`nota en ${n.trabajoId}`);
+    cambiosTexto.push(`nota en ${cita(n.trabajoId)}`);
   }
 
-  const hechoOrigen = `${autor} actualizó ${x.id} «${x.titulo}»${plan.nota ? `: «${plan.nota}»` : ''}`;
+  const hechoOrigen = `${autor} actualizó ${cita(x.id)}${plan.nota ? `: «${plan.nota}»` : ''}`;
 
   // R10: registro de lo que hizo Nexo con la actualización.
   efectos.push({
@@ -205,7 +206,7 @@ export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion,
         destinatarioId: personaId,
         capturaId: null,
       },
-      aviso: { personaId, en: ahora, titulo: `${autor} actualizó ${x.id}`, cuerpo, trabajoIds: g.trabajoIds },
+      aviso: { personaId, en: ahora, titulo: `${autor} actualizó «${x.titulo}»`, cuerpo, trabajoIds: g.trabajoIds },
     });
   }
 

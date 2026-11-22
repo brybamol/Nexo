@@ -3,6 +3,7 @@
 import { enlazarEsperas, agruparProyectos } from '@/correo/enlaces';
 import { extraerDeHilo } from '@/correo/extraccion';
 import { unirBuzones } from '@/correo/union';
+import { claveDesdeNombre, referenciaTrabajo } from '@/dominio/nombres';
 import type {
   Buzon,
   Cadena,
@@ -108,6 +109,28 @@ export function personasDeCadena(cadena: Cadena, compromisos: Compromiso[]): str
   return personas.filter((p, i) => p !== personas[i - 1]);
 }
 
+/**
+ * Referencia visible de cada compromiso (TRANSLOG-1, NAVIDAD-2): proyecto y numeración propia de cada proyecto, en el
+ * orden de los códigos (fecha del pedido). Se calcula sobre lo extraído, ANTES de las correcciones, para que no cambie
+ * cuando alguien corrige o descarta. Un compromiso cuyo proyecto no tiene nombre propio (el asunto completo) no lleva
+ * referencia: se nombra solo por su título. `extraidos` ya viene en orden de código; no se modifica.
+ */
+function referenciasVisibles(extraidos: Compromiso[], empresa: EmpresaCorreo): Map<string, string> {
+  const copia = structuredClone(extraidos);
+  enlazarEsperas(copia, empresa);
+  agruparProyectos(copia);
+  const cuenta = new Map<string, number>();
+  const res = new Map<string, string>();
+  for (const c of copia) {
+    if (/\s/.test(c.proyecto.trim())) continue;
+    const clave = claveDesdeNombre(c.proyecto);
+    const n = (cuenta.get(clave) ?? 0) + 1;
+    cuenta.set(clave, n);
+    res.set(c.id, referenciaTrabajo(clave, n));
+  }
+  return res;
+}
+
 export interface EntradaModeloCorreo {
   empresa: EmpresaCorreo;
   buzones: Buzon[];
@@ -122,6 +145,7 @@ export function calcularModeloCorreo({ empresa, buzones, correcciones, ahora }: 
   // Los códigos se fijan antes de descartar, para que no cambien cuando alguien descarta uno.
   extraidos.sort((a, b) => (a.evidencias[0]?.en.getTime() ?? 0) - (b.evidencias[0]?.en.getTime() ?? 0));
   const codigos = new Map(extraidos.map((c, i) => [c.id, `C${i + 1}`]));
+  const referencias = referenciasVisibles(extraidos, empresa);
 
   const compromisos = aplicarCorrecciones(extraidos, correcciones);
   enlazarEsperas(compromisos, empresa);
@@ -132,6 +156,7 @@ export function calcularModeloCorreo({ empresa, buzones, correcciones, ahora }: 
   const conMarcas: CompromisoConMarcas[] = compromisos.map((c) => ({
     ...c,
     codigo: codigos.get(c.id) ?? c.id,
+    referencia: referencias.get(c.id) ?? '',
     marcas: marcas.get(c.id) ?? { atrasado: false, enRiesgo: false, causas: [] },
   }));
 

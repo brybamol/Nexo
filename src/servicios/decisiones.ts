@@ -5,7 +5,7 @@ import { formatearColones } from '@/dominio/formato';
 import { ErrorDominio, type Decision, type EstadoDecision, type LetraOpcion, type Persona } from '@/dominio/tipos';
 import * as motor from '@/motor/decision';
 import type { Efecto } from '@/motor/efectos';
-import { porId, type Instantanea } from '@/motor/instantanea';
+import { nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import type { ContextoServicio } from '@/servicios/contexto';
 import type { DecisionVista, PersonaBreve } from '@/servicios/vistas';
 
@@ -18,8 +18,15 @@ function aVista(inst: Instantanea, d: Decision): DecisionVista {
   const personas = porId(inst.personas);
   const trabajos = porId(inst.trabajos);
   const proyecto = inst.proyectos.find((p) => p.id === d.proyectoId);
+  const nombres = nombrador(inst);
+  const citados = [
+    ...d.afectados.trabajoIds,
+    ...d.opciones.flatMap((o) => [...o.lineas.flatMap((l) => l.trabajoIds), ...o.cambiosFecha.map((c) => c.trabajoId)]),
+  ];
   return {
     id: d.id,
+    titulo: nombres.tituloDecision(d.id),
+    referencia: nombres.referenciaDecision(d.id),
     estado: d.estado,
     creadaEn: d.creadaEn,
     proyecto: { id: d.proyectoId, nombre: proyecto?.nombre ?? d.proyectoId },
@@ -28,8 +35,14 @@ function aVista(inst: Instantanea, d: Decision): DecisionVista {
     contexto: d.contexto,
     afectados: d.afectados.trabajoIds.map((id) => {
       const t = trabajos.get(id);
-      return { trabajoId: id, titulo: t?.titulo ?? '', responsable: t ? (personas.get(t.responsableId)?.nombre ?? t.responsableId) : '' };
+      return {
+        trabajoId: id,
+        titulo: t?.titulo ?? '',
+        referencia: nombres.referencia(id),
+        responsable: t ? (personas.get(t.responsableId)?.nombre ?? t.responsableId) : '',
+      };
     }),
+    trabajos: Object.fromEntries(citados.map((id) => [id, nombres.ref(id)])),
     opciones: d.opciones.map((o) => ({ ...o, costoTexto: formatearColones(o.costo) })),
     opcionPropuesta: d.opcionPropuesta,
     opcionElegida: d.opcionElegida,
@@ -63,11 +76,12 @@ export async function obtenerDecision(ctx: ContextoServicio, id: string): Promis
 
 function comprobarDecisor(inst: Instantanea, id: string, personaId: string): void {
   const d = inst.decisiones.find((x) => x.id === id);
-  if (!d) throw new ErrorDominio(`No existe la decisión ${id}.`);
-  if (d.estado !== 'pendiente') throw new ErrorDominio(`La decisión ${id} ya está ${d.estado}.`);
+  if (!d) throw new ErrorDominio('No existe esa decisión.');
+  const cita = nombrador(inst).citaDecision(d.id);
+  if (d.estado !== 'pendiente') throw new ErrorDominio(`La decisión ${cita} ya está ${d.estado}.`);
   if (d.decisorId !== personaId) {
     const nombre = inst.personas.find((p) => p.id === d.decisorId)?.nombre ?? d.decisorId;
-    throw new ErrorDominio(`Solo ${nombre} puede decidir ${id}.`);
+    throw new ErrorDominio(`Solo ${nombre} puede decidir ${cita}.`);
   }
 }
 

@@ -4,7 +4,7 @@ import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/i
 import { ErrorDominio, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
 import { efectosActualizacion } from '@/motor/actualizacion';
 import type { Efecto } from '@/motor/efectos';
-import type { Instantanea } from '@/motor/instantanea';
+import { nombrador, type Instantanea } from '@/motor/instantanea';
 import { registrarRespuesta } from '@/motor/seguimiento';
 import type { ContextoServicio } from '@/servicios/contexto';
 
@@ -12,7 +12,7 @@ const ESTADOS: readonly EstadoTrabajo[] = ['abierto', 'en_curso', 'bloqueado', '
 
 function comprobar(inst: Instantanea, trabajoId: string, personaId: string, estado?: EstadoTrabajo) {
   const trabajo = inst.trabajos.find((t) => t.id === trabajoId);
-  if (!trabajo) throw new ErrorDominio(`No existe el trabajo ${trabajoId}.`);
+  if (!trabajo) throw new ErrorDominio('No existe ese trabajo.');
   const persona = inst.personas.find((p) => p.id === personaId);
   if (!persona) throw new ErrorDominio(`No existe la persona ${personaId}.`);
   if (estado !== undefined && !ESTADOS.includes(estado)) throw new ErrorDominio(`El estado «${estado}» no es válido.`);
@@ -42,7 +42,7 @@ export async function responderSeguimiento(
     const estado = r.estado && r.estado !== trabajo.estado ? r.estado : null;
 
     if (!registrarRespuesta(inst, trabajoId, personaId).length) {
-      throw new ErrorDominio(`No hay un seguimiento pendiente de ${trabajoId} que ${persona.nombre} pueda responder.`);
+      throw new ErrorDominio(`No hay un seguimiento pendiente de ${nombrador(inst).cita(trabajoId)} que ${persona.nombre} pueda responder.`);
     }
     let efectos: Efecto[];
     if (estado || nota) {
@@ -55,8 +55,8 @@ export async function responderSeguimiento(
           accion: {
             en: inst.ahora,
             tipo: 'actualizar_trabajo',
-            motivo: `${persona.nombre} respondió al seguimiento de ${trabajoId}: se cierra el seguimiento.`,
-            hechoOrigen: `${persona.nombre} respondió sobre ${trabajoId} «${trabajo.titulo}»`,
+            motivo: `${persona.nombre} respondió al seguimiento de ${nombrador(inst).cita(trabajoId)}: se cierra el seguimiento.`,
+            hechoOrigen: `${persona.nombre} respondió sobre ${nombrador(inst).cita(trabajo.id)}`,
             trabajoIds: [trabajoId],
             decisionId: null,
             destinatarioId: null,

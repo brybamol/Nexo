@@ -78,7 +78,7 @@ describe('DDL sobre PGlite en memoria', () => {
       { id: 'jefa', nombre: 'Jefa', rol: 'Gerente general', area: 'Gerencia', jefeId: null },
       { id: 'ana', nombre: 'Ana', rol: 'Técnica', area: 'Campo', jefeId: 'jefa' },
     ]);
-    await db.insert(esquema.proyectos).values({ id: 'P1', nombre: 'Proyecto', resultado: 'Listo', responsableId: 'jefa', fecha: en, cliente: 'X' });
+    await db.insert(esquema.proyectos).values({ id: 'P1', clave: 'UNO', nombre: 'Proyecto', resultado: 'Listo', responsableId: 'jefa', fecha: en, cliente: 'X' });
     await db.insert(esquema.repuestos).values({
       id: 'termostato',
       nombre: 'Termostato',
@@ -91,10 +91,11 @@ describe('DDL sobre PGlite en memoria', () => {
       faltanteReportadoPor: 'ana',
     });
     await db.insert(esquema.trabajos).values([
-      { id: 'T01', proyectoId: 'P1', titulo: 'Uno', responsableId: 'ana', plazo: en, estado: 'abierto', origen: 'semilla', creadoEn: en },
+      { id: 'T01', proyectoId: 'P1', numero: 1, titulo: 'Uno', responsableId: 'ana', plazo: en, estado: 'abierto', origen: 'semilla', creadoEn: en },
       {
         id: 'T02',
         proyectoId: 'P1',
+        numero: 2,
         titulo: 'Dos',
         responsableId: 'ana',
         solicitadoPorId: 'jefa',
@@ -139,6 +140,7 @@ describe('DDL sobre PGlite en memoria', () => {
       id: 'D01',
       creadaEn: en,
       proyectoId: 'P1',
+      numero: 1,
       proponenteId: 'ana',
       decisorId: 'jefa',
       repuestoId: 'termostato',

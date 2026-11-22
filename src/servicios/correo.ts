@@ -88,7 +88,7 @@ export async function registrarCorreccion(ctx: ContextoServicio, entrada: Entrad
   const c = modelo.compromisos.find((x) => x.id === entrada.compromisoId);
   if (!c) throw new ErrorDominio('Ese compromiso no existe o ya fue descartado.');
   if (c.solicitanteId !== persona.id && c.responsableId !== persona.id) {
-    throw new ErrorDominio(`Solo quien lo pidió o quien lo debe hacer puede revisar ${c.codigo}.`);
+    throw new ErrorDominio(`Solo quien lo pidió o quien lo debe hacer puede revisar «${c.titulo}».`);
   }
 
   const cambios: CambiosCorreccion = {};

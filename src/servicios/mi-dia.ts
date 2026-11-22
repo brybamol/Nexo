@@ -7,6 +7,7 @@ import { registrarRespuesta } from '@/motor/seguimiento';
 import type { ContextoServicio } from '@/servicios/contexto';
 import { cargarVistasTrabajos } from '@/servicios/consultas-trabajos';
 import { listarDecisiones } from '@/servicios/decisiones';
+import { cargarNombrador } from '@/servicios/registro';
 import { obtenerAhora } from '@/servicios/reloj';
 import type { AvisoVista, DecisionVista, MiDia, PersonaBreve, TrabajoVista } from '@/servicios/vistas';
 
@@ -37,12 +38,14 @@ async function avisosDe(ctx: ContextoServicio, personaId: string): Promise<Aviso
     .where(eq(avisos.personaId, personaId))
     .orderBy(desc(avisos.en), desc(avisos.id))
     .limit(MAX_AVISOS);
+  const nombres = await cargarNombrador(ctx.db);
   return filas.map(({ aviso, tipo }) => ({
     id: aviso.id,
     en: aviso.en,
     titulo: aviso.titulo,
     cuerpo: aviso.cuerpo,
     trabajoIds: aviso.trabajoIds,
+    trabajos: nombres.refs(aviso.trabajoIds),
     tipoAccion: tipo,
     leido: aviso.leidoEn !== null,
   }));

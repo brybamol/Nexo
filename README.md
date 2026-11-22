@@ -53,21 +53,36 @@ Es un MVP de hackathon. Funciona en local con datos de ejemplo de una empresa fi
 
 No hay que instalar ni configurar ninguna base de datos. Nexo usa PGlite, una base PostgreSQL embebida que guarda sus datos en la carpeta `.data/` dentro del proyecto. Al arrancar, crea las tablas y carga sola los datos de ejemplo. Si el proyecto está dentro de OneDrive, conviene mover esa carpeta con la variable `NEXO_DATA_DIR` (ver `.env.example`).
 
+### Si ya tenías una base de una versión anterior
+
+Las versiones anteriores no guardaban la clave de cada proyecto ni el número de cada trabajo (ver «Cómo se nombran los trabajos»). Al arrancar, Nexo añade esas columnas a la base de `.data/` y las rellena solo: los trabajos se numeran por proyecto en el orden de su id y las decisiones por fecha. No se borra nada. Los avisos y el registro que ya estaban guardados conservan su texto viejo, con códigos como «T04»; para ver la demo con los textos nuevos, pulsa **Reiniciar demo** en la aplicación o, con `pnpm dev` parado, ejecuta `pnpm db:reset`.
+
+## Cómo se nombran los trabajos
+
+Un número suelto no dice nada cuando hay miles de trabajos. Por eso, ante las personas:
+
+- **Un trabajo se nombra por su título** y lleva, pequeña al lado, una **referencia** con la clave de su proyecto y un número propio de ese proyecto: «Cableado y tablero de control» **COLINA-5**. La referencia sirve para citar un trabajo de palabra o escribirlo en la captura: «sigo con COLINA-4» se entiende como el trabajo COLINA-4.
+- **Una decisión** se nombra por lo que decide, «Compra de 3 compresores de 2 HP», con la referencia de su proyecto y una «D»: **COLINA-D1**.
+- **Un compromiso de la pantalla de correo** se nombra por su título, con la referencia de su proyecto: **TRANSLOG-2**, **NAVIDAD-1**.
+- Claves de los proyectos de Frío del Valle: **COLINA** (Cámara fría La Colina), **TRIGAL** (Mantenimiento Trigal), **REPUESTOS** (Repuestos críticos), **PEDIDOS** (Pedidos de la semana) y **DIARIA** (Operación diaria).
+
+Los ids `T04`, `D01` o `C1` siguen existiendo, pero son de la especificación (`docs/03`, `docs/04`, `docs/06`) y del código: claves de la base, rutas (`/trabajos/T04`) y pruebas. Nexo no los muestra nunca. La equivalencia de los 30 trabajos de ejemplo está en `docs/04-empresa-y-casos-de-control.md`.
+
 ## Cómo recorrer la demo
 
 La demo es el guion de cuatro minutos del plan (`docs/02-plan-mvp-hackathon.md`). Sigue estos pasos en orden. La hora aparece en la barra superior, junto a los botones del reloj.
 
 1. Pulsa **Reiniciar demo** y confirma. El reloj queda en mié 25 nov, 7:00.
 2. Pulsa **+5 min**. El reloj queda en 7:05.
-3. En el selector **ver como**, elige a **José Alfaro**. En la caja de captura escribe «No puedo terminar la instalación en La Colina, falta el compresor de 2 HP» y envíala.
-4. Cambia a **Lucía Mora** y abre **Mi día**.
+3. En el selector **ver como**, elige a **José Alfaro**. En la caja de captura escribe «No puedo terminar la instalación en La Colina, falta el compresor de 2 HP» y envíala. Nexo responde «Creé «Conseguir compresor de 2 HP» (COLINA-8) para Lucía Mora…» y deja bloqueado «Instalar unidad condensadora y compresor» (COLINA-4).
+4. Cambia a **Lucía Mora** y abre **Mi día**. Arriba está «Conseguir compresor de 2 HP», con su referencia COLINA-8.
 5. Pulsa **Siguiente evento**. El reloj queda en 7:35.
 6. Pulsa **Siguiente evento**. El reloj queda en 8:05.
-7. Cambia a **Mario Chaves** y abre **Mi día**.
+7. Cambia a **Mario Chaves** y abre **Mi día**. Un solo aviso, «2 trabajos en riesgo», cita «Cableado y tablero de control» (COLINA-5) y «Cambiar compresor en local Curridabat» (TRIGAL-4), y la causa: «Conciliar el conteo con el sistema» (REPUESTOS-2).
 8. Pulsa **+5 min**. El reloj queda en 8:10.
-9. Cambia a **Lucía Mora** y escribe en la caja de captura «No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local».
-10. Cambia a **Marcela Solís** (gerente general), abre **Decisiones** y aprueba la opción A.
-11. Con Marcela Solís, escribe en **Preguntar** «¿Cómo vamos con los pedidos de la semana?».
+9. Cambia a **Lucía Mora** y escribe en la caja de captura «No hay compresores de 2 HP. Propongo comprar 3 de urgencia al proveedor local». Nexo prepara la decisión «Compra de 3 compresores de 2 HP» (COLINA-D1).
+10. Cambia a **Marcela Solís** (gerente general), abre **Decisiones** y aprueba la opción A. Nexo crea «Comprar 3 compresores de 2 HP al proveedor local» (COLINA-9) para Karla.
+11. Con Marcela Solís, escribe en **Preguntar** «¿Cómo vamos con los pedidos de la semana?». Cada pedido se cita con su referencia, por ejemplo «Pedido 1043 · Minisúper Don Beto (PEDIDOS-3)».
 12. Abre **Proyectos** y **Registro**.
 
 > **Advertencia:** **Siguiente evento** primero procesa lo que ya venció a la hora actual, sin mover el reloj; si no hay nada vencido, salta al siguiente evento programado. No lo pulses antes de la primera frase (paso 3). Después de la segunda frase (paso 9) llevaría el reloj a las 10:00 y cambiaría las cifras.
@@ -132,7 +147,7 @@ Nadie sube cambios directamente a `main`.
 | `src/motor` | Reglas de coordinación: marcas, seguimiento, propagación, opciones y decisiones. Es código puro, sin base de datos ni red. |
 | `src/ia` | Intérpretes Local y Claude, y la validación de sus respuestas. |
 | `src/db` | Esquema de la base (Drizzle), conexión (PGlite o PostgreSQL) y datos de ejemplo en `semilla/`. |
-| `src/dominio` | Tipos, constantes, tiempo (hora de Costa Rica), formato y texto. |
+| `src/dominio` | Tipos, constantes, tiempo (hora de Costa Rica), formato, texto y nombres (`nombres.ts`: cómo se nombra y se referencia cada cosa ante las personas). |
 | `src/servidor` | Contexto de la aplicación y persona actual. |
 | `tests/` | Pruebas: captura, escenarios de coordinación, motor, base de datos e integración del guion. |
 | `scripts/` | `reiniciar-db.ts`, que usa el comando `pnpm db:reset`. |

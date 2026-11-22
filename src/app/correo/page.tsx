@@ -3,6 +3,7 @@
 import { ArrowRight, Inbox, ShieldCheck, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { TarjetaCompromiso } from '@/componentes/correo/tarjeta-compromiso';
+import { Referencia } from '@/componentes/enlaces-trabajos';
 import { PERSONA_CORREO_POR_DEFECTO } from '@/correo/ejemplo/empresa';
 import { personasDeCadena } from '@/correo/modelo';
 import type { CompromisoConMarcas, ModeloCorreo, Proveedor } from '@/correo/tipos';
@@ -54,9 +55,20 @@ function Cadenas({ modelo }: { modelo: ModeloCorreo }) {
                         <strong>{persona?.nombre ?? id}</strong>
                         <span className="correo__depto">{persona?.departamento}</span>
                         {debe ? (
-                          <a href={`#${debe.id}`} className="cadena__debe" data-estado={debe.estado}>
-                            {debe.codigo} · {debe.marcas.atrasado ? 'atrasado' : debe.estado === 'bloqueado' ? 'bloqueado' : debe.marcas.enRiesgo ? 'en riesgo' : 'pendiente'}
-                          </a>
+                          <>
+                            <a href={`#${debe.id}`} className="cadena__debe" data-estado={debe.estado}>
+                              {debe.titulo}
+                            </a>
+                            <span className="cadena__debe">
+                              {debe.marcas.atrasado ? 'atrasado' : debe.estado === 'bloqueado' ? 'bloqueado' : debe.marcas.enRiesgo ? 'en riesgo' : 'pendiente'}
+                              {debe.referencia && (
+                                <>
+                                  {' · '}
+                                  <Referencia valor={debe.referencia} />
+                                </>
+                              )}
+                            </span>
+                          </>
                         ) : (
                           <span className="cadena__debe">espera</span>
                         )}

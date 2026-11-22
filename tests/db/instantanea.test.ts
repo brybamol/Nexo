@@ -26,6 +26,7 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
   return {
     id,
     proyectoId: 'P1',
+    numero: 8,
     titulo: 'Conseguir un compresor de 2 HP',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -68,6 +69,7 @@ function decisionNueva(id = 'D01'): Decision {
     id,
     creadaEn: AHORA,
     proyectoId: 'P1',
+    numero: 1,
     proponenteId: 'lucia-mora',
     decisorId: 'marcela-solis',
     capturaId: null,

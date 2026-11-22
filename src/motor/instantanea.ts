@@ -1,4 +1,5 @@
 // Instantánea del estado y sus índices puros. ARCHIVO DE CONTRATO (§4.0 de docs/05): completo desde la tarea 1.1.
+import { crearNombrador, type Nombrador } from '@/dominio/nombres';
 import type {
   Decision,
   Dependencia,
@@ -93,4 +94,19 @@ export function siguienteIdSeguimiento(inst: Instantanea): string {
     'S',
     1,
   );
+}
+
+/** Número del próximo trabajo de `proyectoId` (máximo del proyecto + 1). Se calcula en la misma transacción que lo crea. */
+export function siguienteNumeroTrabajo(inst: Instantanea, proyectoId: string): number {
+  return Math.max(0, ...inst.trabajos.filter((t) => t.proyectoId === proyectoId).map((t) => t.numero ?? 0)) + 1;
+}
+
+/** Número de la próxima decisión de `proyectoId`: COLINA-D1, COLINA-D2… */
+export function siguienteNumeroDecision(inst: Instantanea, proyectoId: string): number {
+  return Math.max(0, ...inst.decisiones.filter((d) => d.proyectoId === proyectoId).map((d) => d.numero ?? 0)) + 1;
+}
+
+/** Cómo se nombran ante las personas los trabajos y decisiones de esta instantánea (dominio/nombres.ts). */
+export function nombrador(inst: Instantanea): Nombrador {
+  return crearNombrador(inst);
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { formatearFecha } from '@/dominio/formato';
 import type { EstadoTrabajo } from '@/dominio/tipos';
 import type { TrabajoVista } from '@/servicios/vistas';
+import { EnlaceTrabajo, EnlacesTrabajos } from './enlaces-trabajos';
 import { CodigoTrabajo, InsigniaEstado } from './insignia-estado';
 import { InsigniaMarcas } from './insignia-marcas';
 
@@ -28,13 +29,13 @@ export function TarjetaTrabajo({
   return (
     <article className="tarjeta trabajo" data-estado={trabajo.estado}>
       <div className="trabajo__codigo" aria-hidden="true">
-        <CodigoTrabajo id={trabajo.id} estado={trabajo.estado} />
+        <CodigoTrabajo referencia={trabajo.referencia} estado={trabajo.estado} />
       </div>
       <div>
         <h3 className="trabajo__titulo">
           <Link href={`/trabajos/${trabajo.id}`}>
-            <span className="sr-only">{trabajo.id} · </span>
             {trabajo.titulo}
+            {trabajo.referencia && <span className="sr-only"> ({trabajo.referencia})</span>}
           </Link>
         </h3>
         <p className="trabajo__insignias">
@@ -71,23 +72,16 @@ export function TarjetaTrabajo({
           <div className="trabajo__dato--ancho">
             <dt>Bloqueado por</dt>
             <dd>
-              <Link href={`/trabajos/${trabajo.bloqueadoPor.id}`}>
-                {trabajo.bloqueadoPor.id} · {trabajo.bloqueadoPor.titulo}
-              </Link>
+              <EnlaceTrabajo trabajo={trabajo.bloqueadoPor} />
               {trabajo.fechaSolucion && <> (solución: {formatearFecha(trabajo.fechaSolucion)})</>}
             </dd>
           </div>
         )}
-        {trabajo.dependeDe.length > 0 && (
+        {trabajo.dependeDeTrabajos.length > 0 && (
           <div>
             <dt>Depende de</dt>
             <dd>
-              {trabajo.dependeDe.map((d, i) => (
-                <span key={d}>
-                  {i > 0 && ', '}
-                  <Link href={`/trabajos/${d}`}>{d}</Link>
-                </span>
-              ))}
+              <EnlacesTrabajos trabajos={trabajo.dependeDeTrabajos} />
             </dd>
           </div>
         )}

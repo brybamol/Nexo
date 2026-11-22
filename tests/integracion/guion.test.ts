@@ -4,7 +4,9 @@
 // «Siguiente evento» (avanzarReloj / irAlSiguienteEvento, que ejecutan tick), nunca escribiendo en la tabla.
 // Las pruebas de este archivo dependen unas de otras: cada `it` es un paso y parte del estado del anterior.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { acciones, avisos, capturas, notas, preguntas } from '@/db/esquema';
 import { cargarInstantanea } from '@/db/instantanea';
+import { idsInternosEn } from '@/dominio/nombres';
 import { enCR } from '@/dominio/tiempo';
 import { capturar } from '@/servicios/captura';
 import { obtenerCifras } from '@/servicios/cifras';
@@ -69,6 +71,11 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     if (r.estado !== 'aplicada') return;
     expect(r.trabajosCreados).toEqual(['T31']);
     expect(r.avisosA).toContain('lucia-mora');
+    // El resumen nombra el trabajo nuevo por su título y su referencia (siguiente número de La Colina) y el que bloquea.
+    expect(r.resumen).toBe(
+      'Creé «Conseguir compresor de 2 HP» (COLINA-8) para Lucía Mora, plazo mié 25 nov, 12:00, urgente. ' +
+        '«Instalar unidad condensadora y compresor» (COLINA-4) queda bloqueado.',
+    );
 
     const t31 = await obtenerTrabajo(demo.ctx, 'T31');
     expect(t31).toMatchObject({
@@ -97,7 +104,7 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     for (const p of propagacion) {
       const d = await obtenerMiDia(demo.ctx, p.destinatario!.id);
       const aviso = d.avisos.find((a) => a.tipoAccion === 'aviso' && a.trabajoIds.join() === p.trabajoIds.join());
-      expect(aviso?.cuerpo).toContain('T15');
+      expect(aviso?.cuerpo).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
     }
     // 2 pedidos de estado + asignación a Lucía + 5 avisos de propagación.
     expect(await seguimientos()).toBe(8);
@@ -124,7 +131,8 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     expect(resumen(r.acciones)).toEqual([['escalamiento', 'andres-vargas', ['T31']]]);
     const andres = await obtenerMiDia(demo.ctx, 'andres-vargas');
     const esc = andres.avisos.find((a) => a.tipoAccion === 'escalamiento');
-    for (const texto of ['José Alfaro', 'T04', 'T05', 'T06', 'T07', '7:05']) expect(esc?.cuerpo).toContain(texto);
+    // Bloquea T04, T05, T06 y T07: citados por título y referencia.
+    for (const texto of ['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05']) expect(esc?.cuerpo).toContain(texto);
     expect(await seguimientos()).toBe(10);
   });
 
@@ -136,7 +144,7 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
     expect(d.avisos).toHaveLength(1);
     const [aviso] = d.avisos;
     expect(aviso).toMatchObject({ tipoAccion: 'aviso', trabajoIds: ['T05', 'T11'], leido: false });
-    expect(aviso?.cuerpo).toContain('T15');
+    expect(aviso?.cuerpo).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
     const t05 = d.debo.find((t) => t.id === 'T05');
     const t11 = d.debo.find((t) => t.id === 'T11');
     expect(t05?.marcas.enRiesgo).toBe(true);
@@ -242,5 +250,47 @@ describe('guion completo de la demo (servicios reales, PGlite en memoria)', () =
       aplicar_decision: cuenta('aplicar_decision'),
     }).toEqual({ pedir_estado: 2, recordatorio: 1, escalamiento: 1, aviso: 15, crear_decision: 1, aplicar_decision: 1 });
     // La pregunta de C13 no es una acción del registro: se guarda en `preguntas` y cuenta en la cifra 3.
+  });
+
+  it('paso 10 · ningún texto que generó Nexo en el guion lleva un id interno suelto (T04, D01…)', async () => {
+    const { db } = demo.ctx;
+    const textos: [string, string][] = [];
+    const agregar = (donde: string, t: string | null | undefined) => {
+      if (t) textos.push([donde, t]);
+    };
+    for (const a of await db.select().from(avisos)) {
+      agregar('aviso.titulo', a.titulo);
+      agregar('aviso.cuerpo', a.cuerpo);
+    }
+    for (const a of await db.select().from(acciones)) {
+      agregar('accion.motivo', a.motivo);
+      agregar('accion.hechoOrigen', a.hechoOrigen);
+    }
+    for (const c of await db.select().from(capturas)) {
+      const r = c.resultado as { resumen?: string; mensaje?: string; pregunta?: string } | null;
+      agregar('captura.resumen', r?.resumen);
+      agregar('captura.mensaje', r?.mensaje);
+      agregar('captura.pregunta', c.pregunta);
+    }
+    for (const n of await db.select().from(notas)) if (n.autorId === null) agregar('nota de Nexo', n.texto);
+    for (const q of await db.select().from(preguntas)) {
+      agregar('pregunta.respuesta', q.respuesta);
+      for (const f of q.fuentes) agregar('pregunta.fuente', f.etiqueta);
+    }
+    for (const d of await listarDecisiones(demo.ctx)) {
+      agregar('decision.titulo', d.titulo);
+      agregar('decision.contexto', d.contexto);
+      for (const o of d.opciones) {
+        agregar('opcion.descripcion', o.descripcion);
+        agregar('opcion.consecuencia', o.consecuencia);
+      }
+    }
+    expect(textos.length).toBeGreaterThan(40);
+    expect(textos.filter(([, t]) => idsInternosEn(t).length > 0)).toEqual([]);
+
+    // Referencias de lo creado en el guion: cada proyecto lleva su cuenta.
+    expect((await obtenerTrabajo(demo.ctx, 'T31'))?.referencia).toBe('COLINA-8');
+    expect((await obtenerTrabajo(demo.ctx, 'T32'))?.referencia).toBe('COLINA-9');
+    expect((await listarDecisiones(demo.ctx)).map((d) => [d.titulo, d.referencia])).toEqual([['Compra de 3 compresores de 2 HP', 'COLINA-D1']]);
   });
 });

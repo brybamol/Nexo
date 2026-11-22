@@ -6,9 +6,10 @@ import { reloj, type Db } from '@/db/esquema';
 import { MIN_SIGUIENTE_EVENTO_POR_DEFECTO } from '@/dominio/constantes';
 import { sumarMinutos } from '@/dominio/tiempo';
 import { ErrorDominio } from '@/dominio/tipos';
-import { porId } from '@/motor/instantanea';
+import { nombrador } from '@/motor/instantanea';
 import { siguienteEvento, tick } from '@/motor/seguimiento';
 import type { ContextoServicio } from '@/servicios/contexto';
+import { accionAVista } from '@/servicios/registro';
 import type { AccionVista, ResultadoTick } from '@/servicios/vistas';
 
 async function leerAhora(db: Db): Promise<Date> {
@@ -22,21 +23,10 @@ async function moverYEjecutarTick(db: Db, ahora: Date): Promise<ResultadoTick> {
   await db.update(reloj).set({ ahora }).where(eq(reloj.id, 1));
   const inst = await cargarInstantanea(db);
   const { accionIds } = await persistirEfectos(db, tick(inst));
-  const personas = porId(inst.personas);
+  const personas = new Map(inst.personas.map((p) => [p.id, { id: p.id, nombre: p.nombre, rol: p.rol, area: p.area }]));
   const filas = await leerAcciones(db, accionIds);
-  const acciones: AccionVista[] = filas.map((a) => {
-    const d = a.destinatarioId ? personas.get(a.destinatarioId) : undefined;
-    return {
-      id: a.id,
-      en: a.en,
-      tipo: a.tipo,
-      motivo: a.motivo,
-      hechoOrigen: a.hechoOrigen,
-      trabajoIds: a.trabajoIds,
-      destinatario: d ? { id: d.id, nombre: d.nombre, rol: d.rol, area: d.area } : null,
-      decisionId: a.decisionId,
-    };
-  });
+  const nombres = nombrador(inst); // tick no crea trabajos ni decisiones: la instantánea ya los tiene todos
+  const acciones: AccionVista[] = filas.map((a) => accionAVista(a, nombres, personas));
   return { ahora: ahora.toISOString(), acciones };
 }
 

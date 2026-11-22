@@ -48,7 +48,8 @@ describe('E2 · recordatorio y escalamiento', () => {
     expect(deT31(r)).toHaveLength(1);
     expect(deT31(r)[0]).toMatchObject({ tipo: 'escalamiento', destinatario: { id: 'andres-vargas' } });
     const aviso = (await demo.ctx.db.select().from(avisos)).find((a) => a.personaId === 'andres-vargas' && a.trabajoIds.includes('T31'));
-    for (const texto of ['José Alfaro', 'T04', 'T05', 'T06', 'T07', '7:05']) expect(aviso?.cuerpo).toContain(texto);
+    // Bloquea T04, T05, T06 y T07: citados por título y referencia.
+    for (const texto of ['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05']) expect(aviso?.cuerpo).toContain(texto);
 
     // 8:35: escalamiento al jefe del jefe; luego nada más.
     r = await irAlSiguienteEvento(demo.ctx);

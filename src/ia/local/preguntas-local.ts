@@ -1,5 +1,6 @@
 // Preguntas en modo Local: clasificar el tema y redactar la respuesta por plantilla. Tarea 4.3.
 // Sin red ni clave. La redacción SOLO usa los datos que calculó servicios/preguntar.ts: nunca inventa.
+import { citaConReferencia } from '@/dominio/nombres';
 import { normalizar, similitud } from '@/dominio/texto';
 import type { ContextoCaptura, HechosPregunta, TemaPregunta } from '@/ia/interprete';
 
@@ -7,9 +8,13 @@ import type { ContextoCaptura, HechosPregunta, TemaPregunta } from '@/ia/interpr
 
 export type EstadoPedido = 'entregado' | 'en_ruta' | 'atrasado' | 'pendiente';
 
+// Cada trabajo lleva su id interno (`trabajoId`, para las fuentes y los enlaces) y su `referencia` visible (PEDIDOS-3).
+// Los textos citan SIEMPRE título y referencia; nunca el id interno.
+
 export type PedidoDato = {
   pedido: number;
   trabajoId: string;
+  referencia: string;
   cliente: string;
   producto: string;
   estado: EstadoPedido;
@@ -19,7 +24,7 @@ export type PedidoDato = {
   bloqueado: boolean;
   nota: string | null;
   /** Trabajo sin resolver del que depende la entrega (p. ej. reprogramar con el cliente, confirmar el pago). */
-  relacionado: { trabajoId: string; titulo: string; responsable: string; plazo: string } | null;
+  relacionado: { trabajoId: string; referencia: string; titulo: string; responsable: string; plazo: string } | null;
 };
 
 export type DatosPedidos = {
@@ -48,6 +53,7 @@ export type DatosProyectos = { proyectos: ProyectoDato[] };
 
 export type ItemTrabajo = {
   trabajoId: string;
+  referencia: string;
   titulo: string;
   responsable: string;
   estado: string;
@@ -129,7 +135,7 @@ function esLista<T>(x: unknown): x is T[] {
 }
 
 function lineaPedido(p: PedidoDato): string {
-  const quien = [p.cliente, p.trabajoId].filter(Boolean).join(', ');
+  const quien = [p.cliente, p.referencia].filter(Boolean).join(', ');
   const base = `${p.pedido} (${quien})`;
   const bloqueo = p.bloqueado ? ', bloqueado' : '';
   switch (p.estado) {
@@ -140,13 +146,13 @@ function lineaPedido(p: PedidoDato): string {
     case 'atrasado': {
       const nota = p.nota ? ` (${p.nota})` : '';
       const rel = p.relacionado
-        ? `; ${p.relacionado.responsable} lo atiende en ${p.relacionado.trabajoId} («${p.relacionado.titulo}», ${p.relacionado.plazo})`
+        ? `; ${p.relacionado.responsable} lo atiende en ${citaConReferencia(p.relacionado.titulo, p.relacionado.referencia)}, ${p.relacionado.plazo}`
         : '';
       return `${base}, plazo vencido (${p.plazo})${nota}${rel}`;
     }
     case 'pendiente': {
       const rel = p.relacionado
-        ? `, a la espera de «${p.relacionado.titulo}» (${p.relacionado.trabajoId}, ${p.relacionado.responsable})`
+        ? `, a la espera de ${citaConReferencia(p.relacionado.titulo, p.relacionado.referencia)}, de ${p.relacionado.responsable}`
         : '';
       return `${base}, para ${p.plazo}${bloqueo}${rel}`;
     }
@@ -185,7 +191,7 @@ function redactarProyectos(d: DatosProyectos): string {
 }
 
 function lineaItem(i: ItemTrabajo): string {
-  return `${i.trabajoId} «${i.titulo}» (${i.responsable}; ${i.detalle})`;
+  return `${citaConReferencia(i.titulo, i.referencia)}: ${i.responsable}; ${i.detalle}`;
 }
 
 function redactarAtrasados(d: DatosAtrasados): string {

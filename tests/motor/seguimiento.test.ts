@@ -50,6 +50,7 @@ function trasC01(): Instantanea {
   const t31: Trabajo = {
     ...t04,
     id: 'T31',
+    numero: 8, // siguiente número de P1: COLINA-8
     titulo: 'Conseguir un compresor de 2 HP para la cámara de La Colina',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -98,8 +99,8 @@ describe('R1 · solicitud de estado al vencer el plazo', () => {
     ]);
     const [pedido] = acciones(r.efectos);
     expect(pedido?.accion.en).toEqual(enCR(MIE, '07:05'));
-    expect(pedido?.aviso).toMatchObject({ personaId: 'lucia-mora', trabajoIds: ['T15'], titulo: '¿Cómo va T15?' });
-    expect(pedido?.accion.motivo).toContain('T15');
+    expect(pedido?.aviso).toMatchObject({ personaId: 'lucia-mora', trabajoIds: ['T15'], titulo: '¿Cómo va «Conciliar el conteo con el sistema»?' });
+    expect(pedido?.accion.motivo).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
     expect(pedido?.accion.hechoOrigen).toContain('mar 24 nov, 17:00');
     // Repetir el avance no vuelve a pedir nada.
     expect(acciones(mover(r.inst, enCR(MIE, '07:06')).efectos)).toEqual([]);
@@ -177,7 +178,7 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
     ]);
     expect(iniciarSeguimientoUrgente(inst, 'T31')).toEqual([]); // ya tiene uno pendiente
     expect(iniciarSeguimientoUrgente(inst, 'T28')).toEqual([]); // no es urgente
-    expect(() => iniciarSeguimientoUrgente(inst, 'T99')).toThrow('T99');
+    expect(() => iniciarSeguimientoUrgente(inst, 'T99')).toThrow('No existe el trabajo');
     expect(tick(inst)).toEqual([]);
   });
 
@@ -193,7 +194,8 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
     r = mover(inst, enCR(MIE, '08:05'));
     const [esc] = acciones(r.efectos);
     expect(acciones(r.efectos).map(resumen)).toEqual([{ tipo: 'escalamiento', a: 'andres-vargas', trabajos: ['T31'] }]);
-    for (const texto of ['José Alfaro', 'T04', 'T05', 'T06', 'T07', '7:05', 'Lucía Mora']) expect(esc?.aviso?.cuerpo).toContain(texto);
+    // Bloquea T04, T05, T06 y T07: citados por título y referencia.
+    for (const texto of [...['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05'], 'Lucía Mora']) expect(esc?.aviso?.cuerpo).toContain(texto);
     expect(esc?.aviso).toMatchObject({ personaId: 'andres-vargas', trabajoIds: ['T31'], en: enCR(MIE, '08:05') });
     expect(esc?.accion.motivo).toContain('Andrés Vargas');
     expect(esc?.accion.hechoOrigen).toContain('7:05');

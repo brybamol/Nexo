@@ -96,6 +96,7 @@ describe('frases de control (captura a las 7:05)', () => {
         id: 'D01',
         creadaEn: inst.ahora,
         proyectoId,
+        numero: 1,
         proponenteId,
         decisorId: 'andres-vargas',
         capturaId,
@@ -144,6 +145,7 @@ describe('frases de control (captura a las 7:05)', () => {
           id: 'D01',
           creadaEn: inst.ahora,
           proyectoId,
+          numero: 1,
           proponenteId,
           decisorId: 'marcela-solis',
           capturaId,
@@ -268,6 +270,7 @@ describe('construirContextoCaptura (puro)', () => {
     expect(ids).not.toContain('T01');
     expect(ctx.trabajosAbiertos.find((t) => t.id === 'T04')).toEqual({
       id: 'T04',
+      referencia: 'COLINA-4',
       titulo: 'Instalar unidad condensadora y compresor',
       proyectoId: 'P1',
       responsableId: 'jose-alfaro',

@@ -1,7 +1,38 @@
 // SQL idempotente del esquema (§3.4 de docs/05). Debe coincidir con db/esquema.ts. Tarea 1.2.
 // Se ejecuta con el cliente crudo (pglite.exec / pool.query), sin parámetros y con varias sentencias.
+import { CLAVES_PROYECTO } from '@/dominio/constantes';
 
-/** CREATE TABLE IF NOT EXISTS de todas las tablas, en orden de claves foráneas. */
+/** CASE de las claves de la semilla, para completar una base creada antes de que existieran (ver ACTUALIZAR). */
+const CASO_CLAVES = `CASE id ${Object.entries(CLAVES_PROYECTO)
+  .map(([id, clave]) => `WHEN '${id}' THEN '${clave}'`)
+  .join(' ')} ELSE upper(id) END`;
+
+/**
+ * Base de una versión anterior (sin claves de proyecto ni números de trabajo y decisión): añade las columnas y las
+ * rellena. Los trabajos se numeran por proyecto en el orden de su id (T01, T02… T10); las decisiones, por fecha.
+ * En una base nueva no cambia nada. Sentencias sin `;` internos (servicios/demo.ts las separa por `;`).
+ */
+const ACTUALIZAR = `
+ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS clave text;
+UPDATE proyectos SET clave = ${CASO_CLAVES} WHERE clave IS NULL;
+ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS numero integer;
+UPDATE trabajos AS t SET numero = s.base + s.n FROM (
+  SELECT x.id,
+    row_number() OVER (PARTITION BY x.proyecto_id ORDER BY length(x.id), x.id) AS n,
+    COALESCE((SELECT max(y.numero) FROM trabajos AS y WHERE y.proyecto_id = x.proyecto_id), 0) AS base
+  FROM trabajos AS x WHERE x.numero IS NULL
+) AS s WHERE t.id = s.id;
+CREATE UNIQUE INDEX IF NOT EXISTS trabajos_proyecto_numero ON trabajos (proyecto_id, numero);
+ALTER TABLE decisiones ADD COLUMN IF NOT EXISTS numero integer;
+UPDATE decisiones AS d SET numero = s.base + s.n FROM (
+  SELECT x.id,
+    row_number() OVER (PARTITION BY x.proyecto_id ORDER BY x.creada_en, length(x.id), x.id) AS n,
+    COALESCE((SELECT max(y.numero) FROM decisiones AS y WHERE y.proyecto_id = x.proyecto_id), 0) AS base
+  FROM decisiones AS x WHERE x.numero IS NULL
+) AS s WHERE d.id = s.id;
+`;
+
+/** CREATE TABLE IF NOT EXISTS de todas las tablas, en orden de claves foráneas, y la puesta al día de una base anterior. */
 export const DDL_CREAR = `
 CREATE TABLE IF NOT EXISTS personas (
   id text PRIMARY KEY,
@@ -13,6 +44,7 @@ CREATE TABLE IF NOT EXISTS personas (
 
 CREATE TABLE IF NOT EXISTS proyectos (
   id text PRIMARY KEY,
+  clave text NOT NULL UNIQUE,
   nombre text NOT NULL,
   resultado text NOT NULL,
   responsable_id text NOT NULL REFERENCES personas(id),
@@ -35,6 +67,7 @@ CREATE TABLE IF NOT EXISTS repuestos (
 CREATE TABLE IF NOT EXISTS trabajos (
   id text PRIMARY KEY,
   proyecto_id text NOT NULL REFERENCES proyectos(id),
+  numero integer NOT NULL,
   titulo text NOT NULL,
   responsable_id text NOT NULL REFERENCES personas(id),
   solicitado_por_id text REFERENCES personas(id),
@@ -53,7 +86,8 @@ CREATE TABLE IF NOT EXISTS trabajos (
   captura_id integer,
   decision_id text,
   creado_en timestamptz NOT NULL,
-  resuelto_en timestamptz
+  resuelto_en timestamptz,
+  CONSTRAINT trabajos_proyecto_numero UNIQUE (proyecto_id, numero)
 );
 
 CREATE TABLE IF NOT EXISTS dependencias (
@@ -128,6 +162,7 @@ CREATE TABLE IF NOT EXISTS decisiones (
   id text PRIMARY KEY,
   creada_en timestamptz NOT NULL,
   proyecto_id text NOT NULL,
+  numero integer NOT NULL,
   proponente_id text NOT NULL,
   decisor_id text NOT NULL,
   captura_id integer,
@@ -191,7 +226,7 @@ CREATE TABLE IF NOT EXISTS correcciones_correo (
   tipo text NOT NULL,
   cambios jsonb NOT NULL DEFAULT '{}'::jsonb
 );
-`;
+${ACTUALIZAR}`;
 
 /** DROP TABLE IF EXISTS … CASCADE de todas las tablas. */
 export const DDL_BORRAR = `

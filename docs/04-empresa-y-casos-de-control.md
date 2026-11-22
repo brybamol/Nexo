@@ -115,6 +115,43 @@ La columna "Jefe directo" es la cadena de escalamiento de la regla R3.
 
 Nota de T21: el cliente estaba cerrado el martes; los congeladores volvieron a bodega.
 
+### Id interno y referencia visible
+
+Los ids de este documento (`T04`, y `D01` para las decisiones) son de la especificación y del código. Las personas no los ven: Nexo nombra cada trabajo por su **título** y, como referencia corta, por la **clave de su proyecto** y su **número dentro del proyecto** (ver `docs/05` §3.2). Claves: P1 = **COLINA**, P2 = **TRIGAL**, P3 = **REPUESTOS**, P4 = **PEDIDOS**, OD (Operación diaria) = **DIARIA**. Los trabajos nuevos reciben el siguiente número de su proyecto (en el guion, T31 = COLINA-8 y T32 = COLINA-9); las decisiones llevan una «D» (D01 = COLINA-D1, «Compra de 3 compresores de 2 HP»).
+
+| Id interno | Referencia visible | Título |
+|---|---|---|
+| T01 | COLINA-1 | Visita técnica y medidas |
+| T02 | COLINA-2 | Preparar paneles y materiales en bodega |
+| T03 | COLINA-3 | Montar paneles y puerta |
+| T04 | COLINA-4 | Instalar unidad condensadora y compresor |
+| T05 | COLINA-5 | Cableado y tablero de control |
+| T06 | COLINA-6 | Prueba de frío y entrega al cliente |
+| T07 | COLINA-7 | Facturar la instalación |
+| T08 | TRIGAL-1 | Agendar visitas con los 6 locales |
+| T09 | TRIGAL-2 | Mantenimiento en Heredia y Alajuela |
+| T10 | TRIGAL-3 | Cambiar compresor en local Cartago |
+| T11 | TRIGAL-4 | Cambiar compresor en local Curridabat |
+| T12 | TRIGAL-5 | Mantenimiento en Escazú y Tibás |
+| T13 | TRIGAL-6 | Informe de mantenimiento al cliente |
+| T14 | REPUESTOS-1 | Conteo físico de repuestos críticos |
+| T15 | REPUESTOS-2 | Conciliar el conteo con el sistema |
+| T16 | REPUESTOS-3 | Definir mínimos por repuesto |
+| T17 | REPUESTOS-4 | Cotizar el reorden con dos proveedores |
+| T18 | REPUESTOS-5 | Aprobar la compra de reorden |
+| T19 | PEDIDOS-1 | Entregar pedido 1041 · vitrina · Soda El Roble |
+| T20 | PEDIDOS-2 | Entregar pedido 1042 · repuestos · Hotel Mirador |
+| T21 | PEDIDOS-3 | Entregar pedido 1043 · 2 congeladores · Minisúper Don Beto |
+| T22 | PEDIDOS-4 | Reprogramar la entrega 1043 con el cliente |
+| T23 | PEDIDOS-5 | Entregar pedido 1044 · cámara modular · Carnicería San Rafael |
+| T24 | PEDIDOS-6 | Entregar pedido 1045 · vitrina · Trigal Heredia |
+| T25 | PEDIDOS-7 | Entregar pedido 1046 · termostatos y empaques · Restaurante Mar Azul |
+| T26 | PEDIDOS-8 | Entregar pedido 1047 · 3 vitrinas · Supermercado La Colina |
+| T27 | PEDIDOS-9 | Confirmar el pago anticipado del pedido 1047 |
+| T28 | PEDIDOS-10 | Enviar cotización de cámara fría a Hotel Mirador |
+| T29 | PEDIDOS-11 | Revisar la ruta de entregas del jueves |
+| T30 | PEDIDOS-12 | Facturar los pedidos entregados de la semana |
+
 ---
 
 ## 4. Frases de control (captura, etapa 2)

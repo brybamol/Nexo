@@ -59,6 +59,15 @@ export const PROYECTOS = {
 } as const;
 export type ProyectoId = (typeof PROYECTOS)[keyof typeof PROYECTOS];
 
+/** Clave corta y estable de cada proyecto: prefijo de las referencias que ven las personas (COLINA-4, COLINA-D1). */
+export const CLAVES_PROYECTO: Record<ProyectoId, string> = {
+  P1: 'COLINA',
+  P2: 'TRIGAL',
+  P3: 'REPUESTOS',
+  P4: 'PEDIDOS',
+  OD: 'DIARIA',
+};
+
 // ─── Repuestos ────────────────────────────────────────────────────────────────
 export const REPUESTOS = {
   compresor: 'compresor-2hp',

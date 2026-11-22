@@ -10,6 +10,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   type AnyPgColumn,
   type PgDatabase,
   type PgQueryResultHKT,
@@ -51,6 +52,7 @@ export const personas = pgTable('personas', {
 
 export const proyectos = pgTable('proyectos', {
   id: text('id').primaryKey(),
+  clave: text('clave').notNull().unique(), // 'COLINA': prefijo de las referencias visibles (dominio/nombres.ts)
   nombre: text('nombre').notNull(),
   resultado: text('resultado').notNull(),
   responsableId: text('responsable_id')
@@ -72,33 +74,38 @@ export const repuestos = pgTable('repuestos', {
   faltanteReportadoPor: text('faltante_reportado_por').references(() => personas.id),
 });
 
-export const trabajos = pgTable('trabajos', {
-  id: text('id').primaryKey(),
-  proyectoId: text('proyecto_id')
-    .notNull()
-    .references(() => proyectos.id),
-  titulo: text('titulo').notNull(),
-  responsableId: text('responsable_id')
-    .notNull()
-    .references(() => personas.id),
-  solicitadoPorId: text('solicitado_por_id').references(() => personas.id),
-  plazo: fecha('plazo').notNull(),
-  estado: text('estado').$type<EstadoTrabajo>().notNull(),
-  urgente: boolean('urgente').notNull().default(false),
-  conCostoProbable: boolean('con_costo_probable').notNull().default(false),
-  bloqueadoPorId: text('bloqueado_por_id').references((): AnyPgColumn => trabajos.id),
-  motivoBloqueo: text('motivo_bloqueo'),
-  fechaSolucion: fecha('fecha_solucion'),
-  repuestoId: text('repuesto_id').references(() => repuestos.id),
-  cantidadRepuesto: integer('cantidad_repuesto'),
-  etiqueta: text('etiqueta'),
-  relacionados: jsonb('relacionados').$type<string[]>().notNull().default([]),
-  origen: text('origen').$type<OrigenTrabajo>().notNull(),
-  capturaId: integer('captura_id'),
-  decisionId: text('decision_id'),
-  creadoEn: fecha('creado_en').notNull(),
-  resueltoEn: fecha('resuelto_en'),
-});
+export const trabajos = pgTable(
+  'trabajos',
+  {
+    id: text('id').primaryKey(),
+    proyectoId: text('proyecto_id')
+      .notNull()
+      .references(() => proyectos.id),
+    numero: integer('numero').notNull(), // número dentro del proyecto: COLINA-4
+    titulo: text('titulo').notNull(),
+    responsableId: text('responsable_id')
+      .notNull()
+      .references(() => personas.id),
+    solicitadoPorId: text('solicitado_por_id').references(() => personas.id),
+    plazo: fecha('plazo').notNull(),
+    estado: text('estado').$type<EstadoTrabajo>().notNull(),
+    urgente: boolean('urgente').notNull().default(false),
+    conCostoProbable: boolean('con_costo_probable').notNull().default(false),
+    bloqueadoPorId: text('bloqueado_por_id').references((): AnyPgColumn => trabajos.id),
+    motivoBloqueo: text('motivo_bloqueo'),
+    fechaSolucion: fecha('fecha_solucion'),
+    repuestoId: text('repuesto_id').references(() => repuestos.id),
+    cantidadRepuesto: integer('cantidad_repuesto'),
+    etiqueta: text('etiqueta'),
+    relacionados: jsonb('relacionados').$type<string[]>().notNull().default([]),
+    origen: text('origen').$type<OrigenTrabajo>().notNull(),
+    capturaId: integer('captura_id'),
+    decisionId: text('decision_id'),
+    creadoEn: fecha('creado_en').notNull(),
+    resueltoEn: fecha('resuelto_en'),
+  },
+  (t) => [unique('trabajos_proyecto_numero').on(t.proyectoId, t.numero)],
+);
 
 export const dependencias = pgTable(
   'dependencias',
@@ -196,6 +203,7 @@ export const decisiones = pgTable('decisiones', {
   id: text('id').primaryKey(),
   creadaEn: fecha('creada_en').notNull(),
   proyectoId: text('proyecto_id').notNull(),
+  numero: integer('numero').notNull(), // número de decisión dentro del proyecto: COLINA-D1
   proponenteId: text('proponente_id').notNull(),
   decisorId: text('decisor_id').notNull(),
   capturaId: integer('captura_id'),

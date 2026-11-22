@@ -9,6 +9,7 @@ import {
   UMBRAL_GERENTE,
 } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
+import { cantidadDeRepuesto } from '@/dominio/nombres';
 import { enCR, esDiaHabil, partesCR, siguienteDiaHabil } from '@/dominio/tiempo';
 import type { CambioFecha, LineaOpcion, OpcionCalculada, PropuestaCompra, Proveedor, Repuesto, Trabajo } from '@/dominio/tipos';
 import type { Instantanea } from '@/motor/instantanea';
@@ -30,20 +31,8 @@ export function llegadaHabitual(ahora: Date, r: Repuesto): Date {
   return enCR(partesCR(new Date(ahora.getTime() + r.diasHabitual * MS_DIA)).fecha, HORA_LLEGADA_HABITUAL);
 }
 
-function plural(palabra: string): string {
-  return /[aeiouáéíóú]$/i.test(palabra) ? `${palabra}s` : `${palabra}es`;
-}
-
-/** «3 compresores de 2 HP», «1 compresor de 2 HP», «20 metros de empaque de puerta». */
-export function cantidadDeRepuesto(r: Repuesto, n: number): string {
-  const nombre = r.nombre.charAt(0).toLowerCase() + r.nombre.slice(1);
-  if (r.unidad !== 'unidad') return `${n} ${n === 1 ? r.unidad : plural(r.unidad)} de ${nombre}`;
-  if (n === 1) return `1 ${nombre}`;
-  const corte = nombre.indexOf(' de ');
-  const cabeza = corte >= 0 ? nombre.slice(0, corte) : nombre;
-  const resto = corte >= 0 ? nombre.slice(corte) : '';
-  return `${n} ${cabeza.split(' ').map(plural).join(' ')}${resto}`;
-}
+/** «3 compresores de 2 HP»: vive en dominio/nombres.ts; se reexporta aquí por compatibilidad. */
+export { cantidadDeRepuesto };
 
 const dia = (d: Date) => formatearFecha(d).split(',')[0] ?? '';
 
@@ -88,7 +77,9 @@ function consecuencia(inst: Instantanea, lineas: LineaOpcion[], cambios: CambioF
     const cs = cambios.filter((c) => inst.trabajos.find((t) => t.id === c.trabajoId)?.proyectoId === pid);
     if (cs.length === 0) return `${nombre}: a tiempo, sin cambios de fecha`;
     const final = cs.reduce((m, c) => (c.a.getTime() > m.getTime() ? c.a : m), cs[0]!.a);
-    return `${nombre}: se atrasa hasta el ${dia(final)} (${cs.map((c) => `${c.trabajoId} al ${dia(c.a)}`).join(', ')})`;
+    const titulo = (id: string) => inst.trabajos.find((t) => t.id === id)?.titulo ?? 'otro trabajo';
+    // El proyecto ya está nombrado: basta el título de cada trabajo.
+    return `${nombre}: se atrasa hasta el ${dia(final)} (${cs.map((c) => `«${titulo(c.trabajoId)}» al ${dia(c.a)}`).join(', ')})`;
   });
   return `${partes.join('. ')}.`;
 }

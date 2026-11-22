@@ -3,33 +3,27 @@ import { ArrowLeft, Ban, Clock, Link2, Package, TriangleAlert, Zap } from 'lucid
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BotonResponder } from '@/componentes/boton-responder';
+import { EnlaceTrabajo, EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { CodigoTrabajo, InsigniaEstado } from '@/componentes/insignia-estado';
 import { InsigniaMarcas } from '@/componentes/insignia-marcas';
 import { formatearFecha } from '@/dominio/formato';
 import type { CausaRiesgo } from '@/dominio/tipos';
+import type { TrabajoVista } from '@/servicios/vistas';
 import { obtenerTrabajo } from '@/servicios/consultas-trabajos';
 import { obtenerContextoApp } from '@/servidor/contexto-app';
 
-function EnlacesTrabajos({ ids }: { ids: string[] }) {
-  return ids.map((d, i) => (
-    <span key={d}>
-      {i > 0 && ', '}
-      <Link href={`/trabajos/${d}`}>{d}</Link>
-    </span>
-  ));
-}
-
 const ICONO_CAUSA = { bloqueado: Ban, atrasado: Clock, repuesto: Package, cadena: Link2 } as const;
 
-function textoCausa(c: CausaRiesgo) {
-  const enlace = c.trabajoId ? <Link href={`/trabajos/${c.trabajoId}`}>{c.trabajoId}</Link> : null;
+function textoCausa(c: CausaRiesgo, t: TrabajoVista) {
+  const ref = c.trabajoId ? t.causasTrabajos[c.trabajoId] : undefined;
+  const enlace = ref ? <EnlaceTrabajo trabajo={ref} /> : null;
   switch (c.tipo) {
     case 'bloqueado':
       return <>Bloqueado {enlace && <>por {enlace}</>}</>;
     case 'atrasado':
       return <>Atrasado {enlace && <>({enlace})</>}</>;
     case 'repuesto':
-      return <>Falta un repuesto{c.repuestoId && <> ({c.repuestoId})</>}</>;
+      return <>Falta un repuesto{c.repuestoId && t.causasRepuestos[c.repuestoId] && <> ({t.causasRepuestos[c.repuestoId]})</>}</>;
     case 'cadena':
       return <>Depende de {enlace ?? 'un trabajo'} en riesgo</>;
   }
@@ -49,11 +43,11 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
         </Link>
         <div className="detalle__cabecera">
           <span aria-hidden="true">
-            <CodigoTrabajo id={t.id} estado={t.estado} grande />
+            <CodigoTrabajo referencia={t.referencia} estado={t.estado} grande />
           </span>
           <h1 className="pagina__titulo">
-            <span className="sr-only">{t.id} · </span>
             {t.titulo}
+            {t.referencia && <span className="sr-only"> ({t.referencia})</span>}
           </h1>
         </div>
         <p className="detalle__insignias">
@@ -90,9 +84,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
           <div>
             <dt>Bloqueado por</dt>
             <dd>
-              <Link href={`/trabajos/${t.bloqueadoPor.id}`}>
-                {t.bloqueadoPor.id} · {t.bloqueadoPor.titulo}
-              </Link>
+              <EnlaceTrabajo trabajo={t.bloqueadoPor} />
               {t.fechaSolucion ? <> · solución: {formatearFecha(t.fechaSolucion)}</> : <> · sin fecha de solución</>}
             </dd>
           </div>
@@ -101,7 +93,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
           <div>
             <dt>Depende de</dt>
             <dd>
-              <EnlacesTrabajos ids={t.dependeDe} />
+              <EnlacesTrabajos trabajos={t.dependeDeTrabajos} />
             </dd>
           </div>
         )}
@@ -109,7 +101,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
           <div>
             <dt>Arrastra a</dt>
             <dd>
-              <EnlacesTrabajos ids={t.bloquea} />
+              <EnlacesTrabajos trabajos={t.bloqueaTrabajos} />
             </dd>
           </div>
         )}
@@ -140,7 +132,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
               return (
                 <li key={i}>
                   <Icono className="icono" aria-hidden="true" />
-                  <span>{textoCausa(c)}</span>
+                  <span>{textoCausa(c, t)}</span>
                 </li>
               );
             })}
@@ -153,7 +145,7 @@ export default async function PaginaTrabajo({ params }: { params: Promise<{ id: 
           <h2 id="responder" className="seccion__titulo">
             Seguimiento pendiente
           </h2>
-          <BotonResponder trabajoId={t.id} />
+          <BotonResponder trabajoId={t.id} titulo={t.titulo} />
         </section>
       )}
 

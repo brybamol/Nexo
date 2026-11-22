@@ -87,7 +87,7 @@ describe('frases de actualización (captura a las 7:05)', () => {
     expect(await contarTrabajos()).toBe(30);
     const a = await avisoPara(r.capturaId, 'andres-vargas');
     expect([...(a?.aviso?.trabajoIds ?? [])].sort()).toEqual(['T26', 'T27']);
-    expect(a?.aviso?.cuerpo).toContain('T26');
+    expect(a?.aviso?.cuerpo).toContain('«Entregar pedido 1047 · 3 vitrinas · Supermercado La Colina» (PEDIDOS-8)'); // T26
   });
 
   it('C14 · José tras C01: T31 resuelto, T04 en curso sin bloqueante, necesidad atendida; avisa solo a Mario por T05', async () => {
@@ -133,7 +133,7 @@ describe('frases de actualización (captura a las 7:05)', () => {
     const r = await capturar({ ...demo.ctx, ia }, 'jose-alfaro', 'sigo con T04');
     expect(r.estado).toBe('aplicada');
     if (r.estado === 'aplicada') {
-      expect(r.resumen).toContain('T04 sigue bloqueado por T31');
+      expect(r.resumen).toContain('«Instalar unidad condensadora y compresor» (COLINA-4) sigue bloqueado por «Conseguir compresor de 2 HP» (COLINA-8)'); // T04 por T31
       expect(r.avisosA).toEqual([]);
     }
     expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
@@ -235,5 +235,67 @@ describe('efectosActualizacion (puro)', () => {
       expect(a.capturaId).toBeNull();
       expect(a.hechoOrigen).toContain('Ricardo Brenes');
     }
+  });
+});
+
+describe('referencias escritas en la captura (reforma de nombres)', () => {
+  let demo: Demo;
+  beforeEach(async () => {
+    demo = await prepararDemo();
+  });
+  afterEach(async () => {
+    await demo.cerrar();
+  });
+  const trabajo = async (id: string) => (await demo.ctx.db.select().from(trabajos).where(eq(trabajos.id, id)))[0];
+
+  it('«sigo con COLINA-4» (intérprete Local) se resuelve como T04, igual que antes el id interno', async () => {
+    await capturar(demo.ctx, 'jose-alfaro', C01);
+    const r = await capturar(demo.ctx, 'jose-alfaro', 'sigo con COLINA-4');
+    expect(r.estado).toBe('aplicada');
+    if (r.estado !== 'aplicada') return;
+    expect(r.trabajosActualizados).toEqual(['T04']);
+    expect(r.resumen).toContain('«Instalar unidad condensadora y compresor» (COLINA-4) sigue bloqueado por «Conseguir compresor de 2 HP» (COLINA-8)');
+    expect(await trabajo('T04')).toMatchObject({ estado: 'bloqueado', bloqueadoPorId: 'T31' });
+    const ns = await demo.ctx.db.select().from(notas).where(eq(notas.trabajoId, 'T04'));
+    expect(ns.map((n) => n.texto)).toEqual(['Sigo con COLINA-4']);
+  });
+
+  it('en minúsculas y para cerrar: «ya quedó pedidos-10» resuelve T28', async () => {
+    const r = await capturar(demo.ctx, 'paola-herrera', 'ya quedó pedidos-10');
+    expect(r).toMatchObject({ estado: 'aplicada', trabajosActualizados: ['T28'] });
+    expect(await trabajo('T28')).toMatchObject({ estado: 'resuelto' });
+  });
+
+  it('el id interno escrito también se entiende, pero la respuesta nunca lo muestra', async () => {
+    const r = await capturar(demo.ctx, 'paola-herrera', 'ya quedó T28');
+    expect(r).toMatchObject({ estado: 'aplicada', trabajosActualizados: ['T28'] });
+    if (r.estado === 'aplicada') {
+      expect(r.resumen).toContain('«Enviar cotización de cámara fría a Hotel Mirador» (PEDIDOS-10)');
+      expect(r.resumen).not.toMatch(/T28/);
+    }
+  });
+
+  it('si la IA propone la referencia en lugar del id, la validación la traduce al id interno', async () => {
+    const interp: Interpretacion = {
+      tipo: 'actualizacion',
+      trabajoId: 'PEDIDOS-10',
+      nuevoEstado: 'en_curso',
+      nota: null,
+      hayProblema: false,
+      reprogramar: [],
+      notasRelacionadas: [],
+    };
+    const ia = Object.assign(Object.create(demo.ctx.ia) as typeof demo.ctx.ia, {
+      interpretar: async () => ({ valor: interp, implementacion: 'claude' as const, modelo: 'prueba', respaldo: false }),
+    });
+    const r = await capturar({ ...demo.ctx, ia }, 'paola-herrera', 'arranqué con la cotización');
+    expect(r).toMatchObject({ estado: 'aplicada', trabajosActualizados: ['T28'] });
+    expect(await trabajo('T28')).toMatchObject({ estado: 'en_curso' });
+  });
+
+  it('una referencia que no existe no se aplica a ningún trabajo', async () => {
+    const r = await capturar(demo.ctx, 'jose-alfaro', 'sigo con COLINA-99');
+    expect(r.estado).not.toBe('aplicada');
+    expect(await trabajo('T04')).toMatchObject({ estado: 'en_curso' });
   });
 });

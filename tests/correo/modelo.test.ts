@@ -169,3 +169,31 @@ describe('CC12: correcciones', () => {
     expect(porCodigo(m, 'C4')).toMatchObject({ estado: 'en_curso', esperaA: null });
   });
 });
+
+describe('nombres visibles de los compromisos (reforma de nombres)', () => {
+  const base = modelo();
+  const refs = (m: ModeloCorreo) => Object.fromEntries(m.compromisos.map((c) => [c.codigo, c.referencia]));
+
+  it('cada compromiso lleva la referencia de su proyecto con numeración propia, en el orden de los códigos', () => {
+    expect(refs(base)).toEqual({
+      C1: 'NAVIDAD-1',
+      C2: 'TRANSLOG-1',
+      C3: 'NAVIDAD-2',
+      C4: 'TRANSLOG-2',
+      C5: 'NAVIDAD-3',
+      C6: 'TRANSLOG-3',
+      C7: 'TRANSLOG-4',
+    });
+  });
+
+  it('descartar o corregir uno no cambia las referencias de los demás', () => {
+    const en = enCR('2026-11-25', '07:00');
+    const id = (codigo: string) => porCodigo(base, codigo).id;
+    const m = modelo([
+      { compromisoId: id('C3'), personaId: 'luis-mendez', en, tipo: 'descartar', cambios: {} },
+      { compromisoId: id('C4'), personaId: 'luis-mendez', en, tipo: 'corregir', cambios: { titulo: 'Revisar el contrato marco' } },
+    ]);
+    const sinC3 = Object.fromEntries(Object.entries(refs(base)).filter(([codigo]) => codigo !== 'C3'));
+    expect(refs(m)).toEqual(sinC3);
+  });
+});

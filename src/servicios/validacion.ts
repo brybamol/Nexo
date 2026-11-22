@@ -4,7 +4,7 @@ import { minusculaInicial } from '@/dominio/texto';
 import { resolverPlazo } from '@/dominio/tiempo';
 import type { Persona, Plan, PlazoPropuesto, Trabajo } from '@/dominio/tipos';
 import type { Interpretacion, InterpretacionDe } from '@/ia/interprete';
-import { porId, type Instantanea } from '@/motor/instantanea';
+import { nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import type { OpcionRespuesta } from '@/servicios/vistas';
 
 export type ResultadoValidacion =
@@ -14,6 +14,35 @@ export type ResultadoValidacion =
 
 const error = (mensaje: string): ResultadoValidacion => ({ tipo: 'error', mensaje });
 const plan = (p: Plan): ResultadoValidacion => ({ tipo: 'plan', plan: p });
+
+/** Mensaje para un trabajo que la IA citó y no existe: no se repite lo que propuso (podría parecer un id interno). */
+const NO_EXISTE = 'No encontré uno de los trabajos que mencionas';
+
+/**
+ * La IA (o la persona) puede citar un trabajo por su id interno o por su referencia visible (COLINA-4). Aquí se
+ * traduce todo a ids internos, de forma determinista; lo que no se reconoce queda tal cual y falla abajo.
+ */
+function conIdsInternos(inst: Instantanea, i: Interpretacion): Interpretacion {
+  const { resolver } = nombrador(inst);
+  const id = (x: string) => resolver(x) ?? x;
+  switch (i.tipo) {
+    case 'trabajo_nuevo':
+      return { ...i, relacionados: i.relacionados.map(id), bloquea: i.bloquea.map(id) };
+    case 'actualizacion':
+      return {
+        ...i,
+        trabajoId: id(i.trabajoId),
+        reprogramar: i.reprogramar.map((r) => ({ ...r, trabajoId: id(r.trabajoId) })),
+        notasRelacionadas: i.notasRelacionadas.map((n) => ({ ...n, trabajoId: id(n.trabajoId) })),
+      };
+    case 'duplicado':
+      return { ...i, trabajoId: id(i.trabajoId) };
+    case 'decision':
+      return { ...i, trabajoRelacionadoId: i.trabajoRelacionadoId === null ? null : id(i.trabajoRelacionadoId) };
+    default:
+      return i;
+  }
+}
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -52,15 +81,16 @@ function opcionesResponsable(inst: Instantanea, propuestoId: string, proyectoId:
 
 function validarTrabajoNuevo(inst: Instantanea, i: InterpretacionDe<'trabajo_nuevo'>, autorId: string): ResultadoValidacion {
   const proyecto = inst.proyectos.find((p) => p.id === i.proyectoId);
-  if (!proyecto) return error(`No reconozco el proyecto ${i.proyectoId}. No creé nada.`);
+  if (!proyecto) return error('No reconozco el proyecto que mencionas. No creé nada.');
   const trabajos = porId(inst.trabajos);
+  const { cita } = nombrador(inst);
   for (const id of i.relacionados) {
-    if (!trabajos.has(id)) return error(`No existe el trabajo ${id}. No creé nada.`);
+    if (!trabajos.has(id)) return error(`${NO_EXISTE}. No creé nada.`);
   }
   for (const id of i.bloquea) {
     const t = trabajos.get(id);
-    if (!t) return error(`No existe el trabajo ${id}. No creé nada.`);
-    if (t.estado === 'resuelto') return error(`${id} ya está resuelto: no puede quedar bloqueado. No creé nada.`);
+    if (!t) return error(`${NO_EXISTE}. No creé nada.`);
+    if (t.estado === 'resuelto') return error(`${cita(id)} ya está resuelto: no puede quedar bloqueado. No creé nada.`);
   }
   const repuestoId = i.repuestoFaltante?.repuestoId ?? null;
   if (repuestoId && !inst.repuestos.some((r) => r.id === repuestoId)) {
@@ -105,26 +135,27 @@ function validarTrabajoNuevo(inst: Instantanea, i: InterpretacionDe<'trabajo_nue
 
 function validarActualizacion(inst: Instantanea, i: InterpretacionDe<'actualizacion'>): ResultadoValidacion {
   const trabajos = porId(inst.trabajos);
+  const { cita } = nombrador(inst);
   const x = trabajos.get(i.trabajoId);
-  if (!x) return error(`No existe el trabajo ${i.trabajoId}. No cambié nada.`);
-  if (x.estado === 'resuelto') return error(`${x.id} «${x.titulo}» ya está resuelto. No cambié nada.`);
+  if (!x) return error(`${NO_EXISTE}. No cambié nada.`);
+  if (x.estado === 'resuelto') return error(`${cita(x.id)} ya está resuelto. No cambié nada.`);
 
   const reprogramar: { trabajoId: string; plazo: Date }[] = [];
   for (const r of i.reprogramar) {
     const t: Trabajo | undefined = trabajos.get(r.trabajoId);
-    if (!t) return error(`No existe el trabajo ${r.trabajoId}. No cambié nada.`);
-    if (t.estado === 'resuelto') return error(`${t.id} ya está resuelto: no se puede mover su plazo. No cambié nada.`);
+    if (!t) return error(`${NO_EXISTE}. No cambié nada.`);
+    if (t.estado === 'resuelto') return error(`${cita(t.id)} ya está resuelto: no se puede mover su plazo. No cambié nada.`);
     const plazo = plazoValido(r.plazo, t.urgente, inst.ahora);
-    if (!plazo) return error(`No entendí el nuevo plazo de ${t.id}. No cambié nada.`);
+    if (!plazo) return error(`No entendí el nuevo plazo de ${cita(t.id)}. No cambié nada.`);
     reprogramar.push({ trabajoId: t.id, plazo });
   }
   for (const n of i.notasRelacionadas) {
-    if (!trabajos.has(n.trabajoId)) return error(`No existe el trabajo ${n.trabajoId}. No cambié nada.`);
+    if (!trabajos.has(n.trabajoId)) return error(`${NO_EXISTE}. No cambié nada.`);
   }
   const nota = i.nota?.trim() ? i.nota.trim() : null;
   const nuevoEstado = i.nuevoEstado && i.nuevoEstado !== x.estado ? i.nuevoEstado : null;
   if (!nuevoEstado && !nota && reprogramar.length === 0 && i.notasRelacionadas.length === 0) {
-    return error(`Entendí que hablas de ${x.id}, pero no qué cambió. No cambié nada.`);
+    return error(`Entendí que hablas de ${cita(x.id)}, pero no qué cambió. No cambié nada.`);
   }
   return plan({
     tipo: 'actualizacion',
@@ -138,11 +169,11 @@ function validarActualizacion(inst: Instantanea, i: InterpretacionDe<'actualizac
 }
 
 function validarDecision(inst: Instantanea, i: InterpretacionDe<'decision'>): ResultadoValidacion {
-  if (!inst.proyectos.some((p) => p.id === i.proyectoId)) return error(`No reconozco el proyecto ${i.proyectoId}. No creé nada.`);
+  if (!inst.proyectos.some((p) => p.id === i.proyectoId)) return error('No reconozco el proyecto que mencionas. No creé nada.');
   const repuesto = inst.repuestos.find((r) => r.id === i.compra.repuestoId);
   if (!repuesto) return error(`No reconozco el repuesto ${i.compra.repuestoId}. No creé nada.`);
   if (i.trabajoRelacionadoId !== null && !inst.trabajos.some((t) => t.id === i.trabajoRelacionadoId)) {
-    return error(`No existe el trabajo ${i.trabajoRelacionadoId}. No creé nada.`);
+    return error(`${NO_EXISTE}. No creé nada.`);
   }
   // Propuesta repetida: una sola decisión pendiente por repuesto y proyecto.
   const yaPendiente = inst.decisiones.find(
@@ -151,7 +182,7 @@ function validarDecision(inst: Instantanea, i: InterpretacionDe<'decision'>): Re
   if (yaPendiente) {
     const decisor = inst.personas.find((p) => p.id === yaPendiente.decisorId)?.nombre ?? yaPendiente.decisorId;
     return error(
-      `Ya está pendiente la decisión ${yaPendiente.id} sobre ${minusculaInicial(repuesto.nombre)}, esperando a ${decisor}. No creé nada.`,
+      `Ya está pendiente la decisión ${nombrador(inst).citaDecision(yaPendiente.id)}, esperando a ${decisor}. No creé nada.`,
     );
   }
   if (i.compra.cantidad === null) {
@@ -181,8 +212,9 @@ function validarDecision(inst: Instantanea, i: InterpretacionDe<'decision'>): Re
  * Comprueba que existan persona, proyecto, trabajos y repuesto; que el trabajo a actualizar no esté resuelto;
  * resuelve los plazos con inst.ahora y decide la ÚNICA pregunta (responsable no seguro → cantidad nula → nada).
  */
-export function validarInterpretacion(inst: Instantanea, interp: Interpretacion, autorId: string): ResultadoValidacion {
+export function validarInterpretacion(inst: Instantanea, propuesta: Interpretacion, autorId: string): ResultadoValidacion {
   if (!inst.personas.some((p) => p.id === autorId)) return error(`No existe la persona ${autorId}.`);
+  const interp = conIdsInternos(inst, propuesta);
   switch (interp.tipo) {
     case 'trabajo_nuevo':
       return validarTrabajoNuevo(inst, interp, autorId);
@@ -190,7 +222,7 @@ export function validarInterpretacion(inst: Instantanea, interp: Interpretacion,
       return validarActualizacion(inst, interp);
     case 'duplicado': {
       const t = inst.trabajos.find((x) => x.id === interp.trabajoId);
-      return t ? plan({ tipo: 'duplicado', trabajoId: t.id }) : error(`No existe el trabajo ${interp.trabajoId}.`);
+      return t ? plan({ tipo: 'duplicado', trabajoId: t.id }) : error(`${NO_EXISTE}.`);
     }
     case 'decision':
       return validarDecision(inst, interp);

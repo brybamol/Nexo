@@ -5,13 +5,14 @@ import { cargarVistasTrabajos } from '@/servicios/consultas-trabajos';
 import type { ProyectoDetalle, ResumenProyecto, TrabajoVista } from '@/servicios/vistas';
 
 function resumir(
-  proyecto: { id: string; nombre: string; fecha: Date | null },
+  proyecto: { id: string; clave: string; nombre: string; fecha: Date | null },
   responsable: Persona,
   trabajos: TrabajoVista[],
 ): ResumenProyecto {
   const cuenta = (e: TrabajoVista['estado']) => trabajos.filter((t) => t.estado === e).length;
   return {
     id: proyecto.id,
+    clave: proyecto.clave,
     nombre: proyecto.nombre,
     responsable: { id: responsable.id, nombre: responsable.nombre, rol: responsable.rol, area: responsable.area },
     fecha: proyecto.fecha,

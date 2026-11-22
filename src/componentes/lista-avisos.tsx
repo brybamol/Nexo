@@ -2,8 +2,8 @@
 // Cada aviso se muestra tal como lo emitió Nexo (uno por persona y hecho; puede citar trabajos de varios proyectos).
 // Props: `avisos` (AvisoVista[]). Componente de servidor.
 import { CheckCheck } from 'lucide-react';
-import Link from 'next/link';
 import { accionMarcarLeidos } from '@/app/acciones/trabajos';
+import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { formatearFecha } from '@/dominio/formato';
 import type { AvisoVista } from '@/servicios/vistas';
 
@@ -31,15 +31,9 @@ export function ListaAvisos({ avisos }: { avisos: AvisoVista[] }) {
                 <time dateTime={a.en.toISOString()}>{formatearFecha(a.en)}</time>
               </p>
               <p className="aviso__cuerpo">{a.cuerpo}</p>
-              {a.trabajoIds.length > 0 && (
+              {a.trabajos.length > 0 && (
                 <p className="aviso__trabajos">
-                  Trabajos:{' '}
-                  {a.trabajoIds.map((id, i) => (
-                    <span key={id}>
-                      {i > 0 && ', '}
-                      <Link href={`/trabajos/${id}`}>{id}</Link>
-                    </span>
-                  ))}
+                  Trabajos: <EnlacesTrabajos trabajos={a.trabajos} />
                 </p>
               )}
             </article>

@@ -25,14 +25,14 @@ export function BotonResponder({ trabajoId, titulo }: { trabajoId: string; titul
 
   return (
     <details className="responder">
-      <summary className="boton" aria-label={`Responder sobre ${trabajoId}${titulo ? `: ${titulo}` : ''}`}>
+      <summary className="boton" aria-label={titulo ? `Responder sobre «${titulo}»` : 'Responder sobre este trabajo'}>
         <MessageSquareReply className="icono" aria-hidden="true" />
         Responder
       </summary>
       <form onSubmit={alEnviar} aria-busy={pendiente} className="responder__panel">
         <input type="hidden" name="trabajoId" value={trabajoId} />
         <fieldset disabled={pendiente}>
-          <legend>¿Cómo va {trabajoId}?</legend>
+          <legend>{titulo ? `¿Cómo va «${titulo}»?` : '¿Cómo va este trabajo?'}</legend>
           <div className="opciones-radio">
             <label className="opcion-radio">
               <input type="radio" name="estado" value="en_curso" required /> En curso

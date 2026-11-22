@@ -45,7 +45,7 @@ describe('responderSeguimiento / cambiarEstado', () => {
   it('rechaza a quien no puede responder (no es de la cadena) o si no hay seguimiento pendiente', async () => {
     await expect(responderSeguimiento(demo.ctx, 'T28', 'andres-vargas', {})).rejects.toThrow(ErrorDominio);
     await expect(responderSeguimiento(demo.ctx, 'T01', 'paola-herrera', {})).rejects.toThrow(ErrorDominio);
-    await expect(responderSeguimiento(demo.ctx, 'T99', 'paola-herrera', {})).rejects.toThrow('T99');
+    await expect(responderSeguimiento(demo.ctx, 'T99', 'paola-herrera', {})).rejects.toThrow('No existe ese trabajo');
     await expect(responderSeguimiento(demo.ctx, 'T28', 'paola-herrera', { estado: 'otro' as never })).rejects.toThrow(ErrorDominio);
     expect((await seguimientoT28()).map((s) => s.estado)).toEqual(['pendiente']);
   });

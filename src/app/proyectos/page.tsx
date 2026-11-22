@@ -1,6 +1,7 @@
 // Las tres cifras y una tarjeta por proyecto. Lee listarProyectos y obtenerCifras. Tarea 1.7.
 import Link from 'next/link';
 import { CifrasDemo } from '@/componentes/cifras-demo';
+import { Referencia } from '@/componentes/enlaces-trabajos';
 import { formatearFecha } from '@/dominio/formato';
 import { obtenerCifras } from '@/servicios/cifras';
 import { listarProyectos } from '@/servicios/proyectos';
@@ -21,7 +22,7 @@ export default async function PaginaProyectos() {
         {proyectos.map((p) => (
           <li key={p.id} className="tarjeta proyecto">
             <h2>
-              <Link href={`/proyectos/${p.id}`}>{p.nombre}</Link>
+              <Link href={`/proyectos/${p.id}`}>{p.nombre}</Link> <Referencia valor={p.clave} />
             </h2>
             <p className="proyecto__meta">
               Responsable: {p.responsable.nombre}

@@ -7,7 +7,8 @@ import { accionRevisarCompromiso } from '@/app/acciones/correo';
 
 export interface DatosRevision {
   id: string;
-  codigo: string;
+  /** Nombre visible del compromiso (su título, tal como se ve en la tarjeta). */
+  nombre: string;
   titulo: string;
   responsableId: string | null;
   plazoLocal: string; // AAAA-MM-DDTHH:MM en hora de Costa Rica, o ''
@@ -76,7 +77,7 @@ export function FormularioRevision({
           </summary>
           <form onSubmit={alCorregir} className="responder__panel revision__panel">
             <fieldset disabled={pendiente}>
-              <legend>Corregir {compromiso.codigo}</legend>
+              <legend>Corregir «{compromiso.nombre}»</legend>
               <div className="revision__campos">
                 <div className="revision__campo--ancho">
                   <label htmlFor={`${p}-titulo`} className="etiqueta-campo">
@@ -125,7 +126,7 @@ export function FormularioRevision({
         </details>
         {confirmarDescarte ? (
           <span className="revision__descarte">
-            <span>¿Descartar {compromiso.codigo}? Deja de verse para todos.</span>
+            <span>¿Descartar «{compromiso.nombre}»? Deja de verse para todos.</span>
             <button type="button" className="boton boton--peligro" disabled={pendiente} onClick={() => simple('descartar')}>
               Sí, descartar
             </button>

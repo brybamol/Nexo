@@ -3,6 +3,7 @@
 import { BellRing, Scale } from 'lucide-react';
 import Link from 'next/link';
 import { BotonResponder } from '@/componentes/boton-responder';
+import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { ListaAvisos } from '@/componentes/lista-avisos';
 import { IsotipoNexo } from '@/componentes/marca/logo-nexo';
 import { TarjetaTrabajo } from '@/componentes/tarjeta-trabajo';
@@ -10,15 +11,6 @@ import { formatearFecha } from '@/dominio/formato';
 import { obtenerMiDia, obtenerSeguimientosPendientes } from '@/servicios/mi-dia';
 import type { TrabajoVista } from '@/servicios/vistas';
 import { obtenerContextoApp, personaActual } from '@/servidor/contexto-app';
-
-function EnlacesTrabajos({ ids }: { ids: string[] }) {
-  return ids.map((id, i) => (
-    <span key={id}>
-      {i > 0 && ', '}
-      <Link href={`/trabajos/${id}`}>{id}</Link>
-    </span>
-  ));
-}
 
 /** Tarjeta del trabajo más lo que la tarjeta base no cuenta: quién lo pidió y qué arrastra. */
 function Cuenta({ n }: { n: number }) {
@@ -33,7 +25,7 @@ function ItemTrabajo({ trabajo }: { trabajo: TrabajoVista }) {
         {trabajo.solicitadoPor && <>Lo pidió {trabajo.solicitadoPor.nombre}. </>}
         {trabajo.bloquea.length > 0 && (
           <>
-            Bloquea: <EnlacesTrabajos ids={trabajo.bloquea} />.
+            Bloquea: <EnlacesTrabajos trabajos={trabajo.bloqueaTrabajos} />.
           </>
         )}
       </p>

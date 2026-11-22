@@ -83,7 +83,7 @@ describe('obtenerMiDia', () => {
     // Mario recibe UN aviso con T05 (La Colina, P1) y T11 (Trigal, P2), que cita la causa: el conteo T15.
     expect(d.avisos).toHaveLength(1);
     expect(d.avisos[0]).toMatchObject({ tipoAccion: 'aviso', trabajoIds: ['T05', 'T11'], leido: false });
-    expect(d.avisos[0]?.cuerpo).toContain('T15');
+    expect(d.avisos[0]?.cuerpo).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
     const proyectos = new Set(d.debo.filter((t) => d.avisos[0]!.trabajoIds.includes(t.id)).map((t) => t.proyecto.id));
     expect(proyectos).toEqual(new Set(['P1', 'P2']));
     expect(d.debo.filter((t) => t.id === 'T05' || t.id === 'T11').every((t) => t.marcas.enRiesgo)).toBe(true);

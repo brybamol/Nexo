@@ -92,6 +92,8 @@ export interface PersonaBreve {
 
 export interface Proyecto {
   id: string; // 'P1'…'P4', 'OD'
+  /** Clave corta y estable para las referencias visibles: 'COLINA' → 'COLINA-4' (dominio/nombres.ts). */
+  clave: string;
   nombre: string;
   resultado: string;
   responsableId: string;
@@ -100,8 +102,10 @@ export interface Proyecto {
 }
 
 export interface Trabajo {
-  id: string; // 'T01'…; nuevos 'T31', 'T32'…
+  id: string; // 'T01'…; nuevos 'T31', 'T32'… (interno: nunca se muestra; ver dominio/nombres.ts)
   proyectoId: string;
+  /** Número dentro de su proyecto, asignado al crearse y que no cambia: COLINA-4. */
+  numero: number;
   titulo: string;
   responsableId: string;
   solicitadoPorId: string | null;
@@ -181,9 +185,11 @@ export interface OpcionCalculada {
 }
 
 export interface Decision {
-  id: string; // 'D01', 'D02'…
+  id: string; // 'D01', 'D02'… (interno: nunca se muestra; ver dominio/nombres.ts)
   creadaEn: Date;
   proyectoId: string;
+  /** Número dentro de su proyecto, asignado al crearse: COLINA-D1. */
+  numero: number;
   proponenteId: string;
   decisorId: string;
   capturaId: number | null;

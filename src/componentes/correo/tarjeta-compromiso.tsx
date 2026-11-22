@@ -1,6 +1,7 @@
 // Tarjeta de un compromiso extraído del correo (docs/06 §10): qué se pidió, entre quiénes, a quién espera,
 // evidencia citada y su revisión. Componente de servidor; la revisión es un componente de cliente.
 import { Banknote, ExternalLink, Mail, Repeat } from 'lucide-react';
+import { Referencia } from '@/componentes/enlaces-trabajos';
 import { CodigoTrabajo, InsigniaEstado } from '@/componentes/insignia-estado';
 import { InsigniaMarcas } from '@/componentes/insignia-marcas';
 import type { CausaCorreo, CompromisoConMarcas, ModeloCorreo, PersonaCorreo } from '@/correo/tipos';
@@ -37,12 +38,12 @@ export function TarjetaCompromiso({ c, modelo, como }: { c: CompromisoConMarcas;
   return (
     <article className="tarjeta trabajo compromiso" data-estado={c.estado} id={c.id}>
       <div className="trabajo__codigo" aria-hidden="true">
-        <CodigoTrabajo id={c.codigo} estado={c.estado} />
+        <CodigoTrabajo referencia={c.referencia} estado={c.estado} />
       </div>
       <div>
         <h3 className="trabajo__titulo">
-          <span className="sr-only">{c.codigo} · </span>
           {c.titulo}
+          {c.referencia && <span className="sr-only"> ({c.referencia})</span>}
         </h3>
         <p className="trabajo__insignias">
           <InsigniaEstado estado={c.estado} />
@@ -83,9 +84,7 @@ export function TarjetaCompromiso({ c, modelo, como }: { c: CompromisoConMarcas;
             <dd>
               {esperado ? (
                 <>
-                  <a href={`#${esperado.id}`}>
-                    {esperado.codigo} · {esperado.titulo}
-                  </a>{' '}
+                  <a href={`#${esperado.id}`}>{esperado.titulo}</a> <Referencia valor={esperado.referencia} />{' '}
                   (<Persona persona={personas.get(esperado.responsableId ?? '')} />)
                 </>
               ) : (
@@ -112,7 +111,14 @@ export function TarjetaCompromiso({ c, modelo, como }: { c: CompromisoConMarcas;
             const d = porId.get(k.compromisoId);
             return (
               <p key={k.compromisoId} className="compromiso__causa">
-                En riesgo: espera a {d?.codigo ?? k.compromisoId}, {MOTIVOS[k.motivo]}.
+                En riesgo: espera a {d ? <a href={`#${d.id}`}>«{d.titulo}»</a> : 'otro compromiso'}
+                {d?.referencia && (
+                  <>
+                    {' '}
+                    <Referencia valor={d.referencia} />
+                  </>
+                )}
+                , {MOTIVOS[k.motivo]}.
               </p>
             );
           })}
@@ -161,7 +167,7 @@ export function TarjetaCompromiso({ c, modelo, como }: { c: CompromisoConMarcas;
             personas={modelo.empresa.personas.map((p) => ({ id: p.id, nombre: p.nombre, departamento: p.departamento }))}
             compromiso={{
               id: c.id,
-              codigo: c.codigo,
+              nombre: c.titulo,
               titulo: c.titulo,
               responsableId: c.responsableId,
               plazoLocal,

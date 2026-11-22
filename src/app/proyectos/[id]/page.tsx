@@ -2,6 +2,7 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Referencia } from '@/componentes/enlaces-trabajos';
 import { TarjetaTrabajo } from '@/componentes/tarjeta-trabajo';
 import { formatearFecha } from '@/dominio/formato';
 import { obtenerProyecto } from '@/servicios/proyectos';
@@ -19,7 +20,9 @@ export default async function PaginaProyecto({ params }: { params: Promise<{ id:
           <ArrowLeft className="icono" aria-hidden="true" />
           Proyectos
         </Link>
-        <h1 className="pagina__titulo">{proyecto.nombre}</h1>
+        <h1 className="pagina__titulo">
+          {proyecto.nombre} <Referencia valor={proyecto.clave} />
+        </h1>
         <p className="pagina__sub">
           Responsable: {proyecto.responsable.nombre}
           {proyecto.fecha && <> · Fecha: {formatearFecha(proyecto.fecha)}</>}

@@ -28,6 +28,7 @@ const decision: Decision = {
   id: 'D01',
   creadaEn: AHORA,
   proyectoId: 'P1',
+  numero: 1,
   proponenteId: 'lucia-mora',
   decisorId: 'marcela-solis',
   capturaId: null,

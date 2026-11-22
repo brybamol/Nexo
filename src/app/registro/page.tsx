@@ -11,8 +11,8 @@ import {
   Scale,
   type LucideIcon,
 } from 'lucide-react';
-import Link from 'next/link';
 import { CifrasDemo } from '@/componentes/cifras-demo';
+import { EnlacesTrabajos } from '@/componentes/enlaces-trabajos';
 import { formatearFecha } from '@/dominio/formato';
 import type { TipoAccion } from '@/dominio/tipos';
 import { obtenerCifras } from '@/servicios/cifras';
@@ -99,14 +99,7 @@ export default async function PaginaRegistro() {
                   </td>
                   <td>{a.destinatario ? `${a.destinatario.nombre} (${a.destinatario.rol})` : '—'}</td>
                   <td className="tabla__trabajos">
-                    {a.trabajoIds.length === 0
-                      ? '—'
-                      : a.trabajoIds.map((id, i) => (
-                          <span key={id}>
-                            {i > 0 && ', '}
-                            <Link href={`/trabajos/${id}`}>{id}</Link>
-                          </span>
-                        ))}
+                    {a.trabajos.length === 0 ? '—' : <EnlacesTrabajos trabajos={a.trabajos} />}
                   </td>
                   <td>{a.motivo}</td>
                   <td>{a.hechoOrigen}</td>

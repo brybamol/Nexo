@@ -123,8 +123,8 @@ Ids de texto legibles donde el motor los crea o los cita; `serial` en tablas que
 | Tabla | Columnas (tipo; clave) |
 |---|---|
 | `personas` | `id` text PK (`marcela-solis`…), `nombre` text, `rol` text, `area` text (`Gerencia`/`Oficina`/`Bodega`/`Campo`), `jefe_id` text null FK personas |
-| `proyectos` | `id` text PK (`P1`…`P4`, `OD` = Operación diaria), `nombre`, `resultado` text, `responsable_id` FK, `fecha` timestamptz null, `cliente` text null |
-| `trabajos` | `id` text PK (`T01`…; nuevos `T31`, `T32`…), `proyecto_id` FK, `titulo`, `responsable_id` FK, `solicitado_por_id` FK null, `plazo` timestamptz, `estado` text (`abierto`/`en_curso`/`bloqueado`/`resuelto`), `urgente` bool, `con_costo_probable` bool, `bloqueado_por_id` text null FK trabajos, `motivo_bloqueo` text null, `fecha_solucion` timestamptz null, `repuesto_id` text null FK (trabajos de conseguir/comprar), `cantidad_repuesto` int null, `etiqueta` text null (`conciliacion_inventario` en T15), `relacionados` jsonb `string[]` default `[]`, `origen` text (`semilla`/`captura`/`decision`), `captura_id` int null, `decision_id` text null, `creado_en`, `resuelto_en` null |
+| `proyectos` | `id` text PK (`P1`…`P4`, `OD` = Operación diaria), `clave` text único (`COLINA`, `TRIGAL`, `REPUESTOS`, `PEDIDOS`, `DIARIA`), `nombre`, `resultado` text, `responsable_id` FK, `fecha` timestamptz null, `cliente` text null |
+| `trabajos` | `id` text PK (`T01`…; nuevos `T31`, `T32`…), `proyecto_id` FK, `numero` int (número dentro del proyecto; único con `proyecto_id`), `titulo`, `responsable_id` FK, `solicitado_por_id` FK null, `plazo` timestamptz, `estado` text (`abierto`/`en_curso`/`bloqueado`/`resuelto`), `urgente` bool, `con_costo_probable` bool, `bloqueado_por_id` text null FK trabajos, `motivo_bloqueo` text null, `fecha_solucion` timestamptz null, `repuesto_id` text null FK (trabajos de conseguir/comprar), `cantidad_repuesto` int null, `etiqueta` text null (`conciliacion_inventario` en T15), `relacionados` jsonb `string[]` default `[]`, `origen` text (`semilla`/`captura`/`decision`), `captura_id` int null, `decision_id` text null, `creado_en`, `resuelto_en` null |
 | `dependencias` | `trabajo_id` FK, `depende_de_id` FK; PK compuesta |
 | `repuestos` | `id` text PK (`compresor-2hp`, `termostato`, `empaque-puerta`, `gas-refrigerante`, `motor-ventilador`), `nombre`, `unidad`, `existencia` int, `precio_habitual` int, `dias_habitual` int, `precio_local` int, `faltante_reportado_en` timestamptz null, `faltante_reportado_por` FK null |
 | `necesidades_repuesto` | `trabajo_id` FK, `repuesto_id` FK, `cantidad` int, `fecha_disponible` timestamptz null, `atendida` bool default false; PK compuesta |
@@ -133,7 +133,7 @@ Ids de texto legibles donde el motor los crea o los cita; `serial` en tablas que
 | `acciones` | `id` serial, `en`, `tipo` text, `motivo` text, `hecho_origen` text, `trabajo_ids` jsonb, `decision_id` null, `destinatario_id` null, `captura_id` null |
 | `avisos` | `id` serial, `persona_id` FK, `accion_id` FK acciones, `en`, `titulo`, `cuerpo`, `trabajo_ids` jsonb, `leido_en` null |
 | `seguimientos` | `id` text PK (`S1`…), `trabajo_id` FK, `plazo_referencia` timestamptz, `nivel` int (0 solicitud, 1 recordatorio, 2 escalamiento 1, 3 escalamiento 2), `destinatario_id` FK, `urgente` bool, `proximo_en` timestamptz, `estado` (`pendiente`/`respondido`/`agotado`), `iniciado_en` |
-| `decisiones` | `id` text PK (`D01`…), `creada_en`, `proyecto_id`, `proponente_id`, `decisor_id`, `captura_id` null, `repuesto_id`, `cantidad` int, `contexto` text, `afectados` jsonb `{trabajoIds, personaIds}`, `opcion_propuesta` text null, `estado` (`pendiente`/`aprobada`/`rechazada`), `opcion_elegida` text null, `decidida_en` null, `motivo_rechazo` null |
+| `decisiones` | `id` text PK (`D01`…), `creada_en`, `proyecto_id`, `numero` int (número de decisión dentro del proyecto), `proponente_id`, `decisor_id`, `captura_id` null, `repuesto_id`, `cantidad` int, `contexto` text, `afectados` jsonb `{trabajoIds, personaIds}`, `opcion_propuesta` text null, `estado` (`pendiente`/`aprobada`/`rechazada`), `opcion_elegida` text null, `decidida_en` null, `motivo_rechazo` null |
 | `opciones_decision` | `decision_id` FK, `letra` (`A`/`B`/`C`); PK compuesta; `descripcion`, `costo` int, `lineas` jsonb `[{proveedor, cantidad, precioUnitario, llegada, trabajoIds}]`, `cambios_fecha` jsonb `[{trabajoId, de, a}]`, `consecuencia` text |
 | `capturas` | `id` serial, `autor_id`, `texto`, `en`, `implementacion` text, `modelo` text null, `interpretacion` jsonb, `estado` (`aplicada`/`pregunta`/`duplicado`/`ignorada`/`respuesta`/`error`), `pregunta` text null, `resultado` jsonb |
 | `preguntas` | `id` serial, `persona_id`, `en`, `texto`, `tema`, `respuesta`, `fuentes` jsonb, `implementacion`, `modelo` null |
@@ -148,14 +148,15 @@ Tipos de `acciones.tipo`: `crear_trabajo`, `actualizar_trabajo`, `pedir_estado`,
 - **Relación trabajo–bloqueante**: `trabajos.bloqueado_por_id` (T04 → T31 en el guion) más `estado = 'bloqueado'`. No crea fila en `dependencias`.
 - **Fecha de solución**: `trabajos.fecha_solucion` (cuándo se espera levantar el bloqueo). En la necesidad, `necesidades_repuesto.fecha_disponible` (cuándo llega el repuesto comprado).
 - **Ahora**: `reloj.ahora`. Se lee con `obtenerAhora`; nadie usa la hora del sistema.
+- **Nombres visibles (reforma de nombres).** Los ids (`T04`, `D01`, y `C1` en el correo) son de la especificación y del código: claves de la base, del motor, de las rutas (`/trabajos/T04`) y de las pruebas. **Nunca se muestran.** Las personas ven el **título** y, como referencia secundaria, `CLAVE-número`: un trabajo es «Cableado y tablero de control» (`COLINA-5`); una decisión, «Compra de 3 compresores de 2 HP» (`COLINA-D1`); un compromiso de correo, «Revisar el contrato de TransLog» (`TRANSLOG-2`). `numero` se asigna al crear, con `siguienteNumeroTrabajo`/`siguienteNumeroDecision` sobre la instantánea leída tras `tomarTurnoEscritura`, en la misma transacción que inserta (sin duplicados; además hay `UNIQUE (proyecto_id, numero)`), y no cambia nunca. El formato vive solo en `dominio/nombres.ts`; ningún texto construye un id a mano. En frases se cita «Título» (REF); en etiquetas, Título (REF); no se repite el proyecto, que ya está en la clave. Una persona puede escribir la referencia en la captura («sigo con COLINA-4») y se resuelve como el id interno. Correo: la referencia se calcula (no se guarda) con la clave del proyecto de nombre propio (`TRANSLOG`, `NAVIDAD`) y la numeración en el orden de los códigos, antes de aplicar correcciones; un compromiso sin proyecto de nombre propio se nombra solo por su título.
 
 ### 3.3 Semilla (04)
 
-Personas con id = nombre en minúsculas sin tildes, unido con guion (`jose-alfaro`, `lucia-mora`…). Plazos sin hora = 17:00 de ese día; con hora, la indicada (T04 mié 17:00, T22 10:00, T23 14:00, T28 12:00, T29 16:00). `creado_en` = lun 23 7:00; `resuelto_en` = plazo en los 8 resueltos (T01, T02, T03, T08, T09, T14, T19, T20). En curso: T04, T23. Necesidades: T04, T10, T11 → 1 `compresor-2hp`; T25 → 4 `termostato` y 10 `empaque-puerta`. T15 lleva `etiqueta = 'conciliacion_inventario'`. Repuestos con los precios de 04 y `dias_habitual` 6/3/3/3/6. Reloj: `2026-11-25T07:00:00-06:00`. Sin seguimientos ni acciones iniciales. Historial de la gerente: 2 notas de `marcela-solis` con su evento `nota_agregada` (`actor_id` = `marcela-solis`): T19 lun 23 10:00 «Confirmé con Soda El Roble la hora de entrega» y T20 mar 24 10:00 «Pedí priorizar al Hotel Mirador». Nota de T21 (04): `diego-rojas`, mar 24 15:30, «El cliente estaba cerrado el martes; los congeladores volvieron a bodega», con su evento `nota_agregada` (`actor_id` = `diego-rojas`; no cuenta como intervención de la gerente). La respuesta de C13 la cita como motivo del atraso de 1043. No hay más eventos iniciales (3 notas, 3 eventos).
+Personas con id = nombre en minúsculas sin tildes, unido con guion (`jose-alfaro`, `lucia-mora`…). Claves de proyecto en `CLAVES_PROYECTO` (`constantes.ts`); los 30 trabajos se numeran por proyecto en su orden (T01–T07 → COLINA-1…7, T08–T13 → TRIGAL-1…6, T14–T18 → REPUESTOS-1…5, T19–T30 → PEDIDOS-1…12; tabla en 04 §3); el T31 del guion es COLINA-8 y la compra que crea la decisión, COLINA-9. Plazos sin hora = 17:00 de ese día; con hora, la indicada (T04 mié 17:00, T22 10:00, T23 14:00, T28 12:00, T29 16:00). `creado_en` = lun 23 7:00; `resuelto_en` = plazo en los 8 resueltos (T01, T02, T03, T08, T09, T14, T19, T20). En curso: T04, T23. Necesidades: T04, T10, T11 → 1 `compresor-2hp`; T25 → 4 `termostato` y 10 `empaque-puerta`. T15 lleva `etiqueta = 'conciliacion_inventario'`. Repuestos con los precios de 04 y `dias_habitual` 6/3/3/3/6. Reloj: `2026-11-25T07:00:00-06:00`. Sin seguimientos ni acciones iniciales. Historial de la gerente: 2 notas de `marcela-solis` con su evento `nota_agregada` (`actor_id` = `marcela-solis`): T19 lun 23 10:00 «Confirmé con Soda El Roble la hora de entrega» y T20 mar 24 10:00 «Pedí priorizar al Hotel Mirador». Nota de T21 (04): `diego-rojas`, mar 24 15:30, «El cliente estaba cerrado el martes; los congeladores volvieron a bodega», con su evento `nota_agregada` (`actor_id` = `diego-rojas`; no cuenta como intervención de la gerente). La respuesta de C13 la cita como motivo del atraso de 1043. No hay más eventos iniciales (3 notas, 3 eventos).
 
 ### 3.4 Arranque y reinicio
 
-`ddl.ts` exporta `DDL_CREAR` (todas las tablas con `CREATE TABLE IF NOT EXISTS`, en orden de claves foráneas) y `DDL_BORRAR` (`DROP TABLE IF EXISTS … CASCADE` de todas). Se ejecutan con el cliente crudo: `pglite.exec(sql)` o `pool.query(sql)` (sin parámetros, admite varias sentencias). Al abrir la conexión: `DDL_CREAR` y, si `personas` está vacía, `cargarSemilla`. `reiniciarDemo` = `DDL_BORRAR` + `DDL_CREAR` + `cargarSemilla` en una transacción. Elegido sobre las migraciones de drizzle porque no lee archivos en tiempo de ejecución ni depende de una CLI (robusto con el empaquetador y en Windows). La tarea 1.2 incluye una prueba que inserta y lee cada tabla con Drizzle para detectar desajustes entre `esquema.ts` y `ddl.ts`.
+`ddl.ts` exporta `DDL_CREAR` (todas las tablas con `CREATE TABLE IF NOT EXISTS`, en orden de claves foráneas) y `DDL_BORRAR` (`DROP TABLE IF EXISTS … CASCADE` de todas). Se ejecutan con el cliente crudo: `pglite.exec(sql)` o `pool.query(sql)` (sin parámetros, admite varias sentencias). Al abrir la conexión: `DDL_CREAR` y, si `personas` está vacía, `cargarSemilla`. `reiniciarDemo` = `DDL_BORRAR` + `DDL_CREAR` + `cargarSemilla` en una transacción. Elegido sobre las migraciones de drizzle porque no lee archivos en tiempo de ejecución ni depende de una CLI (robusto con el empaquetador y en Windows). La tarea 1.2 incluye una prueba que inserta y lee cada tabla con Drizzle para detectar desajustes entre `esquema.ts` y `ddl.ts`. `DDL_CREAR` termina con una puesta al día idempotente para bases anteriores a la reforma de nombres: añade `proyectos.clave`, `trabajos.numero` y `decisiones.numero` si faltan y los rellena (claves de `CLAVES_PROYECTO`; trabajos por proyecto en orden de id; decisiones por fecha).
 
 ---
 
@@ -192,6 +193,15 @@ export function resolverPlazo(p: PlazoPropuesto, urgente: boolean, ahora: Date):
 export function formatearColones(n: number): string;   // 1380000 → '₡1.380.000'
 export function formatearFecha(d: Date): string;       // 'mié 25 nov, 15:00'
 export function formatearHoras(min: number): string;   // 205 → '3,4 h'
+// nombres.ts (reforma de nombres: lo ÚNICO que da forma a nombres y referencias visibles)
+export function referenciaTrabajo(clave, numero): string;     // 'COLINA', 4 → 'COLINA-4'
+export function referenciaDecision(clave, numero): string;    // 'COLINA', 1 → 'COLINA-D1'
+export function nombreConReferencia(titulo, ref): string;     // 'Cableado y tablero de control (COLINA-5)' (etiquetas, enlaces)
+export function citaConReferencia(titulo, ref): string;       // '«Cableado y tablero de control» (COLINA-5)' (frases)
+export function tituloDecision(repuesto, cantidad): string;   // 'Compra de 3 compresores de 2 HP'
+export function referenciasEnTexto(texto): string[];          // 'sigo con colina-4' → ['COLINA-4']
+export function idsInternosEn(texto): string[];               // red de pruebas: T04, D01, S1, C1 sueltos
+export function crearNombrador(f): Nombrador;                 // referencia/nombre/cita/citas/ref/refs/resolver, y lo mismo para decisiones
 // texto.ts
 export function normalizar(s: string): string;         // minúsculas, sin tildes ni puntuación, espacios simples
 export function similitud(a: string, b: string): number; // Dice de bigramas sobre textos normalizados, 0..1
@@ -224,6 +234,9 @@ export function cadenaDependientes(inst: Instantanea, trabajoId: string): string
 export function siguienteIdTrabajo(inst: Instantanea): string;   // 'T31' si el máximo es T30
 export function siguienteIdDecision(inst: Instantanea): string;  // 'D01', 'D02'…
 export function siguienteIdSeguimiento(inst: Instantanea): string;
+export function siguienteNumeroTrabajo(inst: Instantanea, proyectoId: string): number;   // máximo del proyecto + 1
+export function siguienteNumeroDecision(inst: Instantanea, proyectoId: string): number;
+export function nombrador(inst: Instantanea): Nombrador;         // crearNombrador(inst): así citan el motor y los servicios
 // efectos.ts
 export function aplicarEnMemoria(inst: Instantanea, efectos: Efecto[]): Instantanea; // para comparar antes/después
 // marcas.ts
@@ -292,8 +305,8 @@ export type Interpretacion =
   | { tipo: 'pregunta'; pregunta: string };
 export type TemaPregunta = 'pedidos_semana' | 'estado_proyectos' | 'atrasados' | 'mis_pendientes' | 'desconocido';
 export interface ContextoCaptura { ahora: string; autor: PersonaBreve; personas: (PersonaBreve & { jefeId: string | null })[];
-  proyectos: { id: string; nombre: string; responsableId: string }[];
-  trabajosAbiertos: { id: string; titulo: string; proyectoId: string; responsableId: string; estado: EstadoTrabajo;
+  proyectos: { id: string; clave: string; nombre: string; responsableId: string }[];
+  trabajosAbiertos: { id: string; referencia: string /* COLINA-4 */; titulo: string; proyectoId: string; responsableId: string; estado: EstadoTrabajo;
     plazo: string; bloqueadoPorId: string | null; repuestoId: string | null }[];
   repuestos: { id: string; nombre: string; existencia: number }[]; seguimientosPendientesDelAutor: string[] }
 export type ResultadoIA<T> = { valor: T; implementacion: 'claude' | 'local'; modelo: string | null; respaldo: boolean };
@@ -307,6 +320,7 @@ export type HechosPregunta = { tema: TemaPregunta; datos: Record<string, unknown
 ```
 - **Local:** busca la frase en `respuestas-guardadas.ts` (`{ frase, construir(ctx) => Interpretacion | null }`): coincidencia exacta tras `normalizar`, si no la de mayor `similitud` ≥ 0,8. `construir` resuelve ids dinámicos desde el contexto (C14: el trabajo que bloquea a T04; C11: el trabajo abierto del autor con `repuestoId = compresor-2hp`; E1: el único trabajo con seguimiento pendiente del autor). Sin coincidencia, heurísticas en este orden: pregunta (`¿`/`?` con cómo/qué/cuántos/cuál) → `pregunta`; solo agradecimiento → `no_es_trabajo`; terminación («listo», «ya la/lo …») con un seguimiento pendiente → `actualizacion` a `resuelto`; si no, `trabajo_nuevo` en `OD`, responsable = jefe del autor, `responsableSeguro: false`, plazo `hoy`.
 - **Claude:** `messages.create` con una herramienta `registrar_interpretacion` (esquema de `z.toJSONSchema`) y `tool_choice` forzado; captura con `claude-haiku-5-5`, preguntas con `claude-opus-5-5`; tiempo máximo 15 s. Salida inválida, error o tiempo agotado → respaldo Local con `respaldo: true`. El SDK se importa solo en `ia/claude/` y se instancia solo si hay clave.
+- **Referencias (reforma de nombres):** el contexto lleva el id interno y la referencia visible de cada trabajo; la IA devuelve el id interno, pero si devuelve la referencia, `validarInterpretacion` la traduce de forma determinista (`Nombrador.resolver`). El Local reconoce una referencia escrita («sigo con COLINA-4» → `actualizacion` de T04; «ya quedó PEDIDOS-10» → `resuelto`) y, por compatibilidad, el id interno. Para redactar respuestas, Claude recibe los hechos sin `trabajoId` ni `id` y, si su texto trae un id interno, se usa la plantilla Local (`respaldo: true`).
 - **La IA solo propone.** `validarInterpretacion` (puro) comprueba que existan persona, proyecto, trabajos y repuesto; que el trabajo a actualizar no esté resuelto; y decide la **única** pregunta (prioridad: responsable no seguro → cantidad nula → nada). *Repeticiones (corrección posterior a 4.6):* un `trabajo_nuevo` cuyo `bloquea` incluye un trabajo ya bloqueado por otro no resuelto es `duplicado` de ese bloqueante (no se crea ni se cambia nada; se comprueba antes de la pregunta de responsable); una `decision` con otra `pendiente` del mismo repuesto y proyecto es `error` «Ya está pendiente la decisión D01 sobre …, esperando a …. No creé nada.» (antes de preguntar la cantidad). Devuelve `{ tipo: 'plan', plan } | { tipo: 'pregunta', texto, opciones } | { tipo: 'error', mensaje }`.
 
 ### 4.4 Servicios y vistas
@@ -323,9 +337,9 @@ capturar(ctx, autorId: string, texto: string): Promise<ResultadoCaptura>;
 responderCaptura(ctx, capturaId: number, respuesta: string): Promise<ResultadoCaptura>;
 type MetaIA = { implementacion: 'claude' | 'local'; modelo: string | null; respaldo: boolean };
 type ResultadoCaptura = { capturaId: number; ia: MetaIA } & (
-  | { estado: 'aplicada'; resumen: string; trabajosCreados: string[]; trabajosActualizados: string[]; decisionId: string | null; avisosA: string[] }
+  | { estado: 'aplicada'; resumen: string; trabajosCreados: string[]; trabajosActualizados: string[]; decisionId: string | null; decision?: DecisionRef | null; avisosA: string[] }
   | { estado: 'pregunta'; pregunta: string; opciones: { valor: string; etiqueta: string }[] }
-  | { estado: 'duplicado'; trabajoId: string; titulo: string }
+  | { estado: 'duplicado'; trabajoId: string; titulo: string; referencia?: string }
   | { estado: 'ignorada'; motivo: string }
   | { estado: 'respuesta'; respuesta: RespuestaPregunta }
   | { estado: 'error'; mensaje: string });
@@ -353,20 +367,23 @@ reiniciarDemo(ctx): Promise<void>;
 Vistas (`servicios/vistas.ts`; fechas como `Date`, la interfaz las formatea en el servidor y pasa texto a los componentes de cliente):
 ```ts
 PersonaBreve { id; nombre; rol; area }
-TrabajoVista { id; titulo; proyecto: { id; nombre }; responsable: PersonaBreve; solicitadoPor: PersonaBreve | null;
-  estado; plazo; urgente; conCostoProbable; marcas: Marcas; bloqueadoPor: { id; titulo } | null; fechaSolucion: Date | null;
+TrabajoRef { id; titulo; referencia }   // dominio/nombres.ts: el id solo va en la ruta; se muestran título y referencia
+DecisionRef { id; titulo; referencia }
+TrabajoVista { id; titulo; referencia; proyecto: { id; nombre }; responsable: PersonaBreve; solicitadoPor: PersonaBreve | null;
+  estado; plazo; urgente; conCostoProbable; marcas: Marcas; bloqueadoPor: TrabajoRef | null; fechaSolucion: Date | null;
   bloquea: string[] /* cadena desde este trabajo si está bloqueado */; dependeDe: string[];
+  bloqueaTrabajos: TrabajoRef[]; dependeDeTrabajos: TrabajoRef[]; causasTrabajos: Record<id, TrabajoRef>; causasRepuestos: Record<id, string>;
   necesita: { repuesto: string; cantidad: number }[]; seguimiento: { nivel: number; desde: Date } | null; notas: { en; autor; texto }[] }
-AvisoVista { id; en; titulo; cuerpo; trabajoIds: string[]; tipoAccion; leido: boolean }
+AvisoVista { id; en; titulo; cuerpo; trabajoIds: string[]; trabajos: TrabajoRef[]; tipoAccion; leido: boolean }
 MiDia { persona: PersonaBreve; ahora: Date; debo: TrabajoVista[]; esperoDeOtros: TrabajoVista[];
   avisos: AvisoVista[]; decisionesPendientes: DecisionVista[] }
-ResumenProyecto { id; nombre; responsable: PersonaBreve; fecha: Date | null; total; abiertos; enCurso; bloqueados; resueltos; atrasados; enRiesgo }
+ResumenProyecto { id; clave; nombre; responsable: PersonaBreve; fecha: Date | null; total; abiertos; enCurso; bloqueados; resueltos; atrasados; enRiesgo }
 ProyectoDetalle = ResumenProyecto & { trabajos: TrabajoVista[] }
 OpcionVista = OpcionCalculada & { costoTexto: string }
-DecisionVista { id; estado; creadaEn; proyecto; proponente: PersonaBreve; decisor: PersonaBreve; contexto: string;
-  afectados: { trabajoId; titulo; responsable: string }[]; opciones: OpcionVista[]; opcionPropuesta: string | null;
+DecisionVista { id; titulo; referencia; estado; creadaEn; proyecto; proponente: PersonaBreve; decisor: PersonaBreve; contexto: string;
+  afectados: { trabajoId; titulo; referencia; responsable: string }[]; opciones: OpcionVista[]; trabajos: Record<id, TrabajoRef>; opcionPropuesta: string | null;
   opcionElegida: string | null; decididaEn: Date | null; motivoRechazo: string | null }
-AccionVista { id; en; tipo; motivo; hechoOrigen; trabajoIds: string[]; destinatario: PersonaBreve | null; decisionId: string | null }
+AccionVista { id; en; tipo; motivo; hechoOrigen; trabajoIds: string[]; trabajos: TrabajoRef[]; destinatario: PersonaBreve | null; decisionId: string | null; decision: DecisionRef | null }
 RespuestaPregunta { texto; tema: TemaPregunta; fuentes: { trabajoId; etiqueta }[]; datos: Record<string, unknown>; ia: MetaIA }
 Cifras { resueltosSinGerente; resueltosTotal; porcentaje /* entero */; seguimientos; preguntasRespondidas; minutosAhorrados; horasAhorradas /* 1 decimal */ }
 ```
@@ -375,6 +392,8 @@ Orden de `debo`: urgente, luego atrasado, luego plazo ascendente. `esperoDeOtros
 ---
 
 ## 5. Contrato de la interfaz
+
+**Nombres en pantalla:** ninguna pantalla muestra un id interno. La etiqueta de código (`CodigoTrabajo`) muestra la referencia (COLINA-4); los enlaces a trabajos muestran el título, con la referencia pequeña al lado (`componentes/enlaces-trabajos.tsx`); las decisiones se titulan «Compra de 3 compresores de 2 HP» con su referencia COLINA-D1; los proyectos muestran su clave junto al nombre.
 
 Marco común (`layout.tsx`, `export const dynamic = 'force-dynamic'`): barra superior con **selector «ver como»** (cookie `nexo_persona`, por defecto `marcela-solis`), **reloj** (`mié 25 nov, 7:05`) con botones `+5 min`, `+30 min`, `Siguiente evento`, botón **Reiniciar demo** (pide confirmación) y navegación. **Caja de captura siempre visible**: fija abajo en teléfono (< 640 px), arriba en escritorio; tras enviar muestra la tarjeta de resultado con la insignia «Respondió: Local» / «Respondió: Claude · claude-haiku-5-5» / «Local (respaldo)». Si el resultado es una pregunta, muestra los botones de `opciones` o un campo para la respuesta.
 

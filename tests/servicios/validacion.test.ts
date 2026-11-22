@@ -17,6 +17,7 @@ function conT31(): Instantanea {
   const t31: Trabajo = {
     ...t04,
     id: 'T31',
+    numero: 8, // COLINA-8
     titulo: 'Conseguir compresor de 2 HP',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -81,6 +82,7 @@ describe('validarInterpretacion · decisión repetida', () => {
     id: 'D01',
     creadaEn: enCR(MIE, '08:10'),
     proyectoId: 'P1',
+    numero: 1,
     proponenteId: 'lucia-mora',
     decisorId: 'marcela-solis',
     capturaId: 1,
@@ -100,7 +102,7 @@ describe('validarInterpretacion · decisión repetida', () => {
     const inst = { ...conT31(), decisiones: [pendiente('pendiente')] };
     const r = validarInterpretacion(inst, C11, 'lucia-mora');
     expect(r.tipo).toBe('error');
-    if (r.tipo === 'error') expect(r.mensaje).toMatch(/^Ya está pendiente la decisión D01 .*No creé nada\.$/);
+    if (r.tipo === 'error') expect(r.mensaje).toMatch(/^Ya está pendiente la decisión «Compra de 3 compresores de 2 HP» \(COLINA-D1\), .*No creé nada\.$/); // D01
     expect(validarInterpretacion(inst, { ...C11, compra: { ...C11.compra, cantidad: null } }, 'lucia-mora').tipo).toBe('error');
   });
 

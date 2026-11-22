@@ -13,7 +13,7 @@ import { formatearFecha } from '@/dominio/formato';
 import { sumarHorasLaborales, sumarMinutos } from '@/dominio/tiempo';
 import { ErrorDominio, type NivelSeguimiento, type Seguimiento, type TipoAccion, type Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
-import { cadenaDependientes, dependientesDirectos, porId, siguienteIdSeguimiento, type Instantanea } from '@/motor/instantanea';
+import { cadenaDependientes, dependientesDirectos, nombrador, porId, siguienteIdSeguimiento, type Instantanea } from '@/motor/instantanea';
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
@@ -92,6 +92,7 @@ function solicitar(inst: Instantanea, t: Trabajo): Efecto[] {
     iniciadoEn: inst.ahora,
   };
   const plazo = formatearFecha(t.plazo);
+  const cita = nombrador(inst).cita(t.id);
   return [
     { tipo: 'crear_seguimiento', seguimiento },
     efectoAccion(
@@ -99,10 +100,10 @@ function solicitar(inst: Instantanea, t: Trabajo): Efecto[] {
       'pedir_estado',
       t.responsableId,
       t,
-      `Venció el plazo de ${t.id} (${plazo}) y no está resuelto: se pide el estado a ${nombre(inst, t.responsableId)} (R1).`,
-      `Plazo vencido de ${t.id} · ${plazo}`,
-      `¿Cómo va ${t.id}?`,
-      `Venció el plazo de «${t.titulo}» (${t.id}) el ${plazo}. Cuéntale a Nexo cómo va: responde o cambia el estado.`,
+      `Venció el plazo de ${cita} el ${plazo} y no está resuelto: se pide el estado a ${nombre(inst, t.responsableId)} (R1).`,
+      `Plazo vencido de ${cita} · ${plazo}`,
+      `¿Cómo va «${t.titulo}»?`,
+      `Venció el plazo de ${cita} el ${plazo}. Cuéntale a Nexo cómo va: responde o cambia el estado.`,
     ),
   ];
 }
@@ -116,7 +117,9 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
   const jefe2 = jefeDe(inst, jefe);
   const actualizar = (cambios: Partial<Seguimiento>): Efecto => ({ tipo: 'actualizar_seguimiento', seguimientoId: s.id, cambios });
   const desde = desdeTexto(s, t);
-  const hecho = `Sin respuesta sobre ${t.id} desde ${desde}`;
+  const nombres = nombrador(inst);
+  const cita = nombres.cita(t.id);
+  const hecho = `Sin respuesta sobre ${cita} desde ${desde}`;
 
   if (s.nivel === 0) {
     const siguiente = jefe ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
@@ -127,10 +130,10 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
         'recordatorio',
         responsable,
         t,
-        `${t.id} sigue sin respuesta ${intervaloTexto(s.urgente)} después de pedir el estado: recordatorio a ${nombre(inst, responsable)} (R2).`,
+        `${cita} sigue sin respuesta ${intervaloTexto(s.urgente)} después de pedir el estado: recordatorio a ${nombre(inst, responsable)} (R2).`,
         hecho,
-        `Recordatorio: ${t.id} sigue sin respuesta`,
-        `«${t.titulo}» (${t.id}) sigue sin respuesta desde ${desde}. Plazo: ${formatearFecha(t.plazo)}. Responde o cambia el estado para cerrar el seguimiento.`,
+        `Recordatorio: «${t.titulo}» sigue sin respuesta`,
+        `${cita} sigue sin respuesta desde ${desde}. Plazo: ${formatearFecha(t.plazo)}. Responde o cambia el estado para cerrar el seguimiento.`,
       ),
     ];
   }
@@ -142,7 +145,7 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
   const queda = nivelNuevo === 2 && jefe2 ? { estado: 'pendiente' as const, proximoEn } : { estado: 'agotado' as const };
   const solicitante = t.solicitadoPorId ? `Lo pidió ${nombre(inst, t.solicitadoPorId)}. ` : '';
   const bloquea = queBloquea(inst, t);
-  const bloqueaTexto = bloquea.length > 0 ? `Bloquea: ${bloquea.join(', ')}. ` : 'No bloquea otros trabajos. ';
+  const bloqueaTexto = bloquea.length > 0 ? `Bloquea: ${nombres.citas(bloquea)}. ` : 'No bloquea otros trabajos. ';
   const previo = nivelNuevo === 3 ? ` Ya se escaló a ${nombre(inst, jefe)} sin respuesta.` : '';
   return [
     actualizar({ nivel: nivelNuevo, destinatarioId: destinatario, ...queda }),
@@ -151,10 +154,10 @@ function avanzar(inst: Instantanea, s: Seguimiento, t: Trabajo): Efecto[] {
       'escalamiento',
       destinatario,
       t,
-      `${t.id} de ${nombre(inst, responsable)} sigue sin respuesta tras el ${nivelNuevo === 2 ? 'recordatorio' : 'primer escalamiento'}: escalamiento ${nivelNuevo - 1} a ${nombre(inst, destinatario)} (R3).`,
+      `${cita}, de ${nombre(inst, responsable)}, sigue sin respuesta tras el ${nivelNuevo === 2 ? 'recordatorio' : 'primer escalamiento'}: escalamiento ${nivelNuevo - 1} a ${nombre(inst, destinatario)} (R3).`,
       hecho,
-      `${t.id} sin respuesta de ${nombre(inst, responsable)}`,
-      `«${t.titulo}» (${t.id}), a cargo de ${nombre(inst, responsable)}, sigue sin respuesta desde ${desde}. ${solicitante}${bloqueaTexto}Plazo: ${formatearFecha(t.plazo)}.${previo}`,
+      `«${t.titulo}» sin respuesta de ${nombre(inst, responsable)}`,
+      `${cita}, a cargo de ${nombre(inst, responsable)}, sigue sin respuesta desde ${desde}. ${solicitante}${bloqueaTexto}Plazo: ${formatearFecha(t.plazo)}.${previo}`,
     ),
   ];
 }
@@ -243,7 +246,7 @@ export function siguienteEvento(inst: Instantanea): Date | null {
  */
 export function iniciarSeguimientoUrgente(inst: Instantanea, trabajoId: string): Efecto[] {
   const t = inst.trabajos.find((x) => x.id === trabajoId);
-  if (!t) throw new ErrorDominio(`No existe el trabajo ${trabajoId} para iniciar su seguimiento.`);
+  if (!t) throw new ErrorDominio('No existe el trabajo para iniciar su seguimiento.');
   if (!t.urgente || t.estado === 'resuelto') return [];
   if (inst.seguimientos.some((s) => s.trabajoId === t.id && s.estado === 'pendiente')) return [];
   const seguimiento: Seguimiento = {

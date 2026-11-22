@@ -9,10 +9,11 @@ import { ErrorDominio, NoImplementado, type EstadoCaptura } from '@/dominio/tipo
 import { construirContextoCaptura } from '@/ia/contexto';
 import { esquemaInterpretacion } from '@/ia/esquema-interpretacion';
 import type { Interpretacion } from '@/ia/interprete';
-import type { Instantanea } from '@/motor/instantanea';
+import { nombrador, type Instantanea } from '@/motor/instantanea';
 import { aplicarPlan } from '@/servicios/aplicar';
 import type { ContextoServicio } from '@/servicios/contexto';
 import { preguntar } from '@/servicios/preguntar';
+import { cargarNombrador } from '@/servicios/registro';
 import { validarInterpretacion } from '@/servicios/validacion';
 import type { MetaIA, ResultadoCaptura } from '@/servicios/vistas';
 
@@ -86,15 +87,21 @@ async function resolverEnTransaccion(
   const r = await aplicarPlan(tx, inst, plan, autorId, capturaId);
   switch (plan.tipo) {
     case 'duplicado': {
-      const titulo = inst.trabajos.find((t) => t.id === plan.trabajoId)?.titulo ?? '';
-      return cerrarCaptura(tx, capturaId, meta, { estado: 'duplicado', trabajoId: plan.trabajoId, titulo }, interp);
+      const { titulo, referencia } = nombrador(inst).ref(plan.trabajoId);
+      return cerrarCaptura(tx, capturaId, meta, { estado: 'duplicado', trabajoId: plan.trabajoId, titulo, referencia }, interp);
     }
     case 'no_es_trabajo':
       return cerrarCaptura(tx, capturaId, meta, { estado: 'ignorada', motivo: plan.motivo }, interp);
     case 'pregunta':
       // Las preguntas no llegan aquí (capturar las atiende antes); por si acaso, no se aplica nada.
       return cerrarCaptura(tx, capturaId, meta, { estado: 'error', mensaje: 'Esto es una pregunta: hazla en Preguntar.' }, interp);
-    default:
+    default: {
+      // La decisión recién creada no está en `inst`: su nombre sale de la base, ya escrita en esta transacción.
+      const nombres = r.decisionId ? await cargarNombrador(tx) : null;
+      const decision =
+        r.decisionId && nombres
+          ? { id: r.decisionId, titulo: nombres.tituloDecision(r.decisionId), referencia: nombres.referenciaDecision(r.decisionId) }
+          : null;
       return cerrarCaptura(
         tx,
         capturaId,
@@ -105,10 +112,12 @@ async function resolverEnTransaccion(
           trabajosCreados: r.trabajosCreados,
           trabajosActualizados: r.trabajosActualizados,
           decisionId: r.decisionId,
+          decision,
           avisosA: r.avisosA,
         },
         interp,
       );
+    }
   }
 }
 

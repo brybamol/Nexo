@@ -5,7 +5,7 @@ import { notas, type Db } from '@/db/esquema';
 import { cargarInstantanea } from '@/db/instantanea';
 import type { Marcas, Persona } from '@/dominio/tipos';
 import { calcularMarcas } from '@/motor/marcas';
-import { cadenaDependientes, porId, type Instantanea } from '@/motor/instantanea';
+import { cadenaDependientes, nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import type { ContextoServicio } from '@/servicios/contexto';
 import type { PersonaBreve, TrabajoVista } from '@/servicios/vistas';
 
@@ -33,6 +33,7 @@ export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea;
     return p;
   };
   const noResuelto = (id: string): boolean => trabajos.get(id)?.estado !== 'resuelto';
+  const nombres = nombrador(inst);
 
   const vistas = inst.trabajos.map((t): TrabajoVista => {
     const proyecto = proyectos.get(t.proyectoId);
@@ -55,9 +56,12 @@ export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea;
       .filter((s) => s.trabajoId === t.id && s.estado === 'pendiente')
       .sort((a, b) => b.iniciadoEn.getTime() - a.iniciadoEn.getTime())[0];
 
+    const bloqueaIds = [...bloquea].filter(noResuelto);
+    const dependeDe = inst.dependencias.filter((d) => d.trabajoId === t.id).map((d) => d.dependeDeId);
     return {
       id: t.id,
       titulo: t.titulo,
+      referencia: nombres.referencia(t.id),
       proyecto: { id: t.proyectoId, nombre: proyecto?.nombre ?? t.proyectoId },
       responsable: breve(persona(t.responsableId)),
       solicitadoPor: t.solicitadoPorId ? breve(persona(t.solicitadoPorId)) : null,
@@ -66,10 +70,20 @@ export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea;
       urgente: t.urgente,
       conCostoProbable: t.conCostoProbable,
       marcas: marcas.get(t.id) ?? SIN_MARCAS,
-      bloqueadoPor: bloqueante ? { id: bloqueante.id, titulo: bloqueante.titulo } : null,
+      bloqueadoPor: bloqueante ? nombres.ref(bloqueante.id) : null,
       fechaSolucion: t.fechaSolucion,
-      bloquea: [...bloquea].filter(noResuelto),
-      dependeDe: inst.dependencias.filter((d) => d.trabajoId === t.id).map((d) => d.dependeDeId),
+      bloquea: bloqueaIds,
+      dependeDe,
+      bloqueaTrabajos: nombres.refs(bloqueaIds),
+      dependeDeTrabajos: nombres.refs(dependeDe),
+      causasTrabajos: Object.fromEntries(
+        (marcas.get(t.id)?.causas ?? []).flatMap((c) => (c.trabajoId ? [[c.trabajoId, nombres.ref(c.trabajoId)]] : [])),
+      ),
+      causasRepuestos: Object.fromEntries(
+        (marcas.get(t.id)?.causas ?? []).flatMap((c) =>
+          c.repuestoId ? [[c.repuestoId, inst.repuestos.find((r) => r.id === c.repuestoId)?.nombre ?? 'un repuesto']] : [],
+        ),
+      ),
       necesita: inst.necesidades
         .filter((n) => n.trabajoId === t.id && !n.atendida)
         .map((n) => ({ repuesto: inst.repuestos.find((r) => r.id === n.repuestoId)?.nombre ?? n.repuestoId, cantidad: n.cantidad })),

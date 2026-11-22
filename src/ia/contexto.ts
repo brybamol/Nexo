@@ -1,7 +1,7 @@
 // Construye el contexto que recibe la IA para una captura. Puro. Tarea 2.3.
 import { ErrorDominio } from '@/dominio/tipos';
 import type { ContextoCaptura } from '@/ia/interprete';
-import type { Instantanea } from '@/motor/instantanea';
+import { nombrador, type Instantanea } from '@/motor/instantanea';
 
 const DESFASE_MS = 6 * 60 * 60 * 1000; // Costa Rica = UTC−6, sin horario de verano
 
@@ -25,15 +25,17 @@ export function construirContextoCaptura(inst: Instantanea, autorId: string): Co
     }
   }
 
+  const nombres = nombrador(inst);
   return {
     ahora: isoCR(inst.ahora),
     autor: { id: autor.id, nombre: autor.nombre, rol: autor.rol, area: autor.area },
     personas: inst.personas.map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, area: p.area, jefeId: p.jefeId })),
-    proyectos: inst.proyectos.map((p) => ({ id: p.id, nombre: p.nombre, responsableId: p.responsableId })),
+    proyectos: inst.proyectos.map((p) => ({ id: p.id, clave: p.clave, nombre: p.nombre, responsableId: p.responsableId })),
     trabajosAbiertos: inst.trabajos
       .filter((t) => t.estado !== 'resuelto')
       .map((t) => ({
         id: t.id,
+        referencia: nombres.referencia(t.id),
         titulo: t.titulo,
         proyectoId: t.proyectoId,
         responsableId: t.responsableId,

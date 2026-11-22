@@ -40,6 +40,7 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
   return {
     id,
     proyectoId: 'P1',
+    numero: 8,
     titulo: 'Conseguir un compresor de 2 HP',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -87,6 +88,7 @@ describe('obtenerTrabajo', () => {
     expect(t).toEqual({
       id: 'T04',
       titulo: 'Instalar unidad condensadora y compresor',
+      referencia: 'COLINA-4',
       proyecto: { id: 'P1', nombre: 'Cámara fría La Colina' },
       responsable: { id: 'jose-alfaro', nombre: 'José Alfaro', rol: 'Técnico', area: 'Campo' },
       solicitadoPor: null,
@@ -99,6 +101,10 @@ describe('obtenerTrabajo', () => {
       fechaSolucion: null,
       bloquea: [],
       dependeDe: ['T03'],
+      bloqueaTrabajos: [],
+      dependeDeTrabajos: [{ id: 'T03', titulo: 'Montar paneles y puerta', referencia: 'COLINA-3' }],
+      causasTrabajos: {},
+      causasRepuestos: {},
       necesita: [{ repuesto: 'Compresor de 2 HP', cantidad: 1 }],
       seguimiento: null,
       notas: [],
