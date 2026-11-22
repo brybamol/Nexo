@@ -33,6 +33,20 @@ UPDATE decisiones AS d SET numero = s.base + s.n FROM (
 ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS escalados_a jsonb NOT NULL DEFAULT '[]'::jsonb;
 `;
 
+/**
+ * Reformas v2 (docs/08 §2.4) sobre una base anterior: columnas nuevas con su valor por defecto (todo lo que ya había
+ * queda confirmado y los seguimientos son de estado). Las cuatro tablas nuevas las crea su CREATE TABLE IF NOT EXISTS.
+ * No inserta buzones: una base anterior queda sin buzones conectados («reinicia la demo»).
+ * `correcciones_correo` se conserva hasta la tarea R9, que la elimina con un DROP TABLE IF EXISTS aquí.
+ */
+const ACTUALIZAR_V2 = `
+ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmacion text NOT NULL DEFAULT 'confirmado';
+ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS dueno_propuesta_id text REFERENCES personas(id);
+ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmado_por_id text REFERENCES personas(id);
+ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS entrega jsonb;
+ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'estado';
+`;
+
 /** CREATE TABLE IF NOT EXISTS de todas las tablas, en orden de claves foráneas, y la puesta al día de una base anterior. */
 export const DDL_CREAR = `
 CREATE TABLE IF NOT EXISTS personas (
@@ -88,6 +102,10 @@ CREATE TABLE IF NOT EXISTS trabajos (
   decision_id text,
   creado_en timestamptz NOT NULL,
   resuelto_en timestamptz,
+  confirmacion text NOT NULL DEFAULT 'confirmado',
+  dueno_propuesta_id text REFERENCES personas(id),
+  confirmado_por_id text REFERENCES personas(id),
+  entrega jsonb,
   CONSTRAINT trabajos_proyecto_numero UNIQUE (proyecto_id, numero)
 );
 
@@ -157,7 +175,8 @@ CREATE TABLE IF NOT EXISTS seguimientos (
   proximo_en timestamptz NOT NULL,
   estado text NOT NULL,
   iniciado_en timestamptz NOT NULL,
-  escalados_a jsonb NOT NULL DEFAULT '[]'::jsonb
+  escalados_a jsonb NOT NULL DEFAULT '[]'::jsonb,
+  tipo text NOT NULL DEFAULT 'estado'
 );
 
 CREATE TABLE IF NOT EXISTS decisiones (
@@ -220,6 +239,53 @@ CREATE TABLE IF NOT EXISTS reloj (
   ahora timestamptz NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS buzones (
+  persona_id text PRIMARY KEY REFERENCES personas(id),
+  direccion text NOT NULL,
+  proveedor text NOT NULL,
+  conectado_en timestamptz NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS evidencias (
+  id serial PRIMARY KEY,
+  trabajo_id text NOT NULL REFERENCES trabajos(id),
+  tipo text NOT NULL,
+  fuente text NOT NULL,
+  compromiso_clave text,
+  mensaje_id text,
+  buzones jsonb NOT NULL DEFAULT '[]'::jsonb,
+  enlaces jsonb NOT NULL DEFAULT '{}'::jsonb,
+  autor_id text,
+  en timestamptz NOT NULL,
+  cita text NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mensajes_leidos (
+  persona_id text NOT NULL,
+  id_internet text NOT NULL,
+  enviado timestamptz NOT NULL,
+  leido_en timestamptz NOT NULL,
+  clase text NOT NULL,
+  resultado text NOT NULL,
+  trabajo_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+  PRIMARY KEY (persona_id, id_internet)
+);
+
+CREATE TABLE IF NOT EXISTS revisiones (
+  id serial PRIMARY KEY,
+  en timestamptz NOT NULL,
+  persona_id text NOT NULL REFERENCES personas(id),
+  origen text NOT NULL,
+  trabajo_id text REFERENCES trabajos(id),
+  captura_id integer,
+  resultado text NOT NULL,
+  campos jsonb NOT NULL DEFAULT '[]'::jsonb,
+  propuesto jsonb NOT NULL,
+  final jsonb,
+  entrada jsonb NOT NULL,
+  motivo text
+);
+
 CREATE TABLE IF NOT EXISTS correcciones_correo (
   id serial PRIMARY KEY,
   compromiso_id text NOT NULL,
@@ -228,11 +294,15 @@ CREATE TABLE IF NOT EXISTS correcciones_correo (
   tipo text NOT NULL,
   cambios jsonb NOT NULL DEFAULT '{}'::jsonb
 );
-${ACTUALIZAR}`;
+${ACTUALIZAR}${ACTUALIZAR_V2}`;
 
 /** DROP TABLE IF EXISTS … CASCADE de todas las tablas. */
 export const DDL_BORRAR = `
 DROP TABLE IF EXISTS correcciones_correo CASCADE;
+DROP TABLE IF EXISTS revisiones CASCADE;
+DROP TABLE IF EXISTS mensajes_leidos CASCADE;
+DROP TABLE IF EXISTS evidencias CASCADE;
+DROP TABLE IF EXISTS buzones CASCADE;
 DROP TABLE IF EXISTS reloj CASCADE;
 DROP TABLE IF EXISTS preguntas CASCADE;
 DROP TABLE IF EXISTS capturas CASCADE;

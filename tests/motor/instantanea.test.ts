@@ -25,6 +25,8 @@ function inst(parcial: Partial<Instantanea>): Instantanea {
     necesidades: [],
     seguimientos: [],
     decisiones: [],
+    evidencias: [],
+    descartados: [],
     ...parcial,
   };
 }

@@ -46,6 +46,10 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
     decisionId: null,
     creadoEn: AHORA,
     resueltoEn: null,
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
     ...extra,
   };
 }
@@ -133,6 +137,7 @@ describe('cargarInstantanea', () => {
       estado: 'pendiente',
       iniciadoEn: AHORA,
       escaladosA: [],
+      tipo: 'estado',
     });
     await persistirEfectos(ctx.db, [10, 2, 1].map((n) => ({ tipo: 'crear_seguimiento', seguimiento: mk(n) })));
     const inst = await cargarInstantanea(ctx.db);
@@ -242,6 +247,7 @@ describe('persistirEfectos', () => {
           estado: 'pendiente',
           iniciadoEn: AHORA,
           escaladosA: [],
+          tipo: 'estado',
         },
       },
       { tipo: 'actualizar_seguimiento', seguimientoId: 'S1', cambios: { nivel: 1, estado: 'respondido', escaladosA: ['lucia-mora', 'andres-vargas'] } },

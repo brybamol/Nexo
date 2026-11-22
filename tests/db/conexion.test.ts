@@ -44,7 +44,8 @@ describe('DDL sobre PGlite en memoria', () => {
 
   it('crea todas las tablas de esquema.ts', async () => {
     const esperadas = tablas.map((t) => getTableName(t)).sort();
-    expect(esperadas.length).toBe(17);
+    // 17 del MVP + buzones, evidencias, mensajes_leidos y revisiones (reformas v2). R9 quita correcciones_correo → 20.
+    expect(esperadas.length).toBe(21);
     const reales = await tablasEnBase(c);
     for (const t of esperadas) expect(reales).toContain(t);
   });
@@ -175,6 +176,39 @@ describe('DDL sobre PGlite en memoria', () => {
       fuentes: [{ trabajoId: 'T01', etiqueta: 'e' }],
       implementacion: 'local',
     });
+    await db.insert(esquema.buzones).values({ personaId: 'ana', direccion: 'ana@friodelvalle.cr', proveedor: 'gmail', conectadoEn: en });
+    await db.insert(esquema.evidencias).values({
+      trabajoId: 'T02',
+      tipo: 'pedido',
+      fuente: 'correo',
+      compromisoClave: 'c-h1-m1',
+      mensajeId: '<h1-m1@friodelvalle.cr>',
+      buzones: ['ana', 'jefa'],
+      enlaces: { ana: 'https://mail.google.com/x' },
+      autorId: 'jefa',
+      en,
+      cita: '¿Puedes…?',
+    });
+    await db.insert(esquema.mensajesLeidos).values({
+      personaId: 'ana',
+      idInternet: '<h1-m1@friodelvalle.cr>',
+      enviado: en,
+      leidoEn: en,
+      clase: 'laboral',
+      resultado: 'propuso',
+      trabajoIds: ['T02'],
+    });
+    await db.insert(esquema.revisiones).values({
+      en,
+      personaId: 'ana',
+      origen: 'correo',
+      trabajoId: 'T02',
+      resultado: 'corregida',
+      campos: ['plazo'],
+      propuesto: { titulo: 'Dos', responsableId: 'ana', plazo: en.toISOString(), proyectoId: 'P1' },
+      final: { titulo: 'Dos', responsableId: 'ana', plazo: null, proyectoId: 'P1' },
+      entrada: { cita: '¿Puedes…?', deId: 'jefa', paraIds: ['ana'], enviado: en.toISOString() },
+    });
     await db.insert(esquema.correccionesCorreo).values({
       compromisoId: 'c-h1-m1',
       personaId: 'luis-mendez',
@@ -195,6 +229,12 @@ describe('DDL sobre PGlite en memoria', () => {
     const [t1] = await db.select().from(esquema.trabajos).where(sql`${esquema.trabajos.id} = 'T01'`);
     expect(t1?.relacionados).toEqual([]);
     expect(t1?.urgente).toBe(false);
+    // Valores por defecto de las columnas de las reformas v2.
+    expect(t1).toMatchObject({ confirmacion: 'confirmado', duenoPropuestaId: null, confirmadoPorId: null, entrega: null });
+    const [s1] = await db.select().from(esquema.seguimientos);
+    expect(s1?.tipo).toBe('estado');
+    const [ev] = await db.select().from(esquema.evidencias);
+    expect(ev).toMatchObject({ buzones: ['ana', 'jefa'], enlaces: { ana: 'https://mail.google.com/x' }, en });
   });
 
   it('DDL_BORRAR + DDL_CREAR deja las tablas vacías', async () => {

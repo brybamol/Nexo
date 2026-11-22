@@ -46,7 +46,7 @@ Archivos de contrato afectados (necesitan aprobación humana, §9): `dominio/tip
 
 ### 2.4 Puesta al día de bases existentes
 
-Al final de `DDL_CREAR`, idempotente: `ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmacion text NOT NULL DEFAULT 'confirmado'`, ídem `dueno_propuesta_id`, `confirmado_por_id`, `entrega`; `ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'estado'`; `CREATE TABLE IF NOT EXISTS` de las cuatro nuevas; `DROP TABLE IF EXISTS correcciones_correo`. No inserta buzones: una base anterior queda sin buzones conectados y Correo lo dice («Ningún buzón conectado: reinicia la demo»). `DDL_BORRAR` incluye las tablas nuevas y `correcciones_correo`. Total de tablas: 20.
+Al final de `DDL_CREAR`, idempotente: `ALTER TABLE trabajos ADD COLUMN IF NOT EXISTS confirmacion text NOT NULL DEFAULT 'confirmado'`, ídem `dueno_propuesta_id`, `confirmado_por_id`, `entrega`; `ALTER TABLE seguimientos ADD COLUMN IF NOT EXISTS tipo text NOT NULL DEFAULT 'estado'`; `CREATE TABLE IF NOT EXISTS` de las cuatro nuevas; `DROP TABLE IF EXISTS correcciones_correo`. No inserta buzones: una base anterior queda sin buzones conectados y Correo lo dice («Ningún buzón conectado: reinicia la demo»). `DDL_BORRAR` incluye las tablas nuevas y `correcciones_correo`. Total de tablas: 20. *(R2: el `DROP TABLE IF EXISTS correcciones_correo` y la salida de la tabla de `esquema.ts` los hace R9, porque la pantalla Correo actual la usa hasta R7a; entre R2 y R9 hay 21 tablas.)*
 
 ### 2.5 Semilla
 
@@ -129,15 +129,24 @@ export interface TasaCorreccion { inferidos: number; revisadas: number; confirma
   porCampo: Record<CampoCorregible, number>; confirmadasPorFuentes: number; sinRevisar: number; tasa: number | null }
 // constantes.ts
 export const UMBRAL_MISMO_HECHO = 0.55; export const DOMINIO_EMPRESA = 'friodelvalle.cr'; export const PREFIJO_TRABAJO_CORREO = 'M';
+// R2 añadió: UMBRAL_ENLACE_ESPERA = 0.45; BONO_ACTOR_ESPERA = 0.25; HORAS_REVISION_PROPUESTA = 4; MAX_CITA_EVIDENCIA = 220;
+//   BUZONES_CONECTADOS_EN_ISO (lun 23 7:00). Tipos nuevos de apoyo en dominio/tipos.ts: FuenteEvidencia, TipoEvidencia,
+//   ProveedorCorreo, ClaseCorreo, ResultadoLectura, ResultadoRevision, TrabajoDescartado, EvidenciaNueva, BuzonConectado,
+//   MensajeLeido(Nuevo), ValoresPropuesta, EntradaRevision, RevisionNueva, CambiosPropuesta, EntradaRevisionPropuesta,
+//   DatosRevisionCaptura, CasoCorreccion, Esperas; y noImplementado(donde, ...args) para los esqueletos.
 
 // motor/instantanea.ts
 // Instantanea += evidencias: EvidenciaTrabajo[]; descartados: Pick<Trabajo, 'id' | 'proyectoId' | 'numero'>[]
-//   (trabajos ya NO incluye los descartados; dependencias y seguimientos de descartados no se cargan)
+//   (trabajos ya NO incluye los descartados; dependencias, necesidades y seguimientos de descartados no se cargan;
+//   R2: las evidencias se cargan todas, también las de descartados, por id. Orden de trabajos: id natural, M01 antes que T01)
 export function siguienteIdTrabajoCorreo(inst: Instantanea): string;       // 'M01', 'M02'… (cuenta también los descartados)
 // siguienteNumeroTrabajo: cuenta también los descartados (su número queda ocupado)
+// R2: visiblePara e instantaneaVisible viven aquí (contrato de la instantánea, hechas por R2); motor/confianza.ts las reexporta.
+//   db/instantanea.ts: cargarInstantaneaVisible(db, personaId | null), cargarBuzones, cargarMensajesLeidos,
+//   cargarClavesLeidas (+ claveLeido(personaId, idInternet)), cargarRevisiones.
 // motor/efectos.ts: Efecto += 
-//   | { tipo: 'crear_dependencia'; dependencia: Dependencia }
-//   | { tipo: 'agregar_evidencia'; evidencia: Omit<EvidenciaTrabajo, 'id'> }
+//   | { tipo: 'crear_dependencia'; dependencia: Dependencia; actorId: string | null }   // R2: con actor (evento derivado dependencia_creada)
+//   | { tipo: 'agregar_evidencia'; evidencia: Omit<EvidenciaTrabajo, 'id'> }          // R2: evento derivado evidencia_agregada; id provisional = máx + 1
 //   | { tipo: 'actualizar_evidencia'; evidenciaId: number; cambios: { buzones?: string[]; enlaces?: Record<string, string> } }
 //   | { tipo: 'registrar_mensajes'; mensajes: MensajeLeidoNuevo[] }
 //   | { tipo: 'registrar_revision'; revision: Omit<RevisionPropuesta, 'id'> }
@@ -153,7 +162,7 @@ export function buzonesDelPedido(t: Trabajo, evidencias: EvidenciaTrabajo[]): st
 export function seguimientoDePropuesta(inst: Instantanea, trabajoId: string): Efecto[];         // regla 15, nivel 0 sin acción
 export function efectosRevision(inst: Instantanea, trabajoId: string, personaId: string,
   r: { tipo: 'confirmar' } | { tipo: 'corregir'; cambios: CambiosPropuesta } | { tipo: 'descartar'; motivo: string | null }): Efecto[]; // regla 16
-export function revisionDeCaptura(propuestoId: string, elegidoId: string, ...): Omit<RevisionPropuesta, 'id'>; // regla 17
+export function revisionDeCaptura(propuestoId: string, elegidoId: string, datos: DatosRevisionCaptura): Omit<RevisionPropuesta, 'id'>; // regla 17 (R2: DatosRevisionCaptura en dominio/tipos.ts)
 // motor/entregas.ts (nuevo)
 export function modoResolucion(t: Trabajo, personaId: string): 'resolver' | 'entregar' | 'prohibido'; // regla 19
 export function efectosEntrega(inst: Instantanea, trabajoId: string, personaId: string, e: { nota: string | null; enlace: string | null; fuente: Entrega['fuente'] }): Efecto[];
@@ -175,8 +184,12 @@ export function casoDePrueba(r: RevisionPropuesta): CasoCorreccion;             
 // efectosActualizacion(inst, plan, autorId, evidencia?: { texto: string; fuente }) (regla 19), efectosBloqueo y avisosPorRiesgoNuevo (sin avisos a propuestos)
 
 // correo/tipos.ts (cambia): EmpresaCorreo y PersonaCorreo se conservan; Compromiso* y ModeloCorreo se van.
-export type HechoCorreo = PedidoCorreo | { tipo: 'aceptacion' | 'entrega' | 'recepcion' | 'insistencia'; compromisoClave: string; mensajeId: string; autorId: string | null; en: Date; cita: string; enlaces: Record<string, string> }
-  | ({ tipo: 'espera' } & EsperaCorreo);
+// R2: todo hecho lleva BaseHechoCorreo { compromisoClave; mensajeId; autorId; en; cita; enlaces; buzones } (también `buzones`,
+//   que van a evidencias.buzones). EsperaCorreo { clase: 'dependencia' | 'bloqueo'; texto; actor; objeto; quienEsperaId }:
+//   se llama `clase` (no `tipo`) para que `{ tipo: 'espera' } & EsperaCorreo` no sea imposible.
+//   ResumenLectura vive en dominio/tipos.ts (la usa vistas.ts) y correo/tipos.ts la reexporta.
+export type HechoCorreo = PedidoCorreo | (BaseHechoCorreo & { tipo: 'aceptacion' | 'entrega' | 'recepcion' | 'insistencia' })
+  | (BaseHechoCorreo & { tipo: 'espera' } & EsperaCorreo);
 export interface PedidoCorreo { tipo: 'pedido'; compromisoClave: string; mensajeId: string; asunto: string; titulo: string; solicitanteId: string | null;
   responsableId: string | null; plazo: Date | null; monto: number | null; espera: EsperaCorreo | null; buzones: string[]; enlaces: Record<string, string>; en: Date; cita: string }
 export interface CopiaLeida { personaId: string; idInternet: string; enviado: Date; clase: ClasePrivacidad }
@@ -198,7 +211,7 @@ revisarPropuesta(ctx, trabajoId: string, personaId: string, r: EntradaRevisionPr
 declararEntrega(ctx, trabajoId: string, personaId: string, e: { nota?: string; enlace?: string }): Promise<void>; // estado-trabajos.ts
 confirmarRecepcion(ctx, trabajoId: string, personaId: string, nota?: string): Promise<void>;
 rechazarEntrega(ctx, trabajoId: string, personaId: string, motivo: string): Promise<void>;
-cambiarEstado(ctx, trabajoId: string, personaId: string, estado: EstadoTrabajo, evidencia?: string): Promise<void>; // regla 19
+cambiarEstado(ctx, trabajoId: string, personaId: string, estado: EstadoTrabajo, evidencia?: string): Promise<void>; // regla 19 (R2: firma puesta; `evidencia` sin usar hasta R6b)
 obtenerTasaCorreccion(ctx): Promise<TasaCorreccion>;  exportarCasosDePrueba(ctx): Promise<CasoCorreccion[]>; // servicios/tasa.ts
 listarTrabajos(ctx, f?: { proyectoId?; responsableId?; verComo?: string }); obtenerTrabajo(ctx, id, verComo?: string);
 cargarVistasTrabajos(db, verComo?: string | null): Promise<{ inst /* visible */; vistas }>;
@@ -210,6 +223,10 @@ MiDia += propuestas: TrabajoVista[]; porConfirmarRecibido: TrabajoVista[]
 VistaCorreo { ahora; buzones: { persona; conectado; proveedor | null; leidos; laborales; personales; boletines }[];
   lineas: { en; de; para: PersonaBreve[]; resultado; trabajos: TrabajoRef[]; cita; enlace | null }[];
   sinConvertir: { en; de; cita }[]; esperas: ReturnType<typeof calcularEsperas> con nombres; tasa: TasaCorreccion }
+// R2: `de` es RemitenteVista { nombre; correo; persona: PersonaBreve | null } (puede ser externo); esperas: EsperasVista;
+//   calcularEsperas devuelve `Esperas` (dominio/tipos.ts). Proveedor de buzón = ProveedorCorreo ('gmail' | 'outlook'),
+//   distinto de `Proveedor` (repuestos). Estado de las vistas hasta R6c: confianza 'persona' y evidencias [] (marcados «R6c»).
+// R2: efectosActualizacion ya recibe `evidencia?: { texto; fuente: FuenteEvidencia }` (sin usar hasta R4).
 ```
 
 `nombres.ts`: `idsInternosEn` también detecta `M\d{2,}`. Ningún texto visible lleva `M01`.

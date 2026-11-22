@@ -1,7 +1,7 @@
 // Respuestas a seguimientos y cambios de estado desde la interfaz (sin pasar por la caja de captura). Tarea 3.4.
 // Cada mutación: transacción → cargarInstantanea → motor → persistirEfectos (§4.4). La respuesta es la regla 3 de §4.2.
 import { cargarInstantanea, persistirEfectos, tomarTurnoEscritura } from '@/db/instantanea';
-import { ErrorDominio, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
+import { ErrorDominio, noImplementado, type EstadoTrabajo, type PlanActualizacion } from '@/dominio/tipos';
 import { efectosActualizacion } from '@/motor/actualizacion';
 import type { Efecto } from '@/motor/efectos';
 import { autorizadosParaActuar, type Razon } from '@/motor/escalamiento';
@@ -150,13 +150,16 @@ export async function obtenerPermisosActuar(ctx: ContextoServicio, personaId: st
  * Cambia el estado de un trabajo desde la interfaz. Aplica las mismas reglas que una actualización por captura:
  * responde al seguimiento si corresponde, resolver lo cierra y libera dependientes (§4.2 reglas 3 y 5). Sin cambio
  * real de estado no hace nada.
+ * Reformas v2 (R6b): `evidencia` es la nota con la que se resuelve o se entrega (regla 19). Hasta R6b no se usa.
  */
 export async function cambiarEstado(
   ctx: ContextoServicio,
   trabajoId: string,
   personaId: string,
   estado: EstadoTrabajo,
+  evidencia?: string,
 ): Promise<void> {
+  void evidencia; // R6b: regla 19 (modoResolucion) y efectosActualizacion(…, { texto: evidencia, fuente: 'interfaz' })
   await ctx.db.transaction(async (tx) => {
     await tomarTurnoEscritura(tx);
     const inst = await cargarInstantanea(tx);
@@ -164,4 +167,26 @@ export async function cambiarEstado(
     if (trabajo.estado === estado) return;
     await persistirEfectos(tx, efectosActualizacion(inst, plan(trabajoId, estado, null), personaId));
   });
+}
+
+// ─── Entrega y recepción (docs/08 reglas 19–20). Esqueletos de R2; los implementa R6b con motor/entregas.ts ───
+
+/** El responsable declara la entrega (nota o enlace). ErrorDominio «Escribe qué entregaste o pega el enlace». */
+export async function declararEntrega(
+  ctx: ContextoServicio,
+  trabajoId: string,
+  personaId: string,
+  e: { nota?: string; enlace?: string },
+): Promise<void> {
+  return noImplementado('R6b · servicios/estado-trabajos.ts · declararEntrega', ctx, trabajoId, personaId, e);
+}
+
+/** Quien lo pidió confirma que lo recibió: queda Resuelto. */
+export async function confirmarRecepcion(ctx: ContextoServicio, trabajoId: string, personaId: string, nota?: string): Promise<void> {
+  return noImplementado('R6b · servicios/estado-trabajos.ts · confirmarRecepcion', ctx, trabajoId, personaId, nota);
+}
+
+/** Quien lo pidió rechaza la entrega (motivo obligatorio). */
+export async function rechazarEntrega(ctx: ContextoServicio, trabajoId: string, personaId: string, motivo: string): Promise<void> {
+  return noImplementado('R6b · servicios/estado-trabajos.ts · rechazarEntrega', ctx, trabajoId, personaId, motivo);
 }

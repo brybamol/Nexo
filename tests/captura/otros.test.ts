@@ -292,6 +292,7 @@ describe('construirContextoCaptura (puro)', () => {
       proximoEn: inst.ahora,
       iniciadoEn: inst.ahora,
       escaladosA: [],
+      tipo: 'estado' as const,
     };
     inst.seguimientos = [
       { ...base, id: 'S1', trabajoId: 'T28', destinatarioId: 'paola-herrera', estado: 'pendiente' },

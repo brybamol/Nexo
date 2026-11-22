@@ -83,7 +83,7 @@ describe('trabajos y decisiones nuevos', () => {
   it('la base no admite dos trabajos con el mismo número en un proyecto', async () => {
     demo = await prepararDemo();
     const t04 = TRABAJOS_SEMILLA.find((t) => t.id === 'T04')!;
-    await expect(demo.ctx.db.insert(esquema.trabajos).values({ ...t04, id: 'T99' })).rejects.toThrow();
+    await expect(demo.ctx.db.insert(esquema.trabajos).values({ ...t04, id: 'T99', entrega: null })).rejects.toThrow();
   });
 });
 

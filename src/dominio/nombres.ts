@@ -87,11 +87,12 @@ export function referenciasEnTexto(texto: string): string[] {
 }
 
 /**
- * Ids internos sueltos en un texto: T04, D01 (también S1 de seguimientos y C1 de compromisos de correo). No cuenta lo
- * que forma parte de una referencia (COLINA-D1) ni de otra palabra. Sirve de red: ningún texto para personas los lleva.
+ * Ids internos sueltos en un texto: T04, D01, M01 (trabajos nacidos del correo; también S1 de seguimientos y C1 de
+ * compromisos de correo). No cuenta lo que forma parte de una referencia (COLINA-D1) ni de otra palabra. Sirve de red:
+ * ningún texto para personas los lleva.
  */
 export function idsInternosEn(texto: string): string[] {
-  return [...texto.matchAll(/(?<![\p{L}\p{N}-])(?:T\d{2,}|D\d{2,}|S\d+|C\d{1,2})(?![\p{L}\p{N}])/gu)].map((m) => m[0]);
+  return [...texto.matchAll(/(?<![\p{L}\p{N}-])(?:T\d{2,}|D\d{2,}|M\d{2,}|S\d+|C\d{1,2})(?![\p{L}\p{N}])/gu)].map((m) => m[0]);
 }
 
 // ─── Nombrador: a partir de los datos (instantánea o filas) ───────────────────

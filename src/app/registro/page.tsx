@@ -30,6 +30,14 @@ const ETIQUETAS: Record<TipoAccion, string> = {
   aplicar_decision: 'Aplicar decisión',
   responder_pregunta: 'Responder pregunta',
   corregir_existencia: 'Corregir existencia',
+  // Reformas v2 (docs/08 §6). R7b puede afinar iconos y textos.
+  leer_correo: 'Lectura de correo',
+  proponer_trabajo: 'Propuesta',
+  reconocer_correo: 'Reconocido en el correo',
+  revisar_propuesta: 'Revisión',
+  registrar_entrega: 'Entrega',
+  confirmar_recepcion: 'Recibido',
+  rechazar_entrega: 'Entrega rechazada',
 };
 
 // Icono de cada tipo: el color de la insignia distingue lo que Nexo propone, lo ejecutado y lo que escala.
@@ -44,6 +52,13 @@ const ICONOS: Record<TipoAccion, LucideIcon> = {
   aplicar_decision: CircleCheck,
   responder_pregunta: MessageSquareText,
   corregir_existencia: PackageCheck,
+  leer_correo: MessageSquareText,
+  proponer_trabajo: FilePlus2,
+  reconocer_correo: FilePen,
+  revisar_propuesta: CircleCheck,
+  registrar_entrega: PackageCheck,
+  confirmar_recepcion: CircleCheck,
+  rechazar_entrega: FilePen,
 };
 
 function IconoTipo({ tipo }: { tipo: TipoAccion }) {

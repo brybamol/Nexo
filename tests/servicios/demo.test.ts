@@ -11,7 +11,7 @@ import { prepararDemo, type Demo } from '../ayudantes/preparar';
 
 let demo: Demo;
 beforeEach(async () => {
-  demo = await prepararDemo({ hora: '07:00' });
+  demo = await prepararDemo({ hora: '07:00', correo: true }); // reiniciarDemo deja los 8 buzones conectados de la semilla
 });
 afterEach(async () => {
   await demo.cerrar();

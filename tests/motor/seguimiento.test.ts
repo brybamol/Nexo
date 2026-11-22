@@ -95,6 +95,7 @@ describe('R1 · solicitud de estado al vencer el plazo', () => {
         estado: 'pendiente',
         iniciadoEn: enCR(MIE, '07:05'),
         escaladosA: [],
+        tipo: 'estado',
       },
       expect.objectContaining({ id: 'S2', trabajoId: 'T21', nivel: 0, proximoEn: enCR(MIE, '11:00') }),
     ]);
@@ -176,6 +177,7 @@ describe('E2 · trabajo urgente creado por captura: recordatorio y escalamiento 
         estado: 'pendiente',
         iniciadoEn: enCR(MIE, '07:05'),
         escaladosA: [],
+        tipo: 'estado',
       },
     ]);
     expect(iniciarSeguimientoUrgente(inst, 'T31')).toEqual([]); // ya tiene uno pendiente

@@ -73,6 +73,7 @@ describe('efectosActualizacion · liberación', () => {
           estado: 'pendiente',
           iniciadoEn: base.ahora,
           escaladosA: [],
+          tipo: 'estado',
         },
       ],
     };

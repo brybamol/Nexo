@@ -1,9 +1,9 @@
 // Tipos del giro a correo (docs/06). Prototipo: todo es puro y determinista; la hora llega como argumento.
-import type { EstadoTrabajo } from '@/dominio/tipos';
+import type { ClaseCorreo, EstadoTrabajo, ProveedorCorreo } from '@/dominio/tipos';
 
 // ── Fuentes: cada proveedor entrega su forma; un adaptador la lleva a `MensajeCorreo` ─────────────────────
 
-export type Proveedor = 'gmail' | 'outlook';
+export type Proveedor = ProveedorCorreo;
 
 export interface DireccionGraph {
   emailAddress: { name: string; address: string };
@@ -113,7 +113,7 @@ export interface EmpresaCorreo {
 
 // ── Privacidad y unión ──────────────────────────────────────────────────────────────────────────────
 
-export type ClasePrivacidad = 'laboral' | 'personal' | 'boletin';
+export type ClasePrivacidad = ClaseCorreo;
 
 /** Un mensaje laboral, ya sin duplicados entre buzones. */
 export interface MensajeUnido {
@@ -203,6 +203,72 @@ export interface CorreccionCorreo {
   tipo: TipoCorreccion;
   cambios: CambiosCorreccion;
 }
+
+// ── Reformas v2: hechos del correo (docs/08 §3 reglas 11–13, §4). Los añadió R2; los usa R5 ──────────
+// Lo de abajo de «Modelo vivo» y `Compromiso`/`Correccion*` es el modelo aparte que retira R9.
+
+/**
+ * Espera dentro de un correo. `clase`: `dependencia` si la escribe el solicitante al pedir; `bloqueo` si la escribe el
+ * responsable. (Se llama `clase` y no `tipo` para poder ir dentro de un HechoCorreo con `tipo: 'espera'`.)
+ */
+export interface EsperaCorreo {
+  clase: TipoEspera;
+  /** La cláusula tal cual: «en cuanto Paola envíe la cotización». */
+  texto: string;
+  /** Nombre o departamento nombrado («Paola»); null si no nombra a nadie. */
+  actor: string | null;
+  /** «la cotización»; pronominal («me los envíe») si no nombra el objeto. */
+  objeto: string;
+  /** Persona que espera (la que escribe la espera); null si es externa. */
+  quienEsperaId: string | null;
+}
+
+/** Lo común a todo hecho: de qué pedido es, de qué mensaje sale y en qué buzones conectados está ese mensaje. */
+export interface BaseHechoCorreo {
+  /** 'c-h3-m1': une los hechos de un mismo pedido entre lecturas. */
+  compromisoClave: string;
+  /** `Message-ID`. */
+  mensajeId: string;
+  autorId: string | null;
+  /** Envío del mensaje. */
+  en: Date;
+  /** ≤ MAX_CITA_EVIDENCIA caracteres. */
+  cita: string;
+  /** personaId → enlace en su buzón. */
+  enlaces: Record<string, string>;
+  /** Personas (conectadas) en cuyo buzón está el mensaje. */
+  buzones: string[];
+}
+
+export interface PedidoCorreo extends BaseHechoCorreo {
+  tipo: 'pedido';
+  asunto: string;
+  titulo: string;
+  /** null si quien pide es externo. */
+  solicitanteId: string | null;
+  /** null si el responsable no es de la empresa. */
+  responsableId: string | null;
+  /** null si no hay señal de plazo (no se inventa). */
+  plazo: Date | null;
+  monto: number | null;
+  /** Espera escrita al pedir (dependencia). */
+  espera: EsperaCorreo | null;
+}
+
+export type HechoCorreo =
+  | PedidoCorreo
+  | (BaseHechoCorreo & { tipo: 'aceptacion' | 'entrega' | 'recepcion' | 'insistencia' })
+  | (BaseHechoCorreo & { tipo: 'espera' } & EsperaCorreo);
+
+/** Una copia leída de un buzón (laboral o no): lo que va a `mensajes_leidos`. */
+export interface CopiaLeida {
+  personaId: string;
+  idInternet: string;
+  enviado: Date;
+  clase: ClasePrivacidad;
+}
+
+export type { ResumenLectura } from '@/dominio/tipos';
 
 // ── Modelo vivo ─────────────────────────────────────────────────────────────────────────────────────
 

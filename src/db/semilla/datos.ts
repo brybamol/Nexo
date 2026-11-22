@@ -1,8 +1,10 @@
 // Datos de Frío del Valle (docs/04, §3.3 de docs/05) como constantes tipadas. Tarea 1.4.
 import type { notas } from '@/db/esquema';
 import { enCR } from '@/dominio/tiempo';
-import { CLAVES_PROYECTO, PERSONAS, PROYECTOS, REPUESTOS } from '@/dominio/constantes';
+import { BUZONES_DEMO } from '@/correo/ejemplo/buzones';
+import { BUZONES_CONECTADOS_EN_ISO, CLAVES_PROYECTO, PERSONAS, PROYECTOS, REPUESTOS } from '@/dominio/constantes';
 import type {
+  BuzonConectado,
   Dependencia,
   EstadoTrabajo,
   EventoNuevo,
@@ -61,8 +63,21 @@ function trabajo(
     decisionId: null,
     creadoEn: CREADO_EN,
     resueltoEn: estado === 'resuelto' ? plazo : null,
+    // Reformas v2: lo de la semilla está confirmado por origen, sin dueño de propuesta y sin entrega.
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
   };
 }
+
+/** Los 8 buzones conectados de la demo (docs/08 §5.1), conectados el lun 23 a las 7:00. */
+export const BUZONES_SEMILLA: BuzonConectado[] = BUZONES_DEMO.map((b) => ({
+  personaId: b.personaId,
+  direccion: b.direccion,
+  proveedor: b.proveedor,
+  conectadoEn: new Date(BUZONES_CONECTADOS_EN_ISO),
+}));
 
 export const PERSONAS_SEMILLA: Persona[] = [
   { id: PERSONAS.marcela, nombre: 'Marcela Solís', rol: 'Gerente general', area: 'Gerencia', jefeId: null },

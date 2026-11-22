@@ -75,6 +75,7 @@ function solicitar(inst: Instantanea, t: Trabajo): Efecto[] {
     estado: 'pendiente',
     iniciadoEn: inst.ahora,
     escaladosA: [],
+    tipo: 'estado',
   };
   const plazo = formatearFecha(t.plazo);
   const cita = nombrador(inst).cita(t.id);
@@ -274,6 +275,7 @@ export function iniciarSeguimientoUrgente(inst: Instantanea, trabajoId: string):
     estado: 'pendiente',
     iniciadoEn: t.creadoEn,
     escaladosA: [],
+    tipo: 'estado',
   };
   return [{ tipo: 'crear_seguimiento', seguimiento }];
 }

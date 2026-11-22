@@ -11,11 +11,14 @@ import type {
   CorreccionCorreo,
   ModeloCorreo,
   PersonaCorreo,
+  Proveedor,
   TipoCorreccion,
 } from '@/correo/tipos';
-import { ErrorDominio, type EstadoTrabajo } from '@/dominio/tipos';
+import type { Db } from '@/db/esquema';
+import { ErrorDominio, noImplementado, type EstadoTrabajo, type ResumenLectura } from '@/dominio/tipos';
 import type { ContextoServicio } from '@/servicios/contexto';
 import { obtenerAhora } from '@/servicios/reloj';
+import type { VistaCorreo } from '@/servicios/vistas';
 
 const ESTADOS: readonly EstadoTrabajo[] = ['abierto', 'en_curso', 'bloqueado', 'resuelto'];
 const TIPOS: readonly TipoCorreccion[] = ['confirmar', 'corregir', 'descartar'];
@@ -122,4 +125,31 @@ export async function registrarCorreccion(ctx: ContextoServicio, entrada: Entrad
     tipo: entrada.tipo,
     cambios,
   });
+}
+
+// ── Reformas v2: el correo como fuente de trabajos (docs/08 §3 regla 10, §4, §6). Esqueletos de R2; los implementa R6a.
+// Lo de arriba (modelo aparte con correcciones) lo retira R9.
+
+/**
+ * Regla 10: dentro de la transacción del reloj y ANTES del tick, lee los buzones conectados (tabla `buzones`) con
+ * `enviado ≤ ahora`, procesa solo las copias que no están en `mensajes_leidos` y persiste el plan. Con 0 buzones o 0
+ * copias nuevas no hace nada y devuelve null.
+ */
+export async function leerCorreo(tx: Db, ahora: Date): Promise<ResumenLectura | null> {
+  return noImplementado('R6a · servicios/correo.ts · leerCorreo', tx, ahora);
+}
+
+/** Envío del próximo mensaje sin leer posterior a `ahora` en los buzones conectados, o null (irAlSiguienteEvento). */
+export async function siguienteCorreo(tx: Db, ahora: Date): Promise<Date | null> {
+  return noImplementado('R6a · servicios/correo.ts · siguienteCorreo', tx, ahora);
+}
+
+/** Pantalla Correo (§6) para la persona de la barra. Solo lectura. */
+export async function obtenerVistaCorreo(ctx: ContextoServicio, personaId: string): Promise<VistaCorreo> {
+  return noImplementado('R6a · servicios/correo.ts · obtenerVistaCorreo', ctx, personaId);
+}
+
+/** Conecta (o vuelve a conectar) el buzón de una persona. ErrorDominio si la dirección no es de DOMINIO_EMPRESA (CC14). */
+export async function conectarBuzon(ctx: ContextoServicio, personaId: string, direccion: string, proveedor: Proveedor): Promise<void> {
+  return noImplementado('R6a · servicios/correo.ts · conectarBuzon', ctx, personaId, direccion, proveedor);
 }

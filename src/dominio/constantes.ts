@@ -1,4 +1,5 @@
 // Constantes de dominio de Nexo. ARCHIVO DE CONTRATO (§4.0 de docs/05): congelado tras la tarea 1.1.
+// Ampliado por las reformas v2 (docs/08 §4, tarea R2) y congelado de nuevo tras ella.
 
 // ─── Zona y horario (Costa Rica no tiene horario de verano: desfase fijo −06:00) ──
 export const ZONA = 'America/Costa_Rica';
@@ -17,6 +18,17 @@ export const HORA_LLEGADA_HABITUAL = '07:00'; // el proveedor habitual llega a e
 export const MIN_SIGUIENTE_EVENTO_POR_DEFECTO = 30; // irAlSiguienteEvento sin evento pendiente
 export const UMBRAL_SIMILITUD = 0.8; // intérprete Local: coincidencia mínima con una frase guardada
 export const LIMITE_AVISOS_MI_DIA = 20;
+
+// ─── Reformas v2: correo como fuente (docs/08 §3) ─────────────────────────────
+export const DOMINIO_EMPRESA = 'friodelvalle.cr';
+export const PREFIJO_TRABAJO_CORREO = 'M'; // trabajos nacidos del correo: M01, M02… (no consumen T31)
+export const UMBRAL_MISMO_HECHO = 0.55; // regla 12b: similitud mínima de títulos para «es el mismo hecho»
+export const UMBRAL_ENLACE_ESPERA = 0.45; // regla 13: puntaje mínimo para enlazar una espera con un trabajo
+export const BONO_ACTOR_ESPERA = 0.25; // regla 13: el actor nombrado coincide con el responsable
+export const HORAS_REVISION_PROPUESTA = 4; // regla 15: horas laborales hasta el recordatorio de una propuesta
+export const MAX_CITA_EVIDENCIA = 220; // caracteres de la cita de una evidencia
+/** Hora en que quedaron conectados los buzones de la demo (lun 23, 7:00 de Costa Rica). */
+export const BUZONES_CONECTADOS_EN_ISO = '2026-11-23T07:00:00-06:00';
 
 // ─── Cifras (03 §5): hipótesis de minutos, no medición ────────────────────────
 export const MIN_POR_SEGUIMIENTO = 10;

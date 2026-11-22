@@ -175,6 +175,7 @@ export function efectosReasignar(inst: Instantanea, trabajoId: string, autorId: 
         estado: 'pendiente',
         iniciadoEn: inst.ahora,
         escaladosA: [],
+        tipo: 'estado',
       },
     });
   }

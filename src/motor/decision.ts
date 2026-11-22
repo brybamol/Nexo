@@ -260,6 +260,10 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     decisionId: d.id,
     creadoEn: inst.ahora,
     resueltoEn: null,
+    confirmacion: 'confirmado' as const,
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
   };
 
   // 1. Un trabajo de compra por línea, para la encargada de compras; la necesidad cubierta recibe su fecha.

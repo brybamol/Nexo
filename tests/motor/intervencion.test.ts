@@ -155,6 +155,7 @@ describe('reasignar', () => {
         estado: 'pendiente',
         iniciadoEn: enCR(MIE, '07:05'),
         escaladosA: [],
+        tipo: 'estado',
       },
     });
     expect(avisosA(efs)).toEqual(['diego-rojas']); // Lucía es la autora: no se le avisa

@@ -2,7 +2,7 @@
 // Las marcas (atrasado, en riesgo) no se guardan: salen de calcularMarcas(instantánea) en cada consulta.
 import { asc } from 'drizzle-orm';
 import { notas, type Db } from '@/db/esquema';
-import { cargarInstantanea } from '@/db/instantanea';
+import { cargarInstantaneaVisible } from '@/db/instantanea';
 import type { Marcas, Persona } from '@/dominio/tipos';
 import { calcularMarcas } from '@/motor/marcas';
 import { cadenaDependientes, nombrador, porId, type Instantanea } from '@/motor/instantanea';
@@ -18,9 +18,10 @@ function breve(p: Persona): PersonaBreve {
 /**
  * Todas las vistas de trabajo (ordenadas por plazo y luego por id) junto con la instantánea de la que salen.
  * La reutilizan proyectos.ts y, más adelante, las demás consultas; una sola carga y un solo cálculo de marcas.
+ * Reformas v2 (regla 18): `inst` es la instantánea VISIBLE para `verComo` (null = vista general, sin propuestos).
  */
-export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea; vistas: TrabajoVista[] }> {
-  const inst = await cargarInstantanea(db);
+export async function cargarVistasTrabajos(db: Db, verComo: string | null = null): Promise<{ inst: Instantanea; vistas: TrabajoVista[] }> {
+  const inst = await cargarInstantaneaVisible(db, verComo);
   const marcas = calcularMarcas(inst);
   const filasNotas = await db.select().from(notas).orderBy(asc(notas.en), asc(notas.id));
 
@@ -91,6 +92,16 @@ export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea;
       notas: filasNotas
         .filter((n) => n.trabajoId === t.id)
         .map((n) => ({ en: n.en, autor: n.autorId ? (personas.get(n.autorId)?.nombre ?? n.autorId) : 'Nexo', texto: n.texto })),
+      // Reformas v2. R6c: confianza con confianzaDe (motor/confianza.ts, R3) y evidencias de inst.evidencias (regla 18).
+      origen: t.origen,
+      confirmacion: t.confirmacion,
+      confianza: 'persona',
+      dueno: t.duenoPropuestaId ? breve(persona(t.duenoPropuestaId)) : null,
+      confirmadoPor: t.confirmadoPorId ? breve(persona(t.confirmadoPorId)) : null,
+      entrega: t.entrega
+        ? { en: t.entrega.en, por: breve(persona(t.entrega.porId)), nota: t.entrega.nota, enlace: t.entrega.enlace }
+        : null,
+      evidencias: [],
     };
   });
 
@@ -98,17 +109,18 @@ export async function cargarVistasTrabajos(db: Db): Promise<{ inst: Instantanea;
   return { inst, vistas };
 }
 
-export async function obtenerTrabajo(ctx: ContextoServicio, id: string): Promise<TrabajoVista | null> {
-  const { vistas } = await cargarVistasTrabajos(ctx.db);
+/** `verComo` (reformas v2): la persona que mira; sin ella, vista general (un propuesto da null). */
+export async function obtenerTrabajo(ctx: ContextoServicio, id: string, verComo?: string): Promise<TrabajoVista | null> {
+  const { vistas } = await cargarVistasTrabajos(ctx.db, verComo ?? null);
   return vistas.find((v) => v.id === id) ?? null;
 }
 
-/** Por plazo ascendente (empate: id). Filtros opcionales por proyecto y por responsable. */
+/** Por plazo ascendente (empate: id). Filtros opcionales por proyecto y por responsable; `verComo` como obtenerTrabajo. */
 export async function listarTrabajos(
   ctx: ContextoServicio,
-  f?: { proyectoId?: string; responsableId?: string },
+  f?: { proyectoId?: string; responsableId?: string; verComo?: string },
 ): Promise<TrabajoVista[]> {
-  const { vistas } = await cargarVistasTrabajos(ctx.db);
+  const { vistas } = await cargarVistasTrabajos(ctx.db, f?.verComo ?? null);
   return vistas.filter(
     (v) => (!f?.proyectoId || v.proyecto.id === f.proyectoId) && (!f?.responsableId || v.responsable.id === f.responsableId),
   );

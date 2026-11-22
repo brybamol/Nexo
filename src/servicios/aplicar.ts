@@ -80,6 +80,10 @@ function efectosTrabajoNuevo(inst: Instantanea, plan: PlanTrabajoNuevo, autorId:
     decisionId: null,
     creadoEn: inst.ahora,
     resueltoEn: null,
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
   };
 
   const efectos: Efecto[] = [{ tipo: 'crear_trabajo', trabajo, necesidades: [], actorId: autorId }];

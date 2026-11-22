@@ -7,16 +7,26 @@
 //      actualizar_trabajo → estado_cambiado (si cambia el estado) y plazo_cambiado (si cambia el plazo)
 //      agregar_nota       → nota_agregada
 //      actualizar_repuesto→ existencia_corregida (si cambia la existencia) y faltante_reportado (si se marca el faltante)
-//    Todos los demás eventos (decision_creada, decision_aprobada, decision_rechazada, respuesta_seguimiento…)
-//    se emiten con un efecto `evento` explícito.
+//      crear_dependencia  → dependencia_creada (reformas v2)
+//      agregar_evidencia  → evidencia_agregada (reformas v2; actor = autor si la fuente no es el correo, si no Nexo)
+//    Todos los demás eventos (decision_creada, decision_aprobada, decision_rechazada, respuesta_seguimiento,
+//    propuesta_revisada, entrega_registrada, recepcion_confirmada, entrega_rechazada…) se emiten con un efecto
+//    `evento` explícito. Cambiar `confirmacion`, `entrega`, `titulo`, `proyectoId` o `numero` no deriva eventos.
 //  - Un efecto `accion` inserta la acción y, si trae `aviso`, su aviso (personaId = destinatario de la acción).
-import { and, eq, inArray, sql } from 'drizzle-orm';
+//  - registrar_mensajes inserta en mensajes_leidos (una copia repetida es un error: Nexo nunca lee dos veces);
+//    registrar_revision inserta en revisiones.
+//  - agregar_evidencia: el id provisional (máximo + 1, como aplicarEnMemoria) se traduce al real para los
+//    actualizar_evidencia siguientes del mismo lote.
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
   acciones,
   avisos,
+  buzones,
   decisiones,
   dependencias,
   eventos,
+  evidencias,
+  mensajesLeidos,
   necesidadesRepuesto,
   notas,
   opcionesDecision,
@@ -24,23 +34,37 @@ import {
   proyectos,
   reloj,
   repuestos,
+  revisiones,
   seguimientos,
   trabajos,
   type CambioFechaJson,
   type Db,
+  type EntradaRevisionJson,
+  type EntregaJson,
   type LineaOpcionJson,
+  type ValoresPropuestaJson,
 } from '@/db/esquema';
 import { ErrorDominio } from '@/dominio/tipos';
-import type { EventoNuevo, OpcionCalculada, TipoEvento } from '@/dominio/tipos';
-import type { Efecto } from '@/motor/efectos';
-import type { Instantanea } from '@/motor/instantanea';
+import type {
+  BuzonConectado,
+  EntradaRevision,
+  Entrega,
+  EventoNuevo,
+  MensajeLeido,
+  OpcionCalculada,
+  RevisionPropuesta,
+  TipoEvento,
+  Trabajo,
+  ValoresPropuesta,
+} from '@/dominio/tipos';
+import { siguienteIdEvidencia, type Efecto } from '@/motor/efectos';
+import { instantaneaVisible, type Instantanea } from '@/motor/instantanea';
 
 /** Orden natural de ids tipo 'S2' < 'S10' (por longitud y luego texto). */
 function porIdNatural<T extends { id: string }>(a: T, b: T): number {
   return a.id.length - b.id.length || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
-/** Lee todo lo que necesita el motor (incluido reloj.ahora y las opciones de cada decisión). */
 /** Clave del cerrojo que serializa las mutaciones (cualquier entero fijo; solo lo usa Nexo). */
 const CLAVE_TURNO_ESCRITURA = 20261125;
 
@@ -54,6 +78,11 @@ export async function tomarTurnoEscritura(tx: Db): Promise<void> {
   await tx.execute(sql`select pg_advisory_xact_lock(${CLAVE_TURNO_ESCRITURA})`);
 }
 
+/**
+ * Lee todo lo que necesita el motor (incluido reloj.ahora y las opciones de cada decisión). Reformas v2: los trabajos
+ * descartados van a `descartados` (id, proyecto y número) y sus dependencias, necesidades y seguimientos no se cargan;
+ * las evidencias se cargan todas, por id. Es la instantánea COMPLETA: la usan las mutaciones (ver cargarInstantaneaVisible).
+ */
 export async function cargarInstantanea(db: Db): Promise<Instantanea> {
   const [filaReloj] = await db.select().from(reloj).where(eq(reloj.id, 1));
   if (!filaReloj) throw new ErrorDominio('El reloj de la demo no está inicializado: falta cargar la semilla.');
@@ -61,13 +90,17 @@ export async function cargarInstantanea(db: Db): Promise<Instantanea> {
   // Personas y proyectos nunca se modifican: se leen en el orden de la semilla (inserción).
   const filasPersonas = await db.select().from(personas);
   const filasProyectos = await db.select().from(proyectos);
-  const filasTrabajos = await db.select().from(trabajos);
-  const filasDependencias = await db.select().from(dependencias);
+  const todosTrabajos = (await db.select().from(trabajos)).map(trabajoDesdeFila);
+  const descartadosIds = new Set(todosTrabajos.filter((t) => t.confirmacion === 'descartado').map((t) => t.id));
+  const vivo = (id: string) => !descartadosIds.has(id);
+  const filasTrabajos = todosTrabajos.filter((t) => vivo(t.id));
+  const filasDependencias = (await db.select().from(dependencias)).filter((d) => vivo(d.trabajoId) && vivo(d.dependeDeId));
   const filasRepuestos = await db.select().from(repuestos);
-  const filasNecesidades = await db.select().from(necesidadesRepuesto);
-  const filasSeguimientos = await db.select().from(seguimientos);
+  const filasNecesidades = (await db.select().from(necesidadesRepuesto)).filter((n) => vivo(n.trabajoId));
+  const filasSeguimientos = (await db.select().from(seguimientos)).filter((s) => vivo(s.trabajoId));
   const filasDecisiones = await db.select().from(decisiones);
   const filasOpciones = await db.select().from(opcionesDecision);
+  const filasEvidencias = await db.select().from(evidencias).orderBy(asc(evidencias.id));
 
   const opcionesPorDecision = new Map<string, OpcionCalculada[]>();
   for (const o of [...filasOpciones].sort((a, b) => (a.letra < b.letra ? -1 : a.letra > b.letra ? 1 : 0))) {
@@ -94,7 +127,98 @@ export async function cargarInstantanea(db: Db): Promise<Instantanea> {
     necesidades: filasNecesidades,
     seguimientos: [...filasSeguimientos].sort(porIdNatural),
     decisiones: [...filasDecisiones].sort(porIdNatural).map((d) => ({ ...d, opciones: opcionesPorDecision.get(d.id) ?? [] })),
+    evidencias: filasEvidencias,
+    descartados: todosTrabajos
+      .filter((t) => !vivo(t.id))
+      .sort(porIdNatural)
+      .map((t) => ({ id: t.id, proyectoId: t.proyectoId, numero: t.numero })),
   };
+}
+
+/**
+ * La instantánea que ve `personaId` (null = vista general: sin propuestos). Para LEER: vistas, marcas, Preguntar.
+ * Las mutaciones usan cargarInstantanea (completa). Ver instantaneaVisible en motor/instantanea.ts.
+ */
+export async function cargarInstantaneaVisible(db: Db, personaId: string | null): Promise<Instantanea> {
+  return instantaneaVisible(await cargarInstantanea(db), personaId);
+}
+
+// ─── Conversión fila ↔ dominio de los jsonb con fechas ────────────────────────
+
+type FilaTrabajo = typeof trabajos.$inferSelect;
+
+function entregaDesdeJson(j: EntregaJson | null): Entrega | null {
+  return j ? { en: new Date(j.en), porId: j.porId, nota: j.nota, enlace: j.enlace, fuente: j.fuente } : null;
+}
+
+function entregaAJson(e: Entrega | null): EntregaJson | null {
+  return e ? { en: e.en.toISOString(), porId: e.porId, nota: e.nota, enlace: e.enlace, fuente: e.fuente } : null;
+}
+
+function trabajoDesdeFila(f: FilaTrabajo): Trabajo {
+  return { ...f, entrega: entregaDesdeJson(f.entrega) };
+}
+
+/** Lo que se escribe en `trabajos` (insert o update): `entrega` pasa a ISO. */
+function trabajoAFila<T extends { entrega?: Entrega | null }>(t: T): Omit<T, 'entrega'> & { entrega?: EntregaJson | null } {
+  if (t.entrega === undefined) return t as Omit<T, 'entrega'>;
+  return { ...t, entrega: entregaAJson(t.entrega) };
+}
+
+function valoresDesdeJson(j: ValoresPropuestaJson): ValoresPropuesta {
+  return { ...j, plazo: j.plazo ? new Date(j.plazo) : null };
+}
+
+function valoresAJson(v: ValoresPropuesta): ValoresPropuestaJson {
+  return { ...v, plazo: v.plazo ? v.plazo.toISOString() : null };
+}
+
+function entradaDesdeJson(j: EntradaRevisionJson): EntradaRevision {
+  if ('texto' in j) return { texto: j.texto };
+  const { enviado, ...resto } = j;
+  return enviado === undefined ? resto : { ...resto, enviado: new Date(enviado) };
+}
+
+function entradaAJson(e: EntradaRevision): EntradaRevisionJson {
+  if ('texto' in e) return { texto: e.texto };
+  const { enviado, ...resto } = e;
+  return enviado === undefined ? resto : { ...resto, enviado: enviado.toISOString() };
+}
+
+// ─── Lecturas de las tablas nuevas (fuera de la instantánea) ──────────────────
+
+/** Buzones conectados, en el orden de la semilla (inserción). */
+export async function cargarBuzones(db: Db): Promise<BuzonConectado[]> {
+  return db.select().from(buzones);
+}
+
+/** Copias ya leídas, por (enviado, persona, id_internet). */
+export async function cargarMensajesLeidos(db: Db): Promise<MensajeLeido[]> {
+  return db
+    .select()
+    .from(mensajesLeidos)
+    .orderBy(asc(mensajesLeidos.enviado), asc(mensajesLeidos.personaId), asc(mensajesLeidos.idInternet));
+}
+
+/** Claves `${personaId}|${idInternet}` de las copias ya leídas: el `yaLeidos` de planLectura. */
+export function claveLeido(personaId: string, idInternet: string): string {
+  return `${personaId}|${idInternet}`;
+}
+
+export async function cargarClavesLeidas(db: Db): Promise<Set<string>> {
+  const filas = await db.select({ personaId: mensajesLeidos.personaId, idInternet: mensajesLeidos.idInternet }).from(mensajesLeidos);
+  return new Set(filas.map((f) => claveLeido(f.personaId, f.idInternet)));
+}
+
+/** Revisiones humanas, por (en, id). */
+export async function cargarRevisiones(db: Db): Promise<RevisionPropuesta[]> {
+  const filas = await db.select().from(revisiones).orderBy(asc(revisiones.en), asc(revisiones.id));
+  return filas.map((f) => ({
+    ...f,
+    propuesto: valoresDesdeJson(f.propuesto),
+    final: f.final ? valoresDesdeJson(f.final) : null,
+    entrada: entradaDesdeJson(f.entrada),
+  }));
 }
 
 function aLineasJson(o: OpcionCalculada): LineaOpcionJson[] {
@@ -129,10 +253,14 @@ export async function persistirEfectos(db: Db, efectos: Efecto[]): Promise<{ acc
     await db.insert(eventos).values(fila);
   };
 
+  // Ids provisionales de evidencia (como en aplicarEnMemoria) → ids reales de la base.
+  let ultimaEvidencia: number | null = null;
+  const idReal = new Map<number, number>();
+
   for (const e of efectos) {
     switch (e.tipo) {
       case 'crear_trabajo': {
-        await db.insert(trabajos).values(e.trabajo);
+        await db.insert(trabajos).values(trabajoAFila(e.trabajo));
         if (e.necesidades.length > 0) await db.insert(necesidadesRepuesto).values(e.necesidades);
         await evento('trabajo_creado', e.actorId, e.trabajo.id, {
           titulo: e.trabajo.titulo,
@@ -144,7 +272,7 @@ export async function persistirEfectos(db: Db, efectos: Efecto[]): Promise<{ acc
       case 'actualizar_trabajo': {
         const [antes] = await db.select().from(trabajos).where(eq(trabajos.id, e.trabajoId));
         if (!antes) throw new ErrorDominio(`No existe el trabajo ${e.trabajoId}.`);
-        await db.update(trabajos).set(e.cambios).where(eq(trabajos.id, e.trabajoId));
+        await db.update(trabajos).set(trabajoAFila(e.cambios)).where(eq(trabajos.id, e.trabajoId));
         const { estado, plazo, responsableId } = e.cambios;
         if (responsableId !== undefined && responsableId !== antes.responsableId) {
           await evento('responsable_cambiado', e.actorId, e.trabajoId, { de: antes.responsableId, a: responsableId });
@@ -223,6 +351,47 @@ export async function persistirEfectos(db: Db, efectos: Efecto[]): Promise<{ acc
       }
       case 'evento': {
         await db.insert(eventos).values(e.evento);
+        break;
+      }
+      case 'crear_dependencia': {
+        await db.insert(dependencias).values(e.dependencia).onConflictDoNothing();
+        await evento('dependencia_creada', e.actorId, e.dependencia.trabajoId, { dependeDeId: e.dependencia.dependeDeId });
+        break;
+      }
+      case 'agregar_evidencia': {
+        if (ultimaEvidencia === null) {
+          const filas = await db.select({ id: evidencias.id }).from(evidencias);
+          ultimaEvidencia = siguienteIdEvidencia(filas) - 1;
+        }
+        ultimaEvidencia += 1;
+        const [fila] = await db.insert(evidencias).values(e.evidencia).returning({ id: evidencias.id });
+        if (!fila) throw new Error('No se pudo registrar la evidencia.');
+        idReal.set(ultimaEvidencia, fila.id);
+        const ev = e.evidencia;
+        await evento('evidencia_agregada', ev.fuente === 'correo' ? null : ev.autorId, ev.trabajoId, {
+          evidenciaId: fila.id,
+          tipo: ev.tipo,
+          fuente: ev.fuente,
+        });
+        break;
+      }
+      case 'actualizar_evidencia': {
+        const id = idReal.get(e.evidenciaId) ?? e.evidenciaId;
+        await db.update(evidencias).set(e.cambios).where(eq(evidencias.id, id));
+        break;
+      }
+      case 'registrar_mensajes': {
+        if (e.mensajes.length > 0) await db.insert(mensajesLeidos).values(e.mensajes);
+        break;
+      }
+      case 'registrar_revision': {
+        const r = e.revision;
+        await db.insert(revisiones).values({
+          ...r,
+          propuesto: valoresAJson(r.propuesto),
+          final: r.final ? valoresAJson(r.final) : null,
+          entrada: entradaAJson(r.entrada),
+        });
         break;
       }
     }

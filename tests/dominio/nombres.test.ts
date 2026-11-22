@@ -74,6 +74,8 @@ describe('leer lo que escribe una persona', () => {
     expect(idsInternosEn('T04 y T31 quedan')).toEqual(['T04', 'T31']);
     expect(idsInternosEn('la decisión D01')).toEqual(['D01']);
     expect(idsInternosEn('espera a C2')).toEqual(['C2']);
+    expect(idsInternosEn('M01')).toEqual(['M01']);
+    expect(idsInternosEn('el trabajo M03 del correo')).toEqual(['M03']);
     expect(idsInternosEn('«Compra de 3 compresores de 2 HP» (COLINA-D1) y COLINA-4')).toEqual([]);
     expect(idsInternosEn('pedido 1043, 2 HP, 10:00')).toEqual([]);
   });

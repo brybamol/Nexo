@@ -2,7 +2,8 @@
 // En producción la hará Claude con un esquema zod; esto quedará como respaldo. Nada se inventa: sin señal de
 // plazo, el plazo es null («no lo sé»).
 import { enCR, partesCR } from '@/dominio/tiempo';
-import type { Compromiso, EmpresaCorreo, Espera, Evidencia, Hilo, MensajeUnido, PersonaCorreo } from '@/correo/tipos';
+import type { Compromiso, EmpresaCorreo, Espera, Evidencia, HechoCorreo, Hilo, MensajeUnido, PersonaCorreo } from '@/correo/tipos';
+import { noImplementado } from '@/dominio/tipos';
 
 const MAX_CITA = 220;
 
@@ -163,4 +164,15 @@ export function extraerDeHilo(hilo: Hilo, empresa: EmpresaCorreo): Compromiso[] 
     }
   }
   return compromisos;
+}
+
+// ── Reformas v2 (docs/08 regla 11): hechos por mensaje. Esqueleto de R2; lo implementa R5 (sustituye a extraerDeHilo). ──
+
+/**
+ * Hechos de un hilo, en el orden de sus mensajes y, dentro de cada mensaje, en el orden en que aparecen: `pedido`,
+ * `aceptacion`, `espera` (`dependencia` si la escribe el solicitante al pedir; `bloqueo` si la escribe el responsable),
+ * `entrega`, `recepcion` e `insistencia`. Sin señal de plazo, `plazo = null`.
+ */
+export function extraerHechos(hilo: Hilo, empresa: EmpresaCorreo): HechoCorreo[] {
+  return noImplementado('R5 · correo/extraccion.ts · extraerHechos', hilo, empresa);
 }

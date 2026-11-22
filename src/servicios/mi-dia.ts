@@ -88,6 +88,9 @@ export async function obtenerMiDia(ctx: ContextoServicio, personaId: string): Pr
     esperoDeOtros,
     avisos: await avisosDe(ctx, personaId),
     decisionesPendientes: await decisionesPendientesDe(ctx, personaId),
+    // Reformas v2. R6c: instantánea visible para personaId, propuestas (dueño) y entregas por confirmar (solicitante).
+    propuestas: [],
+    porConfirmarRecibido: [],
   };
 }
 

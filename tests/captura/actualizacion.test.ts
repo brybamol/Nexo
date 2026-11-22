@@ -218,6 +218,7 @@ describe('efectosActualizacion (puro)', () => {
       estado: 'pendiente',
       iniciadoEn: enCR('2026-11-25', '12:00'),
       escaladosA: [],
+      tipo: 'estado',
     };
     inst.seguimientos = [s];
     const efs = efectosActualizacion(inst, plan({ trabajoId: 'T28', nuevoEstado: 'resuelto', nota: 'Ya la envié.' }), 'paola-herrera');

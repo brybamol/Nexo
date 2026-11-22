@@ -27,7 +27,8 @@ async function moverYEjecutarTick(db: Db, ahora: Date): Promise<ResultadoTick> {
   const filas = await leerAcciones(db, accionIds);
   const nombres = nombrador(inst); // tick no crea trabajos ni decisiones: la instantánea ya los tiene todos
   const acciones: AccionVista[] = filas.map((a) => accionAVista(a, nombres, personas));
-  return { ahora: ahora.toISOString(), acciones };
+  // Reformas v2. R6a: leerCorreo (servicios/correo.ts) antes del tick, en esta misma transacción (regla 10).
+  return { ahora: ahora.toISOString(), acciones, lectura: null };
 }
 
 export async function obtenerAhora(ctx: ContextoServicio): Promise<Date> {

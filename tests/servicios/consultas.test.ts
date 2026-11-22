@@ -60,6 +60,10 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
     decisionId: null,
     creadoEn: enCR('2026-11-25', '07:00'),
     resueltoEn: null,
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
     ...extra,
   };
 }
@@ -77,7 +81,7 @@ async function aplicarBloqueo(): Promise<void> {
     },
     {
       tipo: 'crear_seguimiento',
-      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora, escaladosA: [] },
+      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora, escaladosA: [], tipo: 'estado' },
     },
   ]);
 }
@@ -108,6 +112,13 @@ describe('obtenerTrabajo', () => {
       necesita: [{ repuesto: 'Compresor de 2 HP', cantidad: 1 }],
       seguimiento: null,
       notas: [],
+      origen: 'semilla',
+      confirmacion: 'confirmado',
+      confianza: 'persona',
+      dueno: null,
+      confirmadoPor: null,
+      entrega: null,
+      evidencias: [],
     });
   });
 

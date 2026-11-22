@@ -1,7 +1,7 @@
 // Efectos de una actualización: notas con problema, liberación, reprogramación (§4.2 reglas 3, 5–7). Puro. Tarea 2.3.
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
 import { formatearFecha } from '@/dominio/formato';
-import type { PlanActualizacion, Trabajo } from '@/dominio/tipos';
+import type { FuenteEvidencia, PlanActualizacion, Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
 import { dependientesDirectos, nombrador, porId, type Instantanea } from '@/motor/instantanea';
 import { registrarRespuesta } from '@/motor/seguimiento';
@@ -34,7 +34,17 @@ class AvisosPorPersona {
   }
 }
 
-export function efectosActualizacion(inst: Instantanea, plan: PlanActualizacion, autorId: string): Efecto[] {
+/**
+ * Reformas v2 (R4): `evidencia` es el texto con el que la persona resuelve o entrega (la captura, la nota del botón),
+ * para la regla 19. Hasta R4 no se usa.
+ */
+export function efectosActualizacion(
+  inst: Instantanea,
+  plan: PlanActualizacion,
+  autorId: string,
+  evidencia?: { texto: string; fuente: FuenteEvidencia },
+): Efecto[] {
+  void evidencia; // R4: regla 19 (modoResolucion, efectosEntrega)
   const trabajos = porId(inst.trabajos);
   const personas = porId(inst.personas);
   const proyectos = porId(inst.proyectos);
