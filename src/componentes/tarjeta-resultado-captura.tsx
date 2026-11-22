@@ -1,9 +1,19 @@
 'use client';
 // Resultado de una captura, con opciones si Nexo pregunta. Tarea 2.5.
-import { CircleAlert, CircleCheck, Copy, Info, MessageCircleQuestion, MessageSquareText, Scale } from 'lucide-react';
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleHelp,
+  Copy,
+  Info,
+  MessageCircleQuestion,
+  MessageSquareText,
+  Scale,
+} from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { ResultadoCaptura, TrabajoVista } from '@/servicios/vistas';
+import { EnlaceTrabajo, EnlacesTrabajos, Referencia } from './enlaces-trabajos';
 import { InsigniaImplementacion } from './insignia-implementacion';
 import { TarjetaTrabajo } from './tarjeta-trabajo';
 
@@ -15,13 +25,8 @@ type Props = {
   enviarRespuesta?: (formData: FormData) => void;
   /** true mientras se envía la respuesta. */
   pendiente?: boolean;
-};
-
-const TEMAS_PREGUNTA: Record<string, string> = {
-  pedidos_semana: 'Pedidos de la semana',
-  estado_proyectos: 'Estado de los proyectos',
-  atrasados: 'Atrasados',
-  mis_pendientes: 'Mis pendientes',
+  /** true en las tarjetas viejas de un hilo: se leen, pero ya no se responden (la respuesta va más abajo). */
+  soloLectura?: boolean;
 };
 
 const ICONOS = {
@@ -37,20 +42,24 @@ function Marco({
   titulo,
   resultado,
   esPropuesta = false,
+  sinDato = false,
   children,
 }: {
   titulo: string;
   resultado: ResultadoCaptura;
   /** true si lo creado espera la aprobación de una persona (una decisión): se muestra como propuesta, no como hecho. */
   esPropuesta?: boolean;
+  /** true si Nexo respondió «No lo sé»: se nota en el título y en el icono. */
+  sinDato?: boolean;
   children: ReactNode;
 }) {
-  const Icono = esPropuesta ? Scale : ICONOS[resultado.estado];
+  const Icono = esPropuesta ? Scale : sinDato ? CircleHelp : ICONOS[resultado.estado];
   return (
     <article
       className="tarjeta tarjeta-captura"
       data-estado={resultado.estado}
       data-propuesta={esPropuesta || undefined}
+      data-sin-dato={sinDato || undefined}
       aria-label={titulo}
     >
       <header>
@@ -65,18 +74,7 @@ function Marco({
   );
 }
 
-function EnlacesTrabajos({ ids }: { ids: string[] }) {
-  return (
-    <>
-      {ids.map((id, i) => (
-        <span key={id}>
-          {i > 0 && ', '}
-          <Link href={`/trabajos/${id}`}>{id}</Link>
-        </span>
-      ))}
-    </>
-  );
-}
+const cuantos = (n: number) => `${n} ${n === 1 ? 'trabajo' : 'trabajos'}`;
 
 function DetalleTrabajo({ trabajo }: { trabajo: TrabajoVista }) {
   return (
@@ -84,7 +82,7 @@ function DetalleTrabajo({ trabajo }: { trabajo: TrabajoVista }) {
       <TarjetaTrabajo trabajo={trabajo} />
       {trabajo.bloquea.length > 0 && (
         <p className="tarjeta-captura__meta">
-          Bloquea: <EnlacesTrabajos ids={trabajo.bloquea} />
+          Bloquea: <EnlacesTrabajos trabajos={trabajo.bloqueaTrabajos} />
         </p>
       )}
     </>
@@ -144,7 +142,13 @@ function FormularioPregunta({
  * Tarjeta del resultado de una captura. Props: `resultado`, `trabajos?`, `enviarRespuesta?`, `pendiente?`.
  * Muestra la insignia de la implementación que respondió y, si Nexo pregunta, cómo responder.
  */
-export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespuesta, pendiente = false }: Props) {
+export function TarjetaResultadoCaptura({
+  resultado,
+  trabajos = [],
+  enviarRespuesta,
+  pendiente = false,
+  soloLectura = false,
+}: Props) {
   switch (resultado.estado) {
     case 'aplicada': {
       const creados = trabajos.filter((t) => resultado.trabajosCreados.includes(t.id));
@@ -163,7 +167,7 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
           ))}
           {creados.length === 0 && resultado.trabajosCreados.length > 0 && (
             <p>
-              Creado: <EnlacesTrabajos ids={resultado.trabajosCreados} />
+              Creado: {cuantos(resultado.trabajosCreados.length)}. Míralo en Mi día.
             </p>
           )}
           {actualizados.length > 0 ? (
@@ -171,13 +175,19 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
           ) : (
             resultado.trabajosActualizados.length > 0 && (
               <p>
-                Actualizado: <EnlacesTrabajos ids={resultado.trabajosActualizados} />
+                Actualizado: {cuantos(resultado.trabajosActualizados.length)}.
               </p>
             )
           )}
           {resultado.decisionId && (
             <p>
-              Decisión <Link href="/decisiones">{resultado.decisionId}</Link> enviada a quien debe decidir.
+              Decisión <Link href="/decisiones">{resultado.decision?.titulo ?? 'de compra'}</Link>{' '}
+              {resultado.decision?.referencia && (
+                <>
+                  <Referencia valor={resultado.decision.referencia} />{' '}
+                </>
+              )}
+              enviada a quien debe decidir.
             </p>
           )}
           {resultado.avisosA.length > 0 && (
@@ -190,12 +200,14 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
       return (
         <Marco titulo="Nexo necesita un dato" resultado={resultado}>
           <p id={`pregunta-captura-${resultado.capturaId}`}>{resultado.pregunta}</p>
-          <FormularioPregunta
-            resultado={resultado}
-            opciones={resultado.opciones}
-            enviarRespuesta={enviarRespuesta}
-            pendiente={pendiente}
-          />
+          {!soloLectura && (
+            <FormularioPregunta
+              resultado={resultado}
+              opciones={resultado.opciones}
+              enviarRespuesta={enviarRespuesta}
+              pendiente={pendiente}
+            />
+          )}
         </Marco>
       );
     case 'duplicado': {
@@ -204,9 +216,7 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
         <Marco titulo="Ya existe" resultado={resultado}>
           <p>
             Esto ya está registrado como{' '}
-            <Link href={`/trabajos/${resultado.trabajoId}`}>
-              {resultado.trabajoId} · {resultado.titulo}
-            </Link>
+            <EnlaceTrabajo trabajo={{ id: resultado.trabajoId, titulo: resultado.titulo, referencia: resultado.referencia ?? '' }} />
             . No se creó nada nuevo.
           </p>
           {existente && <TarjetaTrabajo trabajo={existente} />}
@@ -221,23 +231,27 @@ export function TarjetaResultadoCaptura({ resultado, trabajos = [], enviarRespue
       );
     case 'respuesta': {
       const r = resultado.respuesta;
+      const sinDato = r.texto.startsWith('No lo sé');
+      const lineas = r.texto.split('\n').filter((l) => l.trim() !== '');
       return (
-        <Marco titulo="Respuesta" resultado={resultado}>
-          <p>{r.texto}</p>
+        <Marco titulo={sinDato ? 'No lo sé' : 'Respuesta'} resultado={resultado} sinDato={sinDato}>
+          <div className="tarjeta-captura__texto">
+            {lineas.map((linea, i) => (
+              <p key={i}>{linea}</p>
+            ))}
+          </div>
           {r.fuentes.length > 0 && (
-            <p>
-              Fuentes:{' '}
-              {r.fuentes.map((f, i) => (
-                <span key={`${f.trabajoId}-${i}`}>
-                  {i > 0 && ', '}
-                  <Link href={`/trabajos/${f.trabajoId}`}>{f.etiqueta}</Link>
-                </span>
-              ))}
-            </p>
+            <>
+              <h3 className="tarjeta-captura__subtitulo">Fuentes</h3>
+              <ul className="tarjeta-captura__fuentes">
+                {r.fuentes.map((f, i) => (
+                  <li key={`${f.trabajoId}-${i}`}>
+                    <Link href={`/trabajos/${f.trabajoId}`}>{f.etiqueta}</Link>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
-          <p>
-            <Link href="/preguntar">Ver en Preguntar{TEMAS_PREGUNTA[r.tema] ? ` · ${TEMAS_PREGUNTA[r.tema]}` : ''}</Link>
-          </p>
         </Marco>
       );
     }

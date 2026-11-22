@@ -22,7 +22,7 @@ const deT31 = (r: { acciones: { trabajoIds: string[]; tipo: string }[] }) =>
   r.acciones.filter((a) => a.trabajoIds.includes('T31') && (a.tipo === 'recordatorio' || a.tipo === 'escalamiento'));
 
 describe('E2 · recordatorio y escalamiento', () => {
-  it('7:05 aviso a Lucía; 7:35 recordatorio; 8:05 escalamiento a Andrés con quién, qué bloquea y desde cuándo; 8:35 Marcela; agotado', async () => {
+  it('7:05 aviso a Lucía; 7:35 recordatorio; 8:05 escalamiento a Esteban (responsable de La Colina) con quién, qué bloquea, desde cuándo y qué puede hacer; 8:35 Andrés (responsable de la operación); agotado', async () => {
     // prepararDemo fija las 7:05 sin tick; en la demo se llega con «+5 min», que pide el estado de T15 y T21.
     await fijarReloj(demo.ctx, enCR(MIE, '07:05'));
     const res = await capturar(demo.ctx, 'jose-alfaro', C01);
@@ -42,28 +42,38 @@ describe('E2 · recordatorio y escalamiento', () => {
     expect(deT31(r)).toHaveLength(1);
     expect(deT31(r)[0]).toMatchObject({ tipo: 'recordatorio', destinatario: { id: 'lucia-mora' }, trabajoIds: ['T31'] });
 
-    // 8:05: escalamiento a Andrés Vargas, con José Alfaro, la cadena de T04 y desde cuándo (7:05).
+    // 8:05: escalamiento a Esteban Castro, responsable del proyecto (no al jefe de Lucía), con José Alfaro, la cadena
+    // de T04, desde cuándo (7:05) y las tres acciones que puede hacer.
     r = await irAlSiguienteEvento(demo.ctx);
     expect(await obtenerAhora(demo.ctx)).toEqual(enCR(MIE, '08:05'));
     expect(deT31(r)).toHaveLength(1);
-    expect(deT31(r)[0]).toMatchObject({ tipo: 'escalamiento', destinatario: { id: 'andres-vargas' } });
-    const aviso = (await demo.ctx.db.select().from(avisos)).find((a) => a.personaId === 'andres-vargas' && a.trabajoIds.includes('T31'));
-    for (const texto of ['José Alfaro', 'T04', 'T05', 'T06', 'T07', '7:05']) expect(aviso?.cuerpo).toContain(texto);
+    expect(deT31(r)[0]).toMatchObject({ tipo: 'escalamiento', destinatario: { id: 'esteban-castro' } });
+    const aviso = (await demo.ctx.db.select().from(avisos)).find((a) => a.personaId === 'esteban-castro' && a.trabajoIds.includes('T31'));
+    // Bloquea T04, T05, T06 y T07: citados por título y referencia.
+    for (const texto of ['José Alfaro', '«Instalar unidad condensadora y compresor» (COLINA-4)', '«Cableado y tablero de control» (COLINA-5)', '«Prueba de frío y entrega al cliente» (COLINA-6)', '«Facturar la instalación» (COLINA-7)', '7:05']) expect(aviso?.cuerpo).toContain(texto);
+    for (const texto of ['reasignarlo', 'mover el plazo', 'declararlo bloqueado']) expect(aviso?.cuerpo).toContain(texto);
+    expect((await demo.ctx.db.select().from(avisos)).some((a) => a.personaId === 'andres-vargas' && a.trabajoIds.includes('T31'))).toBe(false);
 
-    // 8:35: escalamiento al jefe del jefe; luego nada más.
+    // 8:35: nadie de otro proyecto sale perjudicado (la cadena es de La Colina): responsable de la operación; luego nada más.
     r = await irAlSiguienteEvento(demo.ctx);
     expect(await obtenerAhora(demo.ctx)).toEqual(enCR(MIE, '08:35'));
     expect(deT31(r)).toHaveLength(1);
-    expect(deT31(r)[0]).toMatchObject({ tipo: 'escalamiento', destinatario: { id: 'marcela-solis' } });
-    expect((await cargarInstantanea(demo.ctx.db)).seguimientos.find((s) => s.trabajoId === 'T31')).toMatchObject({ nivel: 3, estado: 'agotado' });
+    expect(deT31(r)[0]).toMatchObject({ tipo: 'escalamiento', destinatario: { id: 'andres-vargas' } });
+    expect((await cargarInstantanea(demo.ctx.db)).seguimientos.find((s) => s.trabajoId === 'T31')).toMatchObject({
+      nivel: 3,
+      estado: 'agotado',
+      escaladosA: ['esteban-castro', 'andres-vargas'],
+    });
 
     r = await avanzarReloj(demo.ctx, 60);
     expect(deT31(r)).toEqual([]);
     const todas = (await demo.ctx.db.select().from(acciones)).filter((a) => a.trabajoIds.includes('T31'));
     expect(todas.filter((a) => a.tipo === 'recordatorio' || a.tipo === 'escalamiento').map((a) => [a.tipo, a.destinatarioId])).toEqual([
       ['recordatorio', 'lucia-mora'],
+      ['escalamiento', 'esteban-castro'],
       ['escalamiento', 'andres-vargas'],
-      ['escalamiento', 'marcela-solis'],
     ]);
+    // La gerente no aparece en el seguimiento.
+    expect((await demo.ctx.db.select().from(acciones)).some((a) => a.destinatarioId === 'marcela-solis' && a.tipo === 'escalamiento')).toBe(false);
   });
 });

@@ -1,22 +1,28 @@
 // Decisiones: crear, aplicar (R8) y rechazar (§4.2 regla 9). Puro. Tarea 3.3.
 // Nada con costo se ejecuta al crear (R6): la decisión se prepara y espera aprobación.
 // Las acciones salen con capturaId = null: servicios/aplicar.ts les pone la captura de origen.
-import { HORA_PLAZO_SIN_HORA, ROL_COMPRAS, ROL_SERVICIO_CLIENTE } from '@/dominio/constantes';
+import { HORA_PLAZO_SIN_HORA, ROL_COMPRAS, ROL_SERVICIO_CLIENTE, UMBRAL_GERENTE } from '@/dominio/constantes';
 import { formatearColones, formatearFecha } from '@/dominio/formato';
+import { citaConReferencia, enumerar, referenciaDecision, referenciaTrabajo, tituloDecision } from '@/dominio/nombres';
 import { minusculaInicial } from '@/dominio/texto';
 import { enCR, partesCR } from '@/dominio/tiempo';
 import { ErrorDominio, type Decision, type LetraOpcion, type PropuestaCompra, type Trabajo } from '@/dominio/tipos';
 import { aplicarEnMemoria, type Efecto } from '@/motor/efectos';
-import { cadenaDependientes, porId, siguienteIdDecision, siguienteIdTrabajo, type Instantanea } from '@/motor/instantanea';
+import {
+  cadenaDependientes,
+  nombrador,
+  porId,
+  siguienteIdDecision,
+  siguienteIdTrabajo,
+  siguienteNumeroDecision,
+  siguienteNumeroTrabajo,
+  type Instantanea,
+} from '@/motor/instantanea';
 import { calcularMarcas } from '@/motor/marcas';
 import { calcularOpciones, cantidadDeRepuesto, decisorPara } from '@/motor/opciones';
 import { causaCitada } from '@/motor/propagacion';
 
 const nombreDe = (inst: Instantanea, id: string) => inst.personas.find((p) => p.id === id)?.nombre ?? id;
-
-function enumerar(xs: string[]): string {
-  return xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
-}
 
 /** R5: lo que un mismo hecho le cambia a cada persona va en un solo aviso. */
 class Avisos {
@@ -90,9 +96,13 @@ export function efectosDecisionNueva(
   const corregida = aplicarEnMemoria(inst, efectos);
   const opciones = calcularOpciones(corregida, p);
   if (opciones.length === 0) return [];
-  const decisorId = decisorPara(corregida, opciones);
+  const decisorId = decisorPara(corregida, opciones, proyectoId, proponenteId);
   const id = siguienteIdDecision(inst);
+  const numero = siguienteNumeroDecision(inst, proyectoId);
   const trabajos = porId(inst.trabajos);
+  const nombres = nombrador(inst);
+  const clave = inst.proyectos.find((x) => x.id === proyectoId)?.clave;
+  const citaNueva = citaConReferencia(tituloDecision(r, p.cantidad), referenciaDecision(clave, numero));
 
   // Afectados: los trabajos que esperan la compra y su cadena de dependientes no resueltos.
   const cubiertos = opciones[0]?.lineas.flatMap((l) => l.trabajoIds) ?? [];
@@ -111,20 +121,23 @@ export function efectosDecisionNueva(
   if (cubiertos.length > 0) {
     const lista = cubiertos.map((x) => {
       const t = trabajos.get(x) as Trabajo;
-      return `${t.id} «${t.titulo}»${t.estado === 'bloqueado' ? ' (bloqueado)' : ''}`;
+      const ref = nombres.referencia(t.id);
+      const extra = [ref, t.estado === 'bloqueado' ? 'bloqueado' : ''].filter(Boolean).join(', ');
+      return `«${t.titulo}»${extra ? ` (${extra})` : ''}`;
     });
     partes.push(`Esperan el repuesto: ${enumerar(lista)}.`);
   } else {
     partes.push('La existencia cubre los trabajos abiertos: la compra repone inventario.');
   }
   const causa = causaCitada(inst, r.id);
-  if (causa) partes.push(`Causa: el conteo no está conciliado con el sistema (${causa}).`);
+  if (causa) partes.push(`Causa: el conteo no está conciliado con el sistema: ${nombres.cita(causa)}.`);
   const contexto = partes.join(' ');
 
   const decision: Decision = {
     id,
     creadaEn: inst.ahora,
     proyectoId,
+    numero,
     proponenteId,
     decisorId,
     capturaId,
@@ -153,12 +166,20 @@ export function efectosDecisionNueva(
   });
   const resumenOpciones = opciones.map((o) => `${o.letra} ${formatearColones(o.costo)}`).join(', ');
   const decisor = nombreDe(inst, decisorId);
+  const tope = formatearColones(UMBRAL_GERENTE);
+  const responsableProyecto = inst.proyectos.find((x) => x.id === proyectoId)?.responsableId;
+  const porQueDecide =
+    Math.max(0, ...opciones.map((o) => o.costo)) > UMBRAL_GERENTE
+      ? `supera el tope de ${tope}`
+      : decisorId === responsableProyecto
+        ? `no supera el tope de ${tope} y es responsable del proyecto`
+        : `no supera el tope de ${tope}, pero quien propone es el responsable del proyecto y nadie aprueba su propia propuesta`;
   efectos.push({
     tipo: 'accion',
     accion: {
       en: inst.ahora,
       tipo: 'crear_decision',
-      motivo: `Tiene costo (R6): decide ${decisor}. Opciones: ${resumenOpciones}.`,
+      motivo: `Tiene costo: decide ${decisor} (${porQueDecide}). Opciones: ${resumenOpciones}.`,
       hechoOrigen: hecho,
       trabajoIds: afectados,
       decisionId: id,
@@ -172,9 +193,9 @@ export function efectosDecisionNueva(
       accionAviso(inst, {
         personaId: decisorId,
         tipo: 'aviso',
-        titulo: `Decisión pendiente ${id}: ${cantidadDeRepuesto(r, p.cantidad)}`,
+        titulo: `Decisión pendiente: ${citaNueva}`,
         cuerpo: `${contexto} Opciones: ${opciones.map((o) => `${o.letra}) ${o.descripcion} ${formatearColones(o.costo)}. ${o.consecuencia}`).join(' ')}`,
-        motivo: `Decisión con costo para ${decisor} (R6, R7): ${resumenOpciones}.`,
+        motivo: `Decisión con costo para ${decisor}: ${resumenOpciones}.`,
         hecho,
         trabajoIds: afectados,
         decisionId: id,
@@ -186,19 +207,21 @@ export function efectosDecisionNueva(
 
 function pendiente(inst: Instantanea, decisionId: string): Decision {
   const d = inst.decisiones.find((x) => x.id === decisionId);
-  if (!d) throw new ErrorDominio(`No existe la decisión ${decisionId}.`);
-  if (d.estado !== 'pendiente') throw new ErrorDominio(`La decisión ${decisionId} ya está ${d.estado}.`);
+  if (!d) throw new ErrorDominio('No existe esa decisión.');
+  if (d.estado !== 'pendiente') throw new ErrorDominio(`La decisión ${nombrador(inst).citaDecision(d.id)} ya está ${d.estado}.`);
   return d;
 }
 
 export function aplicarDecision(inst: Instantanea, decisionId: string, letra: LetraOpcion, decisorId: string): Efecto[] {
   const d = pendiente(inst, decisionId);
   const opcion = d.opciones.find((o) => o.letra === letra);
-  if (!opcion) throw new ErrorDominio(`La decisión ${decisionId} no tiene opción ${letra}.`);
+  const nombres = nombrador(inst);
+  const citaD = nombres.citaDecision(d.id);
+  if (!opcion) throw new ErrorDominio(`La decisión ${citaD} no tiene opción ${letra}.`);
   const r = inst.repuestos.find((x) => x.id === d.repuestoId);
   if (!r) throw new ErrorDominio(`No existe el repuesto ${d.repuestoId}.`);
   const decisor = nombreDe(inst, decisorId);
-  const hecho = `${decisor} aprobó la opción ${letra} de ${d.id}: ${opcion.descripcion}`;
+  const hecho = `${decisor} aprobó la opción ${letra} de ${citaD}: ${opcion.descripcion}`;
   const trabajos = porId(inst.trabajos);
   const compras = inst.personas.find((p) => p.rol === ROL_COMPRAS);
   if (!compras) throw new ErrorDominio(`No hay nadie con el rol «${ROL_COMPRAS}».`);
@@ -212,8 +235,12 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
   ];
   const avisos = new Avisos(decisorId);
   const creados: Trabajo[] = [];
-  const crear = (t: Omit<Trabajo, 'id'>): Trabajo => {
-    const trabajo = { ...t, id: siguienteIdTrabajo(aplicarEnMemoria(inst, efectos)) };
+  const claves = new Map(inst.proyectos.map((x) => [x.id, x.clave]));
+  /** Cita de un trabajo, también de los que se crean en esta decisión (aún no están en `inst`). */
+  const citar = (t: Trabajo) => citaConReferencia(t.titulo, referenciaTrabajo(claves.get(t.proyectoId), t.numero));
+  const crear = (t: Omit<Trabajo, 'id' | 'numero'>): Trabajo => {
+    const actual = aplicarEnMemoria(inst, efectos);
+    const trabajo = { ...t, id: siguienteIdTrabajo(actual), numero: siguienteNumeroTrabajo(actual, t.proyectoId) };
     efectos.push({ tipo: 'crear_trabajo', trabajo, necesidades: [], actorId: decisorId });
     creados.push(trabajo);
     return trabajo;
@@ -233,6 +260,10 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     decisionId: d.id,
     creadoEn: inst.ahora,
     resueltoEn: null,
+    confirmacion: 'confirmado' as const,
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
   };
 
   // 1. Un trabajo de compra por línea, para la encargada de compras; la necesidad cubierta recibe su fecha.
@@ -247,7 +278,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
       cantidadRepuesto: l.cantidad,
       relacionados: l.trabajoIds,
     });
-    avisos.agregar(compras.id, [t.id], `Nuevo trabajo ${t.id} «${t.titulo}», plazo ${formatearFecha(t.plazo)} (${formatearColones(l.cantidad * l.precioUnitario)}).`);
+    avisos.agregar(compras.id, [t.id], `Nuevo trabajo ${citar(t)}, plazo ${formatearFecha(t.plazo)} (${formatearColones(l.cantidad * l.precioUnitario)}).`);
     for (const tid of l.trabajoIds) {
       llegadaDe.set(tid, l.llegada);
       if (inst.necesidades.some((n) => n.trabajoId === tid && n.repuestoId === r.id)) {
@@ -268,7 +299,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     if (!fecha) continue;
     bloqueantes.add(b.id);
     efectos.push({ tipo: 'actualizar_trabajo', trabajoId: t.id, cambios: { fechaSolucion: fecha }, actorId: decisorId });
-    avisos.agregar(t.responsableId, [t.id], `${t.id} «${t.titulo}» sigue bloqueado; fecha de solución: ${formatearFecha(fecha)}.`);
+    avisos.agregar(t.responsableId, [t.id], `${citar(t)} sigue bloqueado; fecha de solución: ${formatearFecha(fecha)}.`);
   }
 
   // 3. Cambios de fecha de la opción.
@@ -276,7 +307,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     const t = trabajos.get(c.trabajoId);
     if (!t || t.estado === 'resuelto') continue;
     efectos.push({ tipo: 'actualizar_trabajo', trabajoId: t.id, cambios: { plazo: c.a }, actorId: decisorId });
-    avisos.agregar(t.responsableId, [t.id], `El plazo de ${t.id} «${t.titulo}» pasa de ${formatearFecha(c.de)} a ${formatearFecha(c.a)}.`);
+    avisos.agregar(t.responsableId, [t.id], `El plazo de ${citar(t)} pasa de ${formatearFecha(c.de)} a ${formatearFecha(c.a)}.`);
   }
 
   if (primera) {
@@ -288,7 +319,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
         cambios: { ...(b.estado === 'en_curso' ? {} : { estado: 'en_curso' as const }), plazo: primera },
         actorId: decisorId,
       });
-      avisos.agregar(b.responsableId, [b.id], `${b.id} «${b.titulo}» pasa a en curso con plazo ${formatearFecha(primera)}: el repuesto llega entonces.`);
+      avisos.agregar(b.responsableId, [b.id], `${citar(b)} pasa a en curso con plazo ${formatearFecha(primera)}: el repuesto llega entonces.`);
     }
   }
 
@@ -310,7 +341,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
         cantidadRepuesto: null,
         relacionados: opcion.cambiosFecha.map((c) => c.trabajoId),
       });
-      avisos.agregar(servicio.id, [t.id], `Nuevo trabajo ${t.id} «${t.titulo}», plazo ${formatearFecha(t.plazo)}. ${opcion.consecuencia}`);
+      avisos.agregar(servicio.id, [t.id], `Nuevo trabajo ${citar(t)}, plazo ${formatearFecha(t.plazo)}. ${opcion.consecuencia}`);
     }
   }
 
@@ -320,10 +351,10 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
   const mDespues = calcularMarcas(despues);
   for (const t of despues.trabajos) {
     if (mAntes.get(t.id)?.enRiesgo && !mDespues.get(t.id)?.enRiesgo) {
-      avisos.agregar(t.responsableId, [t.id], `${t.id} «${t.titulo}» ya no está en riesgo.`);
+      avisos.agregar(t.responsableId, [t.id], `${citar(t)} ya no está en riesgo.`);
     }
   }
-  avisos.agregar(d.proponenteId, [], `${decisor} aprobó tu propuesta ${d.id} con la opción ${letra} (${formatearColones(opcion.costo)}).`);
+  avisos.agregar(d.proponenteId, [], `${decisor} aprobó tu propuesta ${citaD} con la opción ${letra} (${formatearColones(opcion.costo)}).`);
 
   const tocados = [...new Set(efectos.flatMap((e) => (e.tipo === 'actualizar_trabajo' ? [e.trabajoId] : e.tipo === 'crear_trabajo' ? [e.trabajo.id] : [])))];
   efectos.push({
@@ -331,7 +362,7 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     accion: {
       en: inst.ahora,
       tipo: 'aplicar_decision',
-      motivo: `${decisor} aprobó la opción ${letra} (${formatearColones(opcion.costo)}). Creé ${creados.map((t) => t.id).join(', ')}. ${opcion.consecuencia}`,
+      motivo: `${decisor} aprobó la opción ${letra} de ${citaD} (${formatearColones(opcion.costo)}). Creé ${enumerar(creados.map(citar))}. ${opcion.consecuencia}`,
       hechoOrigen: hecho,
       trabajoIds: tocados,
       decisionId: d.id,
@@ -341,14 +372,14 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
     aviso: null,
   });
   for (const [personaId, g] of avisos.entradas()) {
-    const cuerpo = `${decisor} aprobó la opción ${letra} de ${d.id}: ${opcion.descripcion} ${g.lineas.join(' ')}`;
+    const cuerpo = `${decisor} aprobó la opción ${letra} de ${citaD}: ${opcion.descripcion} ${g.lineas.join(' ')}`;
     efectos.push(
       accionAviso(inst, {
         personaId,
         tipo: 'aviso',
-        titulo: `${d.id} aprobada: opción ${letra}`,
+        titulo: `«${nombres.tituloDecision(d.id)}» aprobada: opción ${letra}`,
         cuerpo,
-        motivo: `R8: ${g.lineas.join(' ')}`,
+        motivo: g.lineas.join(' '),
         hecho,
         trabajoIds: g.trabajoIds,
         decisionId: d.id,
@@ -361,6 +392,8 @@ export function aplicarDecision(inst: Instantanea, decisionId: string, letra: Le
 export function rechazarDecision(inst: Instantanea, decisionId: string, decisorId: string, motivo: string): Efecto[] {
   const d = pendiente(inst, decisionId);
   const decisor = nombreDe(inst, decisorId);
+  const nombres = nombrador(inst);
+  const citaD = nombres.citaDecision(d.id);
   const efectos: Efecto[] = [
     { tipo: 'actualizar_decision', decisionId: d.id, cambios: { estado: 'rechazada', decididaEn: inst.ahora, motivoRechazo: motivo } },
     { tipo: 'evento', evento: { en: inst.ahora, actorId: decisorId, tipo: 'decision_rechazada', trabajoId: null, decisionId: d.id, datos: { motivo } } },
@@ -370,10 +403,10 @@ export function rechazarDecision(inst: Instantanea, decisionId: string, decisorI
       accionAviso(inst, {
         personaId: d.proponenteId,
         tipo: 'aviso',
-        titulo: `${d.id} rechazada`,
-        cuerpo: `${decisor} rechazó la decisión ${d.id}. Motivo: ${motivo}`,
-        motivo: `Decisión rechazada; se avisa a quien la propuso (R8). Motivo: ${motivo}`,
-        hecho: `${decisor} rechazó ${d.id}: «${motivo}»`,
+        titulo: `«${nombres.tituloDecision(d.id)}» rechazada`,
+        cuerpo: `${decisor} rechazó la decisión ${citaD}. Motivo: ${motivo}`,
+        motivo: `Decisión rechazada; se avisa a quien la propuso. Motivo: ${motivo}`,
+        hecho: `${decisor} rechazó ${citaD}: «${motivo}»`,
         trabajoIds: d.afectados.trabajoIds,
         decisionId: d.id,
       }),

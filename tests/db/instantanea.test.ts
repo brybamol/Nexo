@@ -26,6 +26,7 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
   return {
     id,
     proyectoId: 'P1',
+    numero: 8,
     titulo: 'Conseguir un compresor de 2 HP',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -45,6 +46,10 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
     decisionId: null,
     creadoEn: AHORA,
     resueltoEn: null,
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
     ...extra,
   };
 }
@@ -68,6 +73,7 @@ function decisionNueva(id = 'D01'): Decision {
     id,
     creadaEn: AHORA,
     proyectoId: 'P1',
+    numero: 1,
     proponenteId: 'lucia-mora',
     decisorId: 'marcela-solis',
     capturaId: null,
@@ -130,6 +136,8 @@ describe('cargarInstantanea', () => {
       proximoEn: AHORA,
       estado: 'pendiente',
       iniciadoEn: AHORA,
+      escaladosA: [],
+      tipo: 'estado',
     });
     await persistirEfectos(ctx.db, [10, 2, 1].map((n) => ({ tipo: 'crear_seguimiento', seguimiento: mk(n) })));
     const inst = await cargarInstantanea(ctx.db);
@@ -238,14 +246,16 @@ describe('persistirEfectos', () => {
           proximoEn: AHORA,
           estado: 'pendiente',
           iniciadoEn: AHORA,
+          escaladosA: [],
+          tipo: 'estado',
         },
       },
-      { tipo: 'actualizar_seguimiento', seguimientoId: 'S1', cambios: { nivel: 1, estado: 'respondido' } },
+      { tipo: 'actualizar_seguimiento', seguimientoId: 'S1', cambios: { nivel: 1, estado: 'respondido', escaladosA: ['lucia-mora', 'andres-vargas'] } },
     ]);
     const inst = await cargarInstantanea(ctx.db);
     expect(inst.necesidades.find((n) => n.trabajoId === 'T04')).toMatchObject({ fechaDisponible: llegada, atendida: false });
     expect(inst.necesidades.find((n) => n.trabajoId === 'T10')).toMatchObject({ fechaDisponible: null, atendida: true });
-    expect(inst.seguimientos[0]).toMatchObject({ id: 'S1', nivel: 1, estado: 'respondido', destinatarioId: 'lucia-mora' });
+    expect(inst.seguimientos[0]).toMatchObject({ id: 'S1', nivel: 1, estado: 'respondido', destinatarioId: 'lucia-mora', escaladosA: ['lucia-mora', 'andres-vargas'] });
   });
 
   it('crear_decision guarda las opciones; actualizar_decision cambia solo lo indicado', async () => {

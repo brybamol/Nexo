@@ -6,6 +6,24 @@
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "pnpm", "dev"],
       "port": 3000
+    },
+    {
+      "name": "nexo-dev-3100",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set NEXO_DATA_DIR=%TEMP%\\nexo-dev-3100&& pnpm exec next dev --port 3100"],
+      "port": 3100
+    },
+    {
+      "name": "nexo-3001",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "pnpm exec next start --port 3001"],
+      "port": 3001
+    },
+    {
+      "name": "nexo-8001",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set NEXO_DATA_DIR=%TEMP%\\nexo-8001&& pnpm exec next start --port 8001"],
+      "port": 8001
     }
   ]
 }

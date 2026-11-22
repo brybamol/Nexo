@@ -51,13 +51,14 @@ describe('E3 · propagación entre proyectos', () => {
       'sofia-navarro': ['T13'],
     });
     for (const a of props) {
-      expect(a.cuerpo).toContain('T15');
+      expect(a.cuerpo).toContain('«Conciliar el conteo con el sistema» (REPUESTOS-2)'); // T15
       expect(a.accion).toMatchObject({ tipo: 'aviso', destinatarioId: a.personaId, capturaId: r.capturaId });
       expect(a.accion?.hechoOrigen).toBe(`José Alfaro escribió: «${C01}»`);
     }
     const mario = props.find((a) => a.personaId === 'mario-chaves');
-    expect(mario?.cuerpo).toContain('Cámara fría La Colina');
-    expect(mario?.cuerpo).toContain('Mantenimiento Trigal');
+    // Dos proyectos: la referencia lleva la clave de cada uno (COLINA = Cámara fría La Colina, TRIGAL = Mantenimiento Trigal).
+    expect(mario?.cuerpo).toContain('«Cableado y tablero de control» (COLINA-5)'); // T05
+    expect(mario?.cuerpo).toContain('«Cambiar compresor en local Curridabat» (TRIGAL-4)'); // T11
     // El nombre del repuesto tal como está en los datos («2 HP», no «2 hp»).
     for (const a of props) expect(a.cuerpo).not.toContain('2 hp');
     expect(mario?.cuerpo).toContain('falta compresor de 2 HP');

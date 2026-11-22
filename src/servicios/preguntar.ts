@@ -4,6 +4,8 @@
 import { preguntas } from '@/db/esquema';
 import { ErrorDominio } from '@/dominio/tipos';
 import { formatearFecha } from '@/dominio/formato';
+import { citaConReferencia, nombreConReferencia } from '@/dominio/nombres';
+import { minusculaInicial } from '@/dominio/texto';
 import { partesCR } from '@/dominio/tiempo';
 import { construirContextoCaptura } from '@/ia/contexto';
 import type { HechosPregunta, ResultadoIA, TemaPregunta } from '@/ia/interprete';
@@ -56,6 +58,7 @@ function calcularPedidos(vistas: TrabajoVista[], ahora: Date): Calculo {
     pedidos.push({
       pedido: Number(m[1]),
       trabajoId: v.id,
+      referencia: v.referencia,
       producto: m[2] ?? '',
       cliente: m[3] ?? '',
       estado,
@@ -64,7 +67,7 @@ function calcularPedidos(vistas: TrabajoVista[], ahora: Date): Calculo {
       bloqueado: v.estado === 'bloqueado',
       nota: estado === 'atrasado' ? (v.notas.at(-1)?.texto ?? null) : null,
       relacionado: rel
-        ? { trabajoId: rel.id, titulo: rel.titulo, responsable: rel.responsable.nombre, plazo: plazoTexto(rel.plazo, ahora) }
+        ? { trabajoId: rel.id, referencia: rel.referencia, titulo: rel.titulo, responsable: rel.responsable.nombre, plazo: plazoTexto(rel.plazo, ahora) }
         : null,
     });
   }
@@ -80,7 +83,7 @@ function calcularPedidos(vistas: TrabajoVista[], ahora: Date): Calculo {
   };
   const fuentes: Fuente[] = pedidos.map((p) => ({
     trabajoId: p.trabajoId,
-    etiqueta: `Pedido ${p.pedido}${p.cliente ? ` · ${p.cliente}` : ''} (${p.trabajoId})`,
+    etiqueta: nombreConReferencia(`Pedido ${p.pedido}${p.cliente ? ` · ${p.cliente}` : ''}`, p.referencia),
   }));
   return { hechos: { tema: 'pedidos_semana', datos: { ...datos }, fuentes }, hayDatos: pedidos.length > 0 };
 }
@@ -111,7 +114,7 @@ function calcularProyectos(inst: Instantanea, vistas: TrabajoVista[], texto: str
   const ids = new Set(proyectos.map((p) => p.id));
   const fuentes: Fuente[] = vistas
     .filter((v) => ids.has(v.proyecto.id) && v.estado !== 'resuelto' && (v.marcas.atrasado || v.marcas.enRiesgo || v.estado === 'bloqueado'))
-    .map((v) => ({ trabajoId: v.id, etiqueta: `${v.id} · ${v.titulo}` }));
+    .map((v) => ({ trabajoId: v.id, etiqueta: nombreConReferencia(v.titulo, v.referencia) }));
   return { hechos: { tema: 'estado_proyectos', datos: { ...datos }, fuentes }, hayDatos: proyectos.length > 0 };
 }
 
@@ -120,6 +123,7 @@ function calcularProyectos(inst: Instantanea, vistas: TrabajoVista[], texto: str
 function item(v: TrabajoVista, detalle: string, ahora: Date): ItemTrabajo {
   return {
     trabajoId: v.id,
+    referencia: v.referencia,
     titulo: v.titulo,
     responsable: v.responsable.nombre,
     estado: v.estado,
@@ -128,20 +132,31 @@ function item(v: TrabajoVista, detalle: string, ahora: Date): ItemTrabajo {
   };
 }
 
-function calcularAtrasados(vistas: TrabajoVista[], ahora: Date): Calculo {
+function calcularAtrasados(vistas: TrabajoVista[], ahora: Date, repuestos: Map<string, string>): Calculo {
+  const porId = new Map(vistas.map((v) => [v.id, v]));
+  const citar = (id: string) => {
+    const t = porId.get(id);
+    return t ? citaConReferencia(t.titulo, t.referencia) : null;
+  };
   const abiertos = vistas.filter((v) => v.estado !== 'resuelto');
   const atrasados = abiertos.filter((v) => v.marcas.atrasado).map((v) => item(v, `plazo vencido: ${plazoTexto(v.plazo, ahora)}`, ahora));
   const bloqueados = abiertos
     .filter((v) => v.estado === 'bloqueado')
     .map((v) => {
-      const por = v.bloqueadoPor ? `bloqueado por ${v.bloqueadoPor.id}` : 'bloqueado';
+      const por = v.bloqueadoPor ? `bloqueado por ${citaConReferencia(v.bloqueadoPor.titulo, v.bloqueadoPor.referencia)}` : 'bloqueado';
       const sol = v.fechaSolucion ? `, solución prevista ${plazoTexto(v.fechaSolucion, ahora)}` : ', sin fecha de solución';
       return item(v, `${por}${sol}`, ahora);
     });
   const enRiesgo = abiertos
     .filter((v) => v.marcas.enRiesgo)
     .map((v) => {
-      const origenes = [...new Set(v.marcas.causas.map((c) => c.trabajoId ?? c.repuestoId).filter((x): x is string => !!x))];
+      const origenes = [
+        ...new Set(
+          v.marcas.causas
+            .map((c) => (c.trabajoId ? citar(c.trabajoId) : c.repuestoId ? minusculaInicial(repuestos.get(c.repuestoId) ?? 'un repuesto') : null))
+            .filter((x): x is string => !!x),
+        ),
+      ];
       return item(v, origenes.length > 0 ? `en riesgo por ${origenes.join(', ')}` : 'en riesgo', ahora);
     });
   const datos: DatosAtrasados = { atrasados, bloqueados, enRiesgo };
@@ -150,7 +165,7 @@ function calcularAtrasados(vistas: TrabajoVista[], ahora: Date): Calculo {
   for (const i of [...atrasados, ...bloqueados, ...enRiesgo]) {
     if (vistos.has(i.trabajoId)) continue;
     vistos.add(i.trabajoId);
-    fuentes.push({ trabajoId: i.trabajoId, etiqueta: `${i.trabajoId} · ${i.titulo}` });
+    fuentes.push({ trabajoId: i.trabajoId, etiqueta: nombreConReferencia(i.titulo, i.referencia) });
   }
   // Con 0 casos la respuesta es un dato verdadero («no hay atrasados»), no una laguna.
   return { hechos: { tema: 'atrasados', datos: { ...datos }, fuentes }, hayDatos: true };
@@ -174,7 +189,7 @@ function calcularPendientes(vistas: TrabajoVista[], personaId: string, nombre: s
     return item(v, `${v.estado.replace('_', ' ')}, plazo ${plazoTexto(v.plazo, ahora)}${marcas ? `, ${marcas}` : ''}`, ahora);
   });
   const datos: DatosPendientes = { persona: nombre, pendientes };
-  const fuentes: Fuente[] = pendientes.map((i) => ({ trabajoId: i.trabajoId, etiqueta: `${i.trabajoId} · ${i.titulo}` }));
+  const fuentes: Fuente[] = pendientes.map((i) => ({ trabajoId: i.trabajoId, etiqueta: nombreConReferencia(i.titulo, i.referencia) }));
   return { hechos: { tema: 'mis_pendientes', datos: { ...datos }, fuentes }, hayDatos: true };
 }
 
@@ -213,7 +228,7 @@ export async function preguntar(ctx: ContextoServicio, personaId: string, texto:
       calculo = calcularProyectos(inst, vistas, pregunta);
       break;
     case 'atrasados':
-      calculo = calcularAtrasados(vistas, inst.ahora);
+      calculo = calcularAtrasados(vistas, inst.ahora, new Map(inst.repuestos.map((r) => [r.id, r.nombre])));
       break;
     case 'mis_pendientes':
       calculo = calcularPendientes(vistas, personaId, persona.nombre, inst.ahora);

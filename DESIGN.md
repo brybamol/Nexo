@@ -88,7 +88,7 @@ typography:
     lineHeight: 1.35
   campo-captura:
     fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "1.125rem"
+    fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.4
   costo:
@@ -131,8 +131,8 @@ components:
     backgroundColor: "{colors.nexo-mint}"
     textColor: "{colors.core-navy}"
     rounded: "{rounded.m}"
-    height: "56px"
-    padding: "0 20px"
+    height: "48px"
+    width: "48px"
   boton-captura-hover:
     backgroundColor: "{colors.mint-claro}"
   boton-solido:
@@ -191,7 +191,7 @@ components:
 
 Nexo aplica la identidad aprobada Nexo 3.0, «Enterprise Tech»: moderna, sobria, precisa y confiable. La fuente de verdad de la marca es `docs/marca/` (`BRAND_BRIEF.md`, `VISUAL_SYSTEM.md`, `design-tokens.json` y la imagen de dirección aprobada). Este documento describe cómo se aplicó a la aplicación y qué se añadió.
 
-El marco es de marca: una barra lateral Core Navy con el lockup de la N de cintas, la navegación y, aparte, la consola de la demo; y una banda Surface Navy con la captura, el gesto principal. El trabajo se lee sobre una mesa clara: Canvas White de fondo, tarjetas blancas con borde fino y sombra suave, Space Grotesk en títulos, códigos y cifras, Inter en todo lo demás.
+El marco es de marca: una barra lateral Core Navy con el lockup de la N de cintas, la navegación y, aparte, la consola de la demo; y, flotando abajo a la derecha, el botón «Cuéntale a Nexo», que abre el panel de la captura, el gesto principal. El trabajo se lee sobre una mesa clara: Canvas White de fondo, tarjetas blancas con borde fino y sombra suave, Space Grotesk en títulos, códigos y cifras, Inter en todo lo demás.
 
 Es una herramienta operativa: la marca aporta paleta, tipografía, el isotipo y una gramática de tres registros (propone, aprueba, ejecutado). La navegación, los controles y la estructura son los estándar de la web.
 
@@ -206,11 +206,11 @@ Sustituye por completo la dirección anterior («rotulación de bodega»: Bahnsc
 | Token | HEX | Uso en la aplicación |
 |---|---|---|
 | Core Navy | `#0B172B` | Barra lateral y cabecera; texto principal; texto de los botones Mint y Blue; insignia Urgente |
-| Nexo Mint | `#69E1C7` | Botón «Enviar» de la captura; insignia Nuevo; icono de la pantalla actual; anillo del código recién creado; inicio del degradado del isotipo |
+| Nexo Mint | `#69E1C7` | Botón de enviar del panel de Nexo; insignia Nuevo; icono de la pantalla actual; anillo del código recién creado; inicio del degradado del isotipo |
 | Signal Blue | `#4B8FF7` | Botón sólido (acciones primarias, con texto Navy); subrayado de enlaces; foco sobre zonas Navy; bordes de lo activo (confirmar, En curso); final del degradado |
 | Canvas White | `#F5F8FC` | Fondo de la aplicación |
 | Steel Gray | `#71849B` | Bordes de controles (campos, botones de contorno); barra de desplazamiento. Nunca texto pequeño sobre claro |
-| Surface Navy | `#17283F` | Banda de captura; elemento activo de la barra lateral; selector «ver como» |
+| Surface Navy | `#17283F` | Caja de la frase y burbujas de la persona en el panel de Nexo; hover del botón flotante; elemento activo de la barra lateral; selector «ver como» |
 
 ### Tokens derivados (pendientes de validar con el fundador)
 
@@ -229,7 +229,7 @@ Los seis colores de marca no cubren texto secundario legible sobre claro, ni est
 | `azul-tenue` / `azul-borde` | `#E8F0FE` / `#B9D0FB` | Fondo y borde de lo que espera a una persona: confirmar una opción, decisiones pendientes, En curso |
 | `azul-claro` | `#6AA2F8` | Hover del botón sólido (sube el contraste del texto Navy) |
 | `mint-tenue` / `mint-borde` | `#E6F9F4` / `#9FE9D7` | Superficie de lo que Nexo pide o propone («Nexo te pide», «Crear decisión» en el registro) |
-| `mint-claro` | `#84E7D1` | Hover del botón de captura |
+| `mint-claro` | `#84E7D1` | Hover del botón de enviar del panel |
 | `mint-medio`, `azul-medio` | `#5CC3D8`, `#56A9EE` | Paradas intermedias del degradado del isotipo (interpolación Mint→Blue) |
 | `critico` | `#B42330` | Bloqueado, Atrasado, Escalamiento, Rechazar, errores |
 | `critico-hondo` | `#9C1D29` | Hover de «Confirmar rechazo» |
@@ -257,12 +257,12 @@ Texto normal exige 4,5:1; texto grande y componentes de interfaz, 3:1.
 | Core Navy | Nexo Mint | 11,26 | Botón «Enviar», insignia Nuevo |
 | Core Navy | `mint-tenue` | 16,40 | «Nexo te pide» |
 | Blanco | Core Navy | 17,92 | Barra lateral |
-| Blanco | Surface Navy | 14,88 | Banda de captura |
+| Blanco | Surface Navy | 14,88 | Caja de la frase y burbujas del panel de Nexo |
 | `niebla` | Core Navy | 8,87 | Navegación inactiva, textos de la consola |
-| `niebla` | Surface Navy | 7,36 | Ayuda de la captura |
+| `niebla` | Surface Navy | 7,36 | Ayuda bajo la caja de la frase |
 | Nexo Mint | Core Navy | 11,26 | Icono de la pantalla actual |
 | Signal Blue | Core Navy | 5,61 | Anillo de foco en la barra |
-| Signal Blue | Surface Navy | 4,65 | Anillo de foco en la captura |
+| Signal Blue | Surface Navy | 4,65 | Anillo de foco en la caja de la frase |
 | `azul-tinta` | Canvas White | 5,53 | Anillo de foco sobre claro |
 | `azul-tinta` | `azul-tenue` | 5,14 | En curso, Pendiente |
 | `critico` | `critico-tenue` | 5,71 | Bloqueado, Atrasado, alertas |
@@ -280,7 +280,7 @@ Combinaciones que **no** se usan como texto porque no llegan a 4,5:1: blanco sob
 - **Tres registros:** Mint tenue con el isotipo es lo que Nexo pide o propone; azul es lo que espera la acción de una persona (aprobar, responder, confirmar); verde con marca de verificación es lo ejecutado o registrado. Rojo y ámbar quedan para lo crítico y lo que está en riesgo.
 - **Nunca solo color:** cada estado, marca y tipo de acción lleva su nombre escrito y un icono.
 - **El degradado es del isotipo:** Mint→Blue solo vive en el isotipo. No hay degradados en fondos, botones ni texto.
-- **Mint es de la captura:** el único botón Mint es «Enviar». Las acciones primarias del resto de pantallas son Signal Blue con texto Navy.
+- **Mint es de la captura:** el único botón Mint es el de enviar del panel de Nexo. Las acciones primarias del resto de pantallas son Signal Blue con texto Navy.
 
 ## Typography
 
@@ -294,14 +294,14 @@ Título de página (Space Grotesk 600, clamp 1,75–2,25 rem) → título de sec
 ## Layout
 
 - Espaciado base 8 px (4/8/12/16/24/32/48/64). Ancho máximo del contenido 76 rem; canal lateral 16 px en teléfono, 24 px desde 640 px y 32 px desde 1280 px; desde 1600 px la raíz sube a 18 px para el proyector.
-- **Escritorio (≥ 1024 px):** barra lateral fija de 264 px (lockup, navegación con iconos y, al pie, el panel DEMO con borde discontinuo). A la derecha, la banda de captura a todo el ancho y debajo el contenido.
-- **Teléfono y tableta (< 1024 px):** cabecera Navy con lockup y empresa, pestañas desplazables con la actual subrayada en Mint, y una franja DEMO desplazable (Surface Navy, borde superior discontinuo). Bajo 640 px la captura queda fija abajo (máx. 62 vh).
+- **Escritorio (≥ 1024 px):** barra lateral fija de 264 px (lockup, navegación con iconos y, al pie, el panel DEMO con borde discontinuo). A la derecha, el contenido. Abajo a la derecha flota el botón «Cuéntale a Nexo» (pastilla Core Navy de 56 px con el isotipo); abre un panel de 420 px de ancho y hasta 704 px de alto, con cabecera Core Navy, cuerpo Canvas White y la caja de la frase en Surface Navy. «Ampliar» lo lleva a 832 px de ancho y casi todo el alto. El panel no es modal: la página sigue a la vista.
+- **Teléfono y tableta (< 1024 px):** cabecera Navy con lockup y empresa, pestañas desplazables con la actual subrayada en Mint, y una franja DEMO desplazable (Surface Navy, borde superior discontinuo). Bajo 640 px el botón flotante queda solo con el isotipo y el panel ocupa toda la pantalla.
 - «Mi día» en dos columnas desde 1100 px: «Nexo te pide», «Lo que debes» y «Lo que esperas de otros» a la izquierda; «Decisiones pendientes» y «Qué cambió» a la derecha.
 - Decisiones: las tres opciones en columnas iguales (auto-fit, mín. 17 rem); la cabecera de la opción tiene alto fijo desde 640 px para que los costos queden alineados.
 
 ## Elevation & Depth
 
-Tres sombras suaves con desplazamiento y desenfoque, tintadas con Navy: `sombra-1` (tarjetas), `sombra-2` (reserva) y `sombra-3` (tarjeta de resultado sobre la banda de captura). Sin brillos, sin glassmorphism, sin sombras duras.
+Tres sombras suaves con desplazamiento y desenfoque, tintadas con Navy: `sombra-1` (tarjetas), `sombra-2` (reserva) y `sombra-3` (botón flotante y panel de Nexo). Sin brillos, sin glassmorphism, sin sombras duras.
 
 ## Shapes
 
@@ -316,8 +316,9 @@ Radios 8 px (controles, códigos), 12 px (tarjetas, campo de captura) y 16 px (d
 - **El arte final del logo es exploratorio.** Es una geometría propia inspirada en la referencia, no un vector de producción: falta la construcción final, el área libre y la comprobación de similitud con marcas existentes.
 
 ### Buttons
-- **Captura** (Mint, texto Navy): 56 px de alto, icono de enviar; en teléfono solo el icono.
-- **Sólido** (Signal Blue, texto Navy): la acción primaria de cada pantalla (Preguntar, Sí, aprobar, Enviar respuesta, Ir a decisiones, Responder).
+- **Captura** (Mint, texto Navy): cuadrado de 48 px con el icono de enviar, dentro del panel de Nexo.
+- **Flotante** (Core Navy, texto blanco): pastilla de 56 px con el isotipo y «Cuéntale a Nexo»; con el panel abierto dice «Cerrar». En teléfono, solo el isotipo.
+- **Sólido** (Signal Blue, texto Navy): la acción primaria de cada pantalla (Sí, aprobar, Enviar respuesta, Ir a decisiones, Responder).
 - **Contorno** (blanco, borde Steel Gray): acciones iguales entre sí, como «Aprobar opción A/B/C», para no empujar ninguna.
 - **Quieto** (borde `borde`, fondo transparente): Cancelar, ejemplos, marcar avisos.
 - **Peligro** (`critico`): Rechazar y Confirmar rechazo.
@@ -333,7 +334,7 @@ El código (T04, D01) en Space Grotesk 600, teñido con el color del estado: Abi
 Tarjeta de trabajo: código a la izquierda, título e insignias, y debajo una fila de datos (Proyecto, Responsable, Plazo, Bloqueado por, Depende de) separada por un borde.
 
 ### Inputs / Fields
-Borde de 1 px Steel Gray, radio 8 px, foco con anillo de 2 px `azul-tinta`. El campo de captura es blanco, 18 px, radio 12 px, sobre la banda Surface Navy.
+Borde de 1 px Steel Gray, radio 8 px, foco con anillo de 2 px `azul-tinta`. El campo de la frase es blanco, 16 px, radio 12 px, sobre la caja Surface Navy del panel de Nexo; crece con el texto hasta 144 px.
 
 ### Navigation
 Barra lateral: enlaces de 44 px con icono Lucide; el actual con fondo Surface Navy, texto blanco, icono Mint y `aria-current="page"`. En teléfono, pestañas con subrayado Mint.
@@ -341,8 +342,18 @@ Barra lateral: enlaces de 44 px con icono Lucide; el actual con fondo Surface Na
 ### Consola DEMO
 Ver como, reloj (+5 min, +30 min, Siguiente evento) y Reiniciar demo, siempre separados del producto: panel con borde discontinuo al pie de la barra lateral o franja aparte en teléfono, con la pastilla ámbar «DEMO» y la nota «datos de demostración».
 
+### Recorrido de proyecto (patrón de secuencia)
+Los proyectos se leen como un recorrido, no como una lista de tarjetas. La lógica es pura y probada (`src/motor/secuencia.ts`); la vista vive en `src/componentes/proyectos/` y sus estilos en `src/app/proyectos/proyectos.css` (solo variables de marca).
+
+- **Mapa del recorrido** (`MapaRecorrido`): una columna por etapa y un punto por trabajo; lo que va a la vez se apila en la misma columna sobre una rama vertical. Tramos entre etapas: continuos `exito-borde` en lo hecho, discontinuos `borde-opcion` en lo que falta. Puntos: hecho (verde lleno con ✓), ahora (azul tenue, borde Signal Blue y punto `azul-tinta`), bloqueado (rojo lleno con prohibido), atrasado o rezagado (rojo tenue con reloj), en riesgo (ámbar tenue con triángulo), después (blanco, borde Steel). Es un resumen: el texto de al lado dice lo mismo en palabras, por eso es `aria-hidden`. Tamaño normal (1,25 rem) en la lista; grande (1,75 rem, columnas que llenan el ancho y rótulo «Etapa n» u «Hoy» arriba) en el detalle, con leyenda.
+- **Fila de proyecto** (lista): tres columnas. A la izquierda, la fecha como etiqueta teñida según cercanía («Vence en 2 días» en Space Grotesk; rojo tenue si venció, ámbar tenue si vence hoy o mañana, verde tenue si terminó). En medio, nombre, responsable y resultado, y el mapa con «3 de 8 hechos · después 4 trabajos más». A la derecha, «Ahora» (pastilla azul) con la etapa y quién tiene cada paso, y debajo, separado por un borde, el primer freno escrito con icono y las cuentas de bloqueados, atrasados y en riesgo. Toda la fila lleva al detalle. Los grupos «Por entregar», «Sin fecha de entrega» y «Terminados» van en ese orden; las tres cifras quedan al pie, bajo «Lo que Nexo coordinó esta semana».
+- **Panorama** (detalle): panel blanco radio 16 px con Avance, Ahora y Después en cifras Space Grotesk, y el mapa grande debajo. Le sigue «Qué lo frena»: bloqueos con su motivo y a quién detienen, atrasos, riesgos por repuesto o por otro proyecto; los riesgos que solo heredan un bloqueo del mismo proyecto se resumen en una línea.
+- **Línea del recorrido** (detalle): de arriba abajo, un riel con un nodo de 40 px por etapa (✓ verde hecho, anillo azul ahora, rojo bloqueado, reloj rojo quedó pendiente, blanco después) y el riel continuo en lo hecho y discontinuo en lo que falta. Cada etapa lleva su nombre, la pastilla de estado escrita y «3 a la vez» cuando hay paralelos. Lo hecho se comprime en una línea con ✓; lo pendiente son tarjetas lado a lado (hasta 3 por fila a ≥1280 px) que muestran referencia teñida, título enlazado, estado, marcas, responsable, plazo con «vence hoy» y, bajo un borde, las relaciones: «Bloqueado por…» con motivo, «Espera a…» (mismo proyecto), «Espera a otro proyecto, …», repuesto que falta y riesgo heredado. En la etapa actual la tarjeta lleva borde `azul-borde`; la bloqueada, `critico-borde`.
+- Proyectos casi sin dependencias (menos de la mitad de sus trabajos espera a otro) se muestran «Día por día»: una etapa por día del plazo, con «Ayer», «Hoy» y «Mañana».
+- Proyecto vacío: caja `vacio` que explica que sus trabajos aparecerán en el orden en que deben ocurrir.
+
 ## Motion
-Transiciones de 150 ms en hover y cambios de estado. Una sola entrada orquestada: la tarjeta de resultado de la captura (220 ms, opacidad y 6 px) y el anillo Mint del código recién creado. Con `prefers-reduced-motion` no hay movimiento.
+Transiciones de 150 ms en hover y cambios de estado. Entradas orquestadas: el panel de Nexo al abrirse (200 ms), la tarjeta de resultado de la captura y el anillo Mint del código recién creado; el isotipo late mientras Nexo responde. Con `prefers-reduced-motion` no hay movimiento.
 
 ## Do's and Don'ts
 

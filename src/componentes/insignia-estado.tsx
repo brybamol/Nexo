@@ -22,11 +22,15 @@ export function InsigniaEstado({ estado }: { estado: EstadoTrabajo }) {
   );
 }
 
-/** Código del trabajo (T04) en Space Grotesk, teñido con el color de su estado. */
-export function CodigoTrabajo({ id, estado, grande = false }: { id: string; estado: EstadoTrabajo; grande?: boolean }) {
+/**
+ * Referencia visible del trabajo (COLINA-4) en Space Grotesk, teñida con el color de su estado. Nunca el id interno:
+ * la referencia sale de dominio/nombres.ts. Sin referencia no muestra nada.
+ */
+export function CodigoTrabajo({ referencia, estado, grande = false }: { referencia: string; estado: EstadoTrabajo; grande?: boolean }) {
+  if (!referencia) return null;
   return (
     <span className={grande ? 'codigo codigo--grande' : 'codigo'} data-estado={estado}>
-      {id}
+      {referencia}
     </span>
   );
 }

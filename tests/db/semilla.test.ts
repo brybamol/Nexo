@@ -3,8 +3,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { crearConexion, type Conexion } from '@/db/conexion';
 import {
+  buzones,
   dependencias,
   eventos,
+  evidencias,
+  mensajesLeidos,
+  revisiones,
   necesidadesRepuesto,
   notas,
   personas,
@@ -198,8 +202,47 @@ describe('semilla de Frío del Valle', () => {
     expect(r?.ahora.getTime()).toBe(hora('2026-11-25T07:00:00-06:00'));
   });
 
+  it('reformas v2: los 30 trabajos están confirmados, sin dueño de propuesta, sin confirmado_por y sin entrega', async () => {
+    const filas = await db.select().from(trabajos);
+    expect(filas.every((t) => t.confirmacion === 'confirmado')).toBe(true);
+    expect(filas.every((t) => t.duenoPropuestaId === null && t.confirmadoPorId === null && t.entrega === null)).toBe(true);
+  });
+
+  it('reformas v2: 8 buzones Gmail conectados el lun 23 7:00 (bodega y técnicos de campo, no)', async () => {
+    const filas = await db.select().from(buzones);
+    expect(filas.map((b) => b.personaId).sort()).toEqual(
+      [
+        'andres-vargas',
+        'esteban-castro',
+        'karla-jimenez',
+        'lucia-mora',
+        'marcela-solis',
+        'paola-herrera',
+        'ricardo-brenes',
+        'sofia-navarro',
+      ].sort(),
+    );
+    expect(filas.every((b) => b.proveedor === 'gmail' && b.conectadoEn.getTime() === hora('2026-11-23T07:00:00-06:00'))).toBe(true);
+    expect(filas.find((b) => b.personaId === 'ricardo-brenes')?.direccion).toBe('ricardo.brenes@friodelvalle.cr');
+    expect(await db.select().from(evidencias)).toHaveLength(0);
+    expect(await db.select().from(mensajesLeidos)).toHaveLength(0);
+    expect(await db.select().from(revisiones)).toHaveLength(0);
+  });
+
+  it('reformas v2: sin buzones si se pide (lo que hace prepararDemo por defecto)', async () => {
+    const otra = await crearConexion({ tipo: 'pglite', dir: null });
+    try {
+      await cargarSemilla(otra.db, { buzones: false });
+      expect(await otra.db.select().from(buzones)).toHaveLength(0);
+      expect(await otra.db.select().from(trabajos)).toHaveLength(30);
+    } finally {
+      await otra.cerrar();
+    }
+  });
+
   it('cargar la semilla por segunda vez no duplica nada', async () => {
     await cargarSemilla(db);
+    expect(await db.select().from(buzones)).toHaveLength(8);
     expect(await db.select().from(personas)).toHaveLength(12);
     expect(await db.select().from(proyectos)).toHaveLength(5);
     expect(await db.select().from(repuestos)).toHaveLength(5);

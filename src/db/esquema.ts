@@ -1,4 +1,5 @@
 // Tablas Drizzle (§3.1 de docs/05). ARCHIVO DE CONTRATO (§4.0): congelado tras la tarea 1.1.
+// Reformas v2 (docs/08 §2, tarea R2): columnas nuevas en trabajos y seguimientos y cuatro tablas nuevas.
 // El SQL equivalente (CREATE TABLE IF NOT EXISTS) vive en db/ddl.ts y debe coincidir columna a columna.
 // Fechas: timestamptz (mode 'date'). Dinero: integer en colones. Listas: jsonb.
 import {
@@ -10,25 +11,42 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   type AnyPgColumn,
   type PgDatabase,
   type PgQueryResultHKT,
 } from 'drizzle-orm/pg-core';
 import type {
   Area,
+  CampoCorregible,
+  ClaseCorreo,
+  Confirmacion,
   EstadoCaptura,
   EstadoDecision,
   EstadoSeguimiento,
   EstadoTrabajo,
+  FuenteEvidencia,
   Implementacion,
   LetraOpcion,
   NivelSeguimiento,
   OrigenTrabajo,
+  ProveedorCorreo,
+  ResultadoLectura,
+  ResultadoRevision,
   TipoAccion,
   TipoEvento,
+  TipoEvidencia,
+  TipoSeguimiento,
 } from '@/dominio/tipos';
 
 const fecha = (nombre: string) => timestamp(nombre, { withTimezone: true, mode: 'date' });
+
+/** Formas jsonb de las reformas v2: las fechas van como texto ISO (db/instantanea.ts las convierte en Date). */
+export type EntregaJson = { en: string; porId: string; nota: string | null; enlace: string | null; fuente: FuenteEvidencia };
+export type ValoresPropuestaJson = { titulo: string; responsableId: string; plazo: string | null; proyectoId: string };
+export type EntradaRevisionJson =
+  | { asunto?: string; cita: string; deId?: string | null; paraIds?: string[]; enviado?: string }
+  | { texto: string };
 
 /** Formas jsonb de opciones_decision: las fechas se guardan como texto ISO. */
 export type LineaOpcionJson = {
@@ -50,6 +68,7 @@ export const personas = pgTable('personas', {
 
 export const proyectos = pgTable('proyectos', {
   id: text('id').primaryKey(),
+  clave: text('clave').notNull().unique(), // 'COLINA': prefijo de las referencias visibles (dominio/nombres.ts)
   nombre: text('nombre').notNull(),
   resultado: text('resultado').notNull(),
   responsableId: text('responsable_id')
@@ -71,33 +90,43 @@ export const repuestos = pgTable('repuestos', {
   faltanteReportadoPor: text('faltante_reportado_por').references(() => personas.id),
 });
 
-export const trabajos = pgTable('trabajos', {
-  id: text('id').primaryKey(),
-  proyectoId: text('proyecto_id')
-    .notNull()
-    .references(() => proyectos.id),
-  titulo: text('titulo').notNull(),
-  responsableId: text('responsable_id')
-    .notNull()
-    .references(() => personas.id),
-  solicitadoPorId: text('solicitado_por_id').references(() => personas.id),
-  plazo: fecha('plazo').notNull(),
-  estado: text('estado').$type<EstadoTrabajo>().notNull(),
-  urgente: boolean('urgente').notNull().default(false),
-  conCostoProbable: boolean('con_costo_probable').notNull().default(false),
-  bloqueadoPorId: text('bloqueado_por_id').references((): AnyPgColumn => trabajos.id),
-  motivoBloqueo: text('motivo_bloqueo'),
-  fechaSolucion: fecha('fecha_solucion'),
-  repuestoId: text('repuesto_id').references(() => repuestos.id),
-  cantidadRepuesto: integer('cantidad_repuesto'),
-  etiqueta: text('etiqueta'),
-  relacionados: jsonb('relacionados').$type<string[]>().notNull().default([]),
-  origen: text('origen').$type<OrigenTrabajo>().notNull(),
-  capturaId: integer('captura_id'),
-  decisionId: text('decision_id'),
-  creadoEn: fecha('creado_en').notNull(),
-  resueltoEn: fecha('resuelto_en'),
-});
+export const trabajos = pgTable(
+  'trabajos',
+  {
+    id: text('id').primaryKey(),
+    proyectoId: text('proyecto_id')
+      .notNull()
+      .references(() => proyectos.id),
+    numero: integer('numero').notNull(), // número dentro del proyecto: COLINA-4
+    titulo: text('titulo').notNull(),
+    responsableId: text('responsable_id')
+      .notNull()
+      .references(() => personas.id),
+    solicitadoPorId: text('solicitado_por_id').references(() => personas.id),
+    plazo: fecha('plazo').notNull(),
+    estado: text('estado').$type<EstadoTrabajo>().notNull(),
+    urgente: boolean('urgente').notNull().default(false),
+    conCostoProbable: boolean('con_costo_probable').notNull().default(false),
+    bloqueadoPorId: text('bloqueado_por_id').references((): AnyPgColumn => trabajos.id),
+    motivoBloqueo: text('motivo_bloqueo'),
+    fechaSolucion: fecha('fecha_solucion'),
+    repuestoId: text('repuesto_id').references(() => repuestos.id),
+    cantidadRepuesto: integer('cantidad_repuesto'),
+    etiqueta: text('etiqueta'),
+    relacionados: jsonb('relacionados').$type<string[]>().notNull().default([]),
+    origen: text('origen').$type<OrigenTrabajo>().notNull(),
+    capturaId: integer('captura_id'),
+    decisionId: text('decision_id'),
+    creadoEn: fecha('creado_en').notNull(),
+    resueltoEn: fecha('resuelto_en'),
+    // Reformas v2 (docs/08 §2.1)
+    confirmacion: text('confirmacion').$type<Confirmacion>().notNull().default('confirmado'),
+    duenoPropuestaId: text('dueno_propuesta_id').references(() => personas.id),
+    confirmadoPorId: text('confirmado_por_id').references(() => personas.id),
+    entrega: jsonb('entrega').$type<EntregaJson>(),
+  },
+  (t) => [unique('trabajos_proyecto_numero').on(t.proyectoId, t.numero)],
+);
 
 export const dependencias = pgTable(
   'dependencias',
@@ -189,12 +218,15 @@ export const seguimientos = pgTable('seguimientos', {
   proximoEn: fecha('proximo_en').notNull(),
   estado: text('estado').$type<EstadoSeguimiento>().notNull(),
   iniciadoEn: fecha('iniciado_en').notNull(),
+  escaladosA: jsonb('escalados_a').$type<string[]>().notNull().default([]),
+  tipo: text('tipo').$type<TipoSeguimiento>().notNull().default('estado'), // reformas v2
 });
 
 export const decisiones = pgTable('decisiones', {
   id: text('id').primaryKey(),
   creadaEn: fecha('creada_en').notNull(),
   proyectoId: text('proyecto_id').notNull(),
+  numero: integer('numero').notNull(), // número de decisión dentro del proyecto: COLINA-D1
   proponenteId: text('proponente_id').notNull(),
   decisorId: text('decisor_id').notNull(),
   capturaId: integer('captura_id'),
@@ -255,6 +287,68 @@ export const reloj = pgTable('reloj', {
   ahora: fecha('ahora').notNull(),
 });
 
+// ─── Reformas v2 (docs/08 §2.2) ───────────────────────────────────────────────
+
+/** Buzones conectados. Sin fila = sin conectar (Nexo no lee ese buzón). */
+export const buzones = pgTable('buzones', {
+  personaId: text('persona_id')
+    .primaryKey()
+    .references(() => personas.id),
+  direccion: text('direccion').notNull(),
+  proveedor: text('proveedor').$type<ProveedorCorreo>().notNull(),
+  conectadoEn: fecha('conectado_en').notNull(),
+});
+
+/** Hechos que respaldan cada trabajo (pedido, entrega, recepción…), de correo, captura o interfaz. */
+export const evidencias = pgTable('evidencias', {
+  id: serial('id').primaryKey(),
+  trabajoId: text('trabajo_id')
+    .notNull()
+    .references(() => trabajos.id),
+  tipo: text('tipo').$type<TipoEvidencia>().notNull(),
+  fuente: text('fuente').$type<FuenteEvidencia>().notNull(),
+  compromisoClave: text('compromiso_clave'),
+  mensajeId: text('mensaje_id'),
+  buzones: jsonb('buzones').$type<string[]>().notNull().default([]),
+  enlaces: jsonb('enlaces').$type<Record<string, string>>().notNull().default({}),
+  autorId: text('autor_id'),
+  en: fecha('en').notNull(),
+  cita: text('cita').notNull(),
+});
+
+/** Copias ya leídas (persona × Message-ID): Nexo nunca lee dos veces la misma. Sin asunto, remitente ni cuerpo. */
+export const mensajesLeidos = pgTable(
+  'mensajes_leidos',
+  {
+    personaId: text('persona_id').notNull(),
+    idInternet: text('id_internet').notNull(),
+    enviado: fecha('enviado').notNull(),
+    leidoEn: fecha('leido_en').notNull(),
+    clase: text('clase').$type<ClaseCorreo>().notNull(),
+    resultado: text('resultado').$type<ResultadoLectura>().notNull(),
+    trabajoIds: jsonb('trabajo_ids').$type<string[]>().notNull().default([]),
+  },
+  (t) => [primaryKey({ columns: [t.personaId, t.idInternet] })],
+);
+
+/** Cada revisión humana de una propuesta (regla 16 y 17): de aquí sale la tasa de corrección. */
+export const revisiones = pgTable('revisiones', {
+  id: serial('id').primaryKey(),
+  en: fecha('en').notNull(),
+  personaId: text('persona_id')
+    .notNull()
+    .references(() => personas.id),
+  origen: text('origen').$type<'correo' | 'captura'>().notNull(),
+  trabajoId: text('trabajo_id').references(() => trabajos.id),
+  capturaId: integer('captura_id'),
+  resultado: text('resultado').$type<ResultadoRevision>().notNull(),
+  campos: jsonb('campos').$type<CampoCorregible[]>().notNull().default([]),
+  propuesto: jsonb('propuesto').$type<ValoresPropuestaJson>().notNull(),
+  final: jsonb('final').$type<ValoresPropuestaJson>(),
+  entrada: jsonb('entrada').$type<EntradaRevisionJson>().notNull(),
+  motivo: text('motivo'),
+});
+
 /** Todas las tablas; se pasa como `schema` a drizzle() en db/conexion.ts. */
 export const esquema = {
   personas,
@@ -273,6 +367,10 @@ export const esquema = {
   capturas,
   preguntas,
   reloj,
+  buzones,
+  evidencias,
+  mensajesLeidos,
+  revisiones,
 };
 
 /** Base de datos de Nexo: sirve igual con PGlite (local, pruebas) y con pg (DATABASE_URL). Las transacciones (tx) también lo cumplen. */

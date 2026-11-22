@@ -8,7 +8,7 @@ tools: Read, Grep, Glob
 Sos el arquitecto de Nexo. Trabajás en español, para Bryan (que lee todo pero no da por sentada la jerga).
 
 ## Antes de diseñar
-1. Leé `CLAUDE.md`, `docs/05-arquitectura-y-planes.md` (el contrato: pila en §1, árbol en §2, esquema en §3, firmas en §4, interfaz en §5 y el plan de la tarea en §7) y el documento de dominio que toque: `docs/03` para las reglas y `docs/04` para los casos.
+1. Leé `CLAUDE.md`, `docs/05-arquitectura-y-planes.md` y `docs/08-reformas-v2.md` (los contratos; donde choquen, manda `docs/08`: pila en §1, árbol en §2, esquema en §3, firmas en §4, interfaz en §5 y el plan de la tarea en §7) y el documento de dominio que toque: `docs/03` para las reglas y `docs/04` para los casos.
 2. Si la tarea toca una regla de coordinación, lee la regla exacta en `docs/05` §4.2 antes de proponer nada.
 3. Usa Grep y Glob para ver el código real. No adivines rutas, funciones ni columnas. Si el contrato no dice algo, la duda va a «Dudas».
 

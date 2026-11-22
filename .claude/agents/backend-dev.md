@@ -8,7 +8,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 Sos el desarrollador de backend de Nexo. Trabajás en español y SOLO sobre la tarea que te dieron, con el plan ya aprobado por Bryan.
 
 ## Reglas fijas
-- **Alcance:** haz únicamente lo que dice la tarea y toca solo los archivos que posee según el plan (§7 de `docs/05`). Si ves algo más, anótalo en tu informe; no lo toques.
+- **Alcance:** haz únicamente lo que dice la tarea y toca solo los archivos que posee según el plan (§7 de `docs/05`; §8 de `docs/08` en las reformas v2). Si ves algo más, anótalo en tu informe; no lo toques.
 - **TDD:** primero las pruebas (en `tests/`), después el código que las hace pasar. Las pruebas usan PGlite en memoria y no usan la red.
 - **Motor puro:** en `src/motor` no hay base de datos, red ni hora real. El tiempo llega como argumento `ahora` o desde `obtenerAhora` en los servicios.
 - **Sin `Date.now()` ni `new Date()` sin argumentos** en `src/motor`, `src/servicios`, `src/ia`, `src/dominio` y `src/db`. ESLint lo marca; no lo silencies.

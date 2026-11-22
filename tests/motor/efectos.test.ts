@@ -22,12 +22,15 @@ const seguimiento: Seguimiento = {
   proximoEn: AHORA,
   estado: 'pendiente',
   iniciadoEn: AHORA,
+  escaladosA: [],
+  tipo: 'estado',
 };
 
 const decision: Decision = {
   id: 'D01',
   creadaEn: AHORA,
   proyectoId: 'P1',
+  numero: 1,
   proponenteId: 'lucia-mora',
   decisorId: 'marcela-solis',
   capturaId: null,
@@ -105,6 +108,74 @@ describe('aplicarEnMemoria', () => {
     const res = aplicarEnMemoria(instantaneaDesdeSemilla(), efectos);
     expect(res.seguimientos).toEqual([{ ...seguimiento, nivel: 2 }]);
     expect(res.decisiones).toEqual([{ ...decision, estado: 'aprobada', opcionElegida: 'A' }]);
+  });
+
+  it('reformas v2: crear_dependencia sin repetir; agregar_evidencia con id provisional; actualizar_evidencia', () => {
+    const inst = instantaneaDesdeSemilla();
+    const evidencia = {
+      trabajoId: 'T27',
+      tipo: 'pedido' as const,
+      fuente: 'correo' as const,
+      compromisoClave: 'c-h1-m1',
+      mensajeId: '<h1-m1@friodelvalle.cr>',
+      buzones: ['andres-vargas'],
+      enlaces: {},
+      autorId: 'andres-vargas',
+      en: AHORA,
+      cita: '¿puedes confirmar el pago anticipado del pedido 1047?',
+    };
+    const res = aplicarEnMemoria(inst, [
+      { tipo: 'crear_dependencia', dependencia: { trabajoId: 'T28', dependeDeId: 'T27' }, actorId: null },
+      { tipo: 'crear_dependencia', dependencia: { trabajoId: 'T28', dependeDeId: 'T27' }, actorId: null },
+      { tipo: 'agregar_evidencia', evidencia },
+      { tipo: 'agregar_evidencia', evidencia: { ...evidencia, tipo: 'entrega' } },
+      { tipo: 'actualizar_evidencia', evidenciaId: 1, cambios: { buzones: ['andres-vargas', 'ricardo-brenes'] } },
+    ]);
+    expect(res.dependencias.filter((d) => d.trabajoId === 'T28' && d.dependeDeId === 'T27')).toHaveLength(1);
+    expect(res.dependencias).toHaveLength(inst.dependencias.length + 1);
+    expect(res.evidencias.map((e) => [e.id, e.tipo, e.buzones])).toEqual([
+      [1, 'pedido', ['andres-vargas', 'ricardo-brenes']],
+      [2, 'entrega', ['andres-vargas']],
+    ]);
+  });
+
+  it('reformas v2: descartar mueve el trabajo a descartados y quita sus dependencias, necesidades y seguimientos', () => {
+    const inst = instantaneaDesdeSemilla();
+    const res = aplicarEnMemoria(inst, [
+      { tipo: 'crear_seguimiento', seguimiento: { ...seguimiento, trabajoId: 'T04' } },
+      { tipo: 'actualizar_trabajo', trabajoId: 'T04', cambios: { confirmacion: 'descartado' }, actorId: 'jose-alfaro' },
+    ]);
+    expect(res.trabajos.some((t) => t.id === 'T04')).toBe(false);
+    expect(res.descartados).toEqual([{ id: 'T04', proyectoId: 'P1', numero: 4 }]);
+    expect(res.dependencias.some((d) => d.trabajoId === 'T04' || d.dependeDeId === 'T04')).toBe(false); // T04>T03 y T05>T04
+    expect(res.dependencias).toHaveLength(inst.dependencias.length - 2);
+    expect(res.necesidades.some((n) => n.trabajoId === 'T04')).toBe(false);
+    expect(res.seguimientos).toEqual([]);
+    expect(inst.trabajos.some((t) => t.id === 'T04')).toBe(true); // puro
+  });
+
+  it('reformas v2: registrar_mensajes y registrar_revision no cambian la instantánea', () => {
+    const inst = instantaneaDesdeSemilla();
+    const res = aplicarEnMemoria(inst, [
+      { tipo: 'registrar_mensajes', mensajes: [] },
+      {
+        tipo: 'registrar_revision',
+        revision: {
+          en: AHORA,
+          personaId: 'lucia-mora',
+          origen: 'captura',
+          trabajoId: null,
+          capturaId: 1,
+          resultado: 'confirmada',
+          campos: [],
+          propuesto: { titulo: 't', responsableId: 'lucia-mora', plazo: null, proyectoId: 'OD' },
+          final: { titulo: 't', responsableId: 'lucia-mora', plazo: null, proyectoId: 'OD' },
+          entrada: { texto: 'x' },
+          motivo: null,
+        },
+      },
+    ]);
+    expect(res).toEqual(inst);
   });
 
   it('notas, acciones y eventos no cambian la instantánea; ids inexistentes se ignoran', () => {

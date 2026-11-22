@@ -79,7 +79,7 @@ describe('E4 · decisión con costo', () => {
 
     const evs = await demo.ctx.db.select().from(eventos);
     expect(evs.find((e) => e.tipo === 'decision_aprobada')).toMatchObject({ actorId: 'marcela-solis', decisionId: 'D01' });
-    const mario = (await demo.ctx.db.select().from(avisos)).filter((a) => a.personaId === 'mario-chaves' && a.titulo.startsWith('D01'));
+    const mario = (await demo.ctx.db.select().from(avisos)).filter((a) => a.personaId === 'mario-chaves' && a.titulo.startsWith('«Compra de 3 compresores de 2 HP» aprobada')); // D01
     expect(mario).toHaveLength(1);
     expect(mario[0]?.trabajoIds).toEqual(['T05', 'T11']);
     const d = await obtenerDecision(demo.ctx, 'D01');

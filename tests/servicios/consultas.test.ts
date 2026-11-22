@@ -40,6 +40,7 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
   return {
     id,
     proyectoId: 'P1',
+    numero: 8,
     titulo: 'Conseguir un compresor de 2 HP',
     responsableId: 'lucia-mora',
     solicitadoPorId: 'jose-alfaro',
@@ -59,6 +60,10 @@ function trabajoNuevo(id: string, extra: Partial<Trabajo> = {}): Trabajo {
     decisionId: null,
     creadoEn: enCR('2026-11-25', '07:00'),
     resueltoEn: null,
+    confirmacion: 'confirmado',
+    duenoPropuestaId: null,
+    confirmadoPorId: null,
+    entrega: null,
     ...extra,
   };
 }
@@ -76,7 +81,7 @@ async function aplicarBloqueo(): Promise<void> {
     },
     {
       tipo: 'crear_seguimiento',
-      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora },
+      seguimiento: { id: 'S1', trabajoId: 'T31', plazoReferencia: ahora, nivel: 0, destinatarioId: 'lucia-mora', urgente: true, proximoEn: enCR('2026-11-25', '07:30'), estado: 'pendiente', iniciadoEn: ahora, escaladosA: [], tipo: 'estado' },
     },
   ]);
 }
@@ -87,6 +92,7 @@ describe('obtenerTrabajo', () => {
     expect(t).toEqual({
       id: 'T04',
       titulo: 'Instalar unidad condensadora y compresor',
+      referencia: 'COLINA-4',
       proyecto: { id: 'P1', nombre: 'Cámara fría La Colina' },
       responsable: { id: 'jose-alfaro', nombre: 'José Alfaro', rol: 'Técnico', area: 'Campo' },
       solicitadoPor: null,
@@ -99,9 +105,20 @@ describe('obtenerTrabajo', () => {
       fechaSolucion: null,
       bloquea: [],
       dependeDe: ['T03'],
+      bloqueaTrabajos: [],
+      dependeDeTrabajos: [{ id: 'T03', titulo: 'Montar paneles y puerta', referencia: 'COLINA-3' }],
+      causasTrabajos: {},
+      causasRepuestos: {},
       necesita: [{ repuesto: 'Compresor de 2 HP', cantidad: 1 }],
       seguimiento: null,
       notas: [],
+      origen: 'semilla',
+      confirmacion: 'confirmado',
+      confianza: 'persona',
+      dueno: null,
+      confirmadoPor: null,
+      entrega: null,
+      evidencias: [],
     });
   });
 
