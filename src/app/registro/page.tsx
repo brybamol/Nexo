@@ -73,7 +73,10 @@ function IconoTipo({ tipo }: { tipo: TipoAccion }) {
   return <Icono className="icono" aria-hidden="true" />;
 }
 
-export default async function PaginaRegistro({ searchParams }: PageProps<'/registro'>) {
+// El tipo va escrito a mano: el `PageProps` global lo genera Next al compilar y no existe en un `typecheck` limpio (CI).
+type Props = { searchParams: Promise<{ [clave: string]: string | string[] | undefined }> };
+
+export default async function PaginaRegistro({ searchParams }: Props) {
   const ctx = await obtenerContextoApp();
   const consulta = await searchParams;
   const [cifras, acciones, tasa, trabajos] = await Promise.all([
