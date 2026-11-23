@@ -251,3 +251,54 @@ Documentos de `docs/`:
 - Las preguntas respondidas no aparecen en el registro de acciones.
 - Con Claude, una reprogramación de una entrega a un cliente se aplica sin pasar por una decisión (la regla está pendiente de definir).
 - Las horas ahorradas son una estimación basada en minutos supuestos (10 por seguimiento y 15 por pregunta), no una medición.
+
+## Recepción de correos (webhook)
+
+Nexo incluye un endpoint inicial para recibir el webhook **Inbound** de Postmark:
+
+- `POST /api/webhooks/email`
+- Autenticación HTTP Basic (Postmark permite incluir las credenciales en la URL del webhook; debe usarse HTTPS fuera de local).
+- Identificación explícita del remitente mediante `NEXO_EMAIL_REMITENTES`, un objeto JSON que asocia cada correo autorizado con un ID de persona existente en Nexo.
+- Idempotencia por `MessageID`: los reintentos de un mensaje ya procesado no vuelven a crear solicitudes.
+- Los remitentes no registrados quedan registrados como rechazados y no generan capturas.
+- El cuerpo de texto se envía al servicio `capturar()` existente. Se usa `StrippedTextReply` cuando está disponible, luego `TextBody` y, como último recurso, se convierte `HtmlBody` a texto. El asunto se usa únicamente si el mensaje no trae cuerpo.
+
+Configura estas variables en `.env.local` (no compartas ese archivo):
+
+```dotenv
+NEXO_EMAIL_WEBHOOK_USER=usuario-webhook
+NEXO_EMAIL_WEBHOOK_PASSWORD=una-clave-larga-y-unica
+NEXO_EMAIL_REMITENTES={"jose@empresa.test":"jose-alfaro"}
+```
+
+Los IDs de persona deben existir en la base de datos de Nexo. El mapa por variable de entorno es una solución inicial para el MVP; posteriormente conviene administrarlo desde la aplicación y asociar correos a usuarios verificados.
+
+### Prueba local sin Postmark ni dominio
+
+1. Configura las tres variables anteriores en `.env.local` y arranca `pnpm dev`.
+2. Envía un POST local con HTTP Basic Auth a `http://localhost:3000/api/webhooks/email` usando un JSON con `MessageID`, `From`, `Subject` y `TextBody` en el formato Inbound de Postmark.
+3. Comprueba la respuesta y abre el Registro de Nexo para verificar la captura creada.
+
+Ejemplo de payload mínimo:
+
+```json
+{
+  "MessageID": "prueba-local-001",
+  "From": "Jose Alfaro <jose@empresa.test>",
+  "FromFull": { "Email": "jose@empresa.test", "Name": "Jose Alfaro" },
+  "Subject": "Problema en La Colina",
+  "TextBody": "No puedo terminar la instalación en La Colina, falta el compresor de 2 HP"
+}
+```
+
+Alcance inicial: se procesa el texto del mensaje; los archivos adjuntos todavía no se descargan ni interpretan. Tampoco se envían respuestas por correo. Esas capacidades se pueden incorporar después de validar el flujo principal.
+
+## Conexión con Gmail
+
+Nexo puede leer una cuenta de Google Workspace con permiso de solo lectura (`gmail.readonly`).
+
+1. Configura `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (termina en `/api/auth/google/callback`), `NEXO_CLAVE_CIFRADO` (`openssl rand -base64 32`), `NEXO_ADMIN_USUARIO`, `NEXO_ADMIN_CLAVE` y `NEXO_EMAIL_REMITENTES`.
+2. Entra a `/api/auth/google` con el usuario de administración y autoriza la cuenta. El refresh token se guarda cifrado en la tabla `credenciales_google`, que no se borra al reiniciar la demo.
+3. `GET /api/gmail/estado` muestra la cuenta conectada y `POST /api/gmail/procesar` procesa los últimos correos de los remitentes registrados. Ambas rutas piden el usuario de administración.
+
+Privacidad: solo se piden los cuerpos de los remitentes registrados; borradores, spam, papelera, boletines y notificaciones automáticas se saltan sin abrirse. En producción no se conectan cuentas personales `@gmail.com`.

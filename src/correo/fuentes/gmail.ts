@@ -10,7 +10,8 @@ import { decodificarEncabezado, direccionesDe, idsDe, sinCitas, textoDeHtml } fr
 export const ETIQUETAS_IGNORADAS = ['DRAFT', 'SPAM', 'TRASH'];
 /** Categorías automáticas de Gmail que cuentan como boletín. */
 export const CATEGORIAS_AUTOMATICAS = ['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_FORUMS'];
-const DOMINIOS_PERSONALES = ['gmail.com', 'googlemail.com'];
+/** Dominios de cuentas personales de Google: Nexo no las conecta. */
+export const DOMINIOS_PERSONALES = ['gmail.com', 'googlemail.com'];
 
 export function decodificarBase64Url(data: string): string {
   const b64 = data.replace(/-/g, '+').replace(/_/g, '/');

@@ -61,7 +61,7 @@ export type ItemTrabajo = {
   detalle: string;
 };
 
-export type DatosAtrasados = { atrasados: ItemTrabajo[]; bloqueados: ItemTrabajo[]; enRiesgo: ItemTrabajo[] };
+export type DatosAtrasados = { proyecto: string | null; atrasados: ItemTrabajo[]; bloqueados: ItemTrabajo[]; enRiesgo: ItemTrabajo[] };
 
 export type DatosPendientes = { persona: string; pendientes: ItemTrabajo[] };
 
@@ -195,8 +195,9 @@ function lineaItem(i: ItemTrabajo): string {
 }
 
 function redactarAtrasados(d: DatosAtrasados): string {
+  const encabezado = d.proyecto ? `Proyecto: ${d.proyecto}\n` : '';
   if (d.atrasados.length + d.bloqueados.length + d.enRiesgo.length === 0) {
-    return 'No hay trabajos atrasados, bloqueados ni en riesgo.';
+    return `${encabezado}No hay trabajos atrasados, bloqueados ni en riesgo.`;
   }
   const lineas: string[] = [];
   const grupos: [string, ItemTrabajo[]][] = [
@@ -207,7 +208,7 @@ function redactarAtrasados(d: DatosAtrasados): string {
   for (const [titulo, items] of grupos) {
     lineas.push(items.length > 0 ? `${titulo} (${items.length}): ${items.map(lineaItem).join('; ')}.` : `${titulo}: ninguno.`);
   }
-  return lineas.join('\n');
+  return `${encabezado}${lineas.join('\n')}`;
 }
 
 function redactarPendientes(d: DatosPendientes): string {

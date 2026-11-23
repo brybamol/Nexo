@@ -132,13 +132,20 @@ function item(v: TrabajoVista, detalle: string, ahora: Date): ItemTrabajo {
   };
 }
 
-function calcularAtrasados(vistas: TrabajoVista[], ahora: Date, repuestos: Map<string, string>): Calculo {
+function calcularAtrasados(
+  vistas: TrabajoVista[],
+  ahora: Date,
+  repuestos: Map<string, string>,
+  proyectoId: string | null,
+  proyectoNombre: string | null,
+): Calculo {
   const porId = new Map(vistas.map((v) => [v.id, v]));
   const citar = (id: string) => {
     const t = porId.get(id);
     return t ? citaConReferencia(t.titulo, t.referencia) : null;
   };
-  const abiertos = vistas.filter((v) => v.estado !== 'resuelto');
+  const alcance = proyectoId ? vistas.filter((v) => v.proyecto.id === proyectoId) : vistas;
+  const abiertos = alcance.filter((v) => v.estado !== 'resuelto');
   const atrasados = abiertos.filter((v) => v.marcas.atrasado).map((v) => item(v, `plazo vencido: ${plazoTexto(v.plazo, ahora)}`, ahora));
   const bloqueados = abiertos
     .filter((v) => v.estado === 'bloqueado')
@@ -159,7 +166,7 @@ function calcularAtrasados(vistas: TrabajoVista[], ahora: Date, repuestos: Map<s
       ];
       return item(v, origenes.length > 0 ? `en riesgo por ${origenes.join(', ')}` : 'en riesgo', ahora);
     });
-  const datos: DatosAtrasados = { atrasados, bloqueados, enRiesgo };
+  const datos: DatosAtrasados = { proyecto: proyectoNombre, atrasados, bloqueados, enRiesgo };
   const vistos = new Set<string>();
   const fuentes: Fuente[] = [];
   for (const i of [...atrasados, ...bloqueados, ...enRiesgo]) {
@@ -207,7 +214,7 @@ function noLoSe(tema: TemaPregunta, ia: MetaIA): RespuestaPregunta {
  * Responde una pregunta con los datos actuales. Solo se guardan (y cuentan para las horas ahorradas) las preguntas
  * respondidas con datos; un «no lo sé» no se guarda.
  */
-export async function preguntar(ctx: ContextoServicio, personaId: string, texto: string): Promise<RespuestaPregunta> {
+async function preguntarUna(ctx: ContextoServicio, personaId: string, texto: string, temaForzado?: TemaPregunta): Promise<RespuestaPregunta> {
   const pregunta = texto.trim();
   if (!pregunta) throw new ErrorDominio('Escribe una pregunta.');
   if (pregunta.length > MAX_TEXTO) throw new ErrorDominio(`La pregunta es muy larga (máximo ${MAX_TEXTO} caracteres).`);
@@ -216,7 +223,9 @@ export async function preguntar(ctx: ContextoServicio, personaId: string, texto:
   const persona = inst.personas.find((p) => p.id === personaId);
   if (!persona) throw new ErrorDominio(`No existe la persona ${personaId}.`);
 
-  const clasificada = await ctx.ia.clasificarPregunta(pregunta, construirContextoCaptura(inst, personaId));
+  const clasificada = temaForzado
+    ? { valor: temaForzado, implementacion: ctx.ia.nombre, modelo: null, respaldo: false }
+    : await ctx.ia.clasificarPregunta(pregunta, construirContextoCaptura(inst, personaId));
   const tema = clasificada.valor;
 
   let calculo: Calculo | null = null;
@@ -227,9 +236,13 @@ export async function preguntar(ctx: ContextoServicio, personaId: string, texto:
     case 'estado_proyectos':
       calculo = calcularProyectos(inst, vistas, pregunta);
       break;
-    case 'atrasados':
-      calculo = calcularAtrasados(vistas, inst.ahora, new Map(inst.repuestos.map((r) => [r.id, r.nombre])));
+    case 'atrasados': {
+      const proyectoId = proyectoMencionado(pregunta, inst.proyectos);
+      const proyectoNombre = inst.proyectos.find((p) => p.id === proyectoId)?.nombre ?? null;
+      const repuestos = new Map(inst.repuestos.map((r) => [r.id, r.nombre]));
+      calculo = calcularAtrasados(vistas, inst.ahora, repuestos, proyectoId, proyectoNombre);
       break;
+    }
     case 'mis_pendientes':
       calculo = calcularPendientes(vistas, personaId, persona.nombre, inst.ahora);
       break;
@@ -262,4 +275,44 @@ export async function preguntar(ctx: ContextoServicio, personaId: string, texto:
     modelo: ia.modelo,
   });
   return respuesta;
+}
+
+
+/**
+ * Divide un correo que contiene varias preguntas explícitas y las responde por separado.
+ * La respuesta individual conserva exactamente el contrato anterior.
+ */
+export async function preguntar(ctx: ContextoServicio, personaId: string, texto: string): Promise<RespuestaPregunta> {
+  const partes = texto.trim().split(/(?<=\?)\s+(?=[¿A-ZÁÉÍÓÚ])/u).map((p) => p.trim()).filter(Boolean);
+  if (partes.length < 2) return preguntarUna(ctx, personaId, texto);
+
+  const contexto = await cargarVistasTrabajos(ctx.db);
+  const ctxIa = construirContextoCaptura(contexto.inst, personaId);
+  const clasificadas = await Promise.all(
+    partes.map(async (parte) => ({
+      texto: parte,
+      clasificacion: await ctx.ia.clasificarPregunta(parte, ctxIa),
+    })),
+  );
+  const consultas = clasificadas.filter((x) => x.clasificacion.valor !== 'desconocido');
+  if (consultas.length < 2) return preguntarUna(ctx, personaId, texto);
+
+  const respuestas: RespuestaPregunta[] = [];
+  for (const consulta of consultas) {
+    respuestas.push(await preguntarUna(ctx, personaId, consulta.texto, consulta.clasificacion.valor));
+  }
+  const fuentes = [...new Map(respuestas.flatMap((r) => r.fuentes).map((f) => [f.trabajoId, f])).values()];
+  const ia: MetaIA = {
+    implementacion: respuestas.every((r) => r.ia.implementacion === 'local') ? 'local' : respuestas[0]!.ia.implementacion,
+    modelo: respuestas.find((r) => r.ia.modelo)?.ia.modelo ?? null,
+    respaldo: respuestas.some((r) => r.ia.respaldo),
+  };
+  return {
+    texto: respuestas.map((r, i) => `${i + 1}. ${r.texto}`).join('\n\n'),
+    tema: respuestas[0]!.tema,
+    fuentes,
+    respuestas: respuestas.map((r) => ({ tema: r.tema, texto: r.texto, datos: r.datos, fuentes: r.fuentes })),
+    datos: { respuestas: respuestas.map((r) => ({ tema: r.tema, texto: r.texto, datos: r.datos, fuentes: r.fuentes })) },
+    ia,
+  };
 }

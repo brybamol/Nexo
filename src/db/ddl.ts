@@ -223,6 +223,23 @@ CREATE TABLE IF NOT EXISTS capturas (
   resultado jsonb
 );
 
+CREATE TABLE IF NOT EXISTS correos_entrantes (
+  message_id text PRIMARY KEY,
+  remitente text NOT NULL,
+  asunto text NOT NULL DEFAULT '',
+  recibido_en timestamptz NOT NULL,
+  estado text NOT NULL,
+  captura_id integer,
+  error text
+);
+
+CREATE TABLE IF NOT EXISTS credenciales_google (
+  id text PRIMARY KEY,
+  correo text NOT NULL,
+  token_cifrado text NOT NULL,
+  actualizado_en timestamptz NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS preguntas (
   id serial PRIMARY KEY,
   persona_id text NOT NULL,
@@ -289,7 +306,7 @@ CREATE TABLE IF NOT EXISTS revisiones (
 
 ${ACTUALIZAR}${ACTUALIZAR_V2}`;
 
-/** DROP TABLE IF EXISTS … CASCADE de todas las tablas. */
+/** DROP TABLE IF EXISTS … CASCADE de todas las tablas menos credenciales_google: la conexión con Google sobrevive al reinicio de la demo. */
 export const DDL_BORRAR = `
 DROP TABLE IF EXISTS correcciones_correo CASCADE;
 DROP TABLE IF EXISTS revisiones CASCADE;
@@ -298,6 +315,7 @@ DROP TABLE IF EXISTS evidencias CASCADE;
 DROP TABLE IF EXISTS buzones CASCADE;
 DROP TABLE IF EXISTS reloj CASCADE;
 DROP TABLE IF EXISTS preguntas CASCADE;
+DROP TABLE IF EXISTS correos_entrantes CASCADE;
 DROP TABLE IF EXISTS capturas CASCADE;
 DROP TABLE IF EXISTS opciones_decision CASCADE;
 DROP TABLE IF EXISTS decisiones CASCADE;

@@ -44,8 +44,8 @@ describe('DDL sobre PGlite en memoria', () => {
 
   it('crea todas las tablas de esquema.ts', async () => {
     const esperadas = tablas.map((t) => getTableName(t)).sort();
-    // 17 del MVP + buzones, evidencias, mensajes_leidos y revisiones (reformas v2).
-    expect(esperadas.length).toBe(20);
+    // 17 del MVP + buzones, evidencias, mensajes_leidos y revisiones (reformas v2) + correos_entrantes y credenciales_google.
+    expect(esperadas.length).toBe(22);
     const reales = await tablasEnBase(c);
     for (const t of esperadas) expect(reales).toContain(t);
   });
@@ -174,6 +174,21 @@ describe('DDL sobre PGlite en memoria', () => {
       interpretacion: { x: 1 },
       estado: 'aplicada',
     });
+    await db.insert(esquema.correosEntrantes).values({
+      messageId: 'msg-test-001',
+      remitente: 'ana@empresa.test',
+      asunto: 'Prueba de conexión',
+      recibidoEn: en,
+      estado: 'procesado',
+      capturaId: null,
+      error: null,
+    });
+    await db.insert(esquema.credencialesGoogle).values({
+      id: 'principal',
+      correo: 'ana@empresa.test',
+      tokenCifrado: 'iv.etiqueta.datos',
+      actualizadoEn: en,
+    });
     await db.insert(esquema.preguntas).values({
       personaId: 'ana',
       en,
@@ -236,9 +251,13 @@ describe('DDL sobre PGlite en memoria', () => {
     expect(ev).toMatchObject({ buzones: ['ana', 'jefa'], enlaces: { ana: 'https://mail.google.com/x' }, en });
   });
 
-  it('DDL_BORRAR + DDL_CREAR deja las tablas vacías', async () => {
+  it('DDL_BORRAR + DDL_CREAR deja las tablas vacías (la conexión con Google sobrevive)', async () => {
+    await c.db.delete(esquema.credencialesGoogle);
+    await c.db.insert(esquema.credencialesGoogle).values({ id: 'principal', correo: 'ana@empresa.test', tokenCifrado: 'x', actualizadoEn: new Date('2026-11-25T13:00:00Z') });
     await c.ejecutarSql(DDL_BORRAR);
-    expect((await tablasEnBase(c)).filter((n) => tablas.some((t) => getTableName(t) === n))).toHaveLength(0);
+    expect((await tablasEnBase(c)).filter((n) => tablas.some((t) => getTableName(t) === n))).toEqual(['credenciales_google']);
+    expect(await c.db.select().from(esquema.credencialesGoogle)).toHaveLength(1);
+    await c.db.delete(esquema.credencialesGoogle);
     await c.ejecutarSql(DDL_BORRAR); // idempotente
     await c.ejecutarSql(DDL_CREAR);
     for (const t of tablas) expect(await c.db.select().from(t), getTableName(t)).toHaveLength(0);

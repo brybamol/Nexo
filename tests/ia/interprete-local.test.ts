@@ -348,9 +348,86 @@ describe('frases desconocidas: no se inventa un trabajo', () => {
     expect(interpretarPorHeuristicas('Cuántos pedidos faltan por entregar', ctx).tipo).toBe('trabajo_nuevo');
   });
 
+  it('reconoce consultas cordiales sin signos de interrogación', () => {
+    const ctx = ctxDe('jose-alfaro');
+    const textos = [
+      'Buenas tardes. Me gustaría saber cuántos trabajos atrasados tenemos en el proyecto Repuestos críticos. Muchas gracias.',
+      'Quisiera conocer el estado actual del proyecto Cámara fría La Colina.',
+      'Necesito saber qué trabajos están bloqueados.',
+    ];
+    for (const texto of textos) {
+      expect(interpretarPorHeuristicas(texto, ctx)).toEqual({ tipo: 'pregunta', pregunta: texto });
+    }
+  });
+
+  it('no confunde una solicitud de trabajo con una consulta por contener «me gustaría»', () => {
+    const ctx = ctxDe('jose-alfaro');
+    expect(interpretarPorHeuristicas('Me gustaría instalar un compresor nuevo en La Colina', ctx).tipo).toBe('trabajo_nuevo');
+  });
+
+
+  it('extrae proyecto, responsable explícito y título de una solicitud por correo', () => {
+    const texto = 'Buenas tardes. Necesitamos conseguir un compresor de 3 HP para completar la instalación de la cámara fría del proyecto La Colina. Por favor, crear un trabajo y asignarlo a Esteban Castro para gestionar la compra y coordinar su entrega.';
+    const r = interpretarPorHeuristicas(texto, ctxDe('jose-alfaro'));
+    expect(r).toMatchObject({
+      tipo: 'trabajo_nuevo',
+      titulo: 'Conseguir un compresor de 3 HP',
+      proyectoId: 'P1',
+      responsableId: 'esteban-castro',
+      responsableSeguro: true,
+    });
+  });
+
+  it('no confirma a una persona solo porque se la mencione', () => {
+    const texto = 'Buenas tardes. Necesitamos conseguir un compresor de 3 HP para el proyecto La Colina. Hablé con Esteban Castro sobre el tema.';
+    const r = interpretarPorHeuristicas(texto, ctxDe('jose-alfaro'));
+    expect(r).toMatchObject({
+      tipo: 'trabajo_nuevo',
+      proyectoId: 'P1',
+      responsableId: 'esteban-castro',
+      responsableSeguro: false,
+    });
+  });
+
   it('el título conserva el texto del usuario y la propuesta cumple el esquema', () => {
     const r = interpretarPorHeuristicas('hay que cambiar la llanta del camión.', ctxDe('esteban-castro'));
     expect(esquemaInterpretacion.safeParse(r).success).toBe(true);
     expect(r).toMatchObject({ tipo: 'trabajo_nuevo', titulo: 'Hay que cambiar la llanta del camión' });
   });
+
+  it('actualiza la fecha de un trabajo identificado por código sin pedir responsable ni crear otro', async () => {
+    const ctx = ctxDe('jose-alfaro', {
+      trabajosAbiertos: [...TRABAJOS, t('T32', 'Conseguir un compresor de 3 HP', 'P1', 'esteban-castro')],
+    });
+    const r = await interpretar(
+      'Buenas tardes. Por favor, actualizar el trabajo T32. La nueva fecha de vencimiento debe ser el viernes 27 de noviembre de 2026 a las 17:00. Mantener el mismo responsable y proyecto.',
+      ctx,
+    );
+    expect(r).toMatchObject({
+      tipo: 'actualizacion',
+      trabajoId: 'T32',
+      nuevoEstado: null,
+      nota: null,
+      hayProblema: false,
+      reprogramar: [{ trabajoId: 'T32', plazo: { dia: '2026-11-27', hora: '17:00' } }],
+      notasRelacionadas: [],
+    });
+  });
+
+  it('no convierte en trabajo nuevo una actualización por código sin fecha interpretable', () => {
+    const ctx = ctxDe('jose-alfaro', {
+      trabajosAbiertos: [...TRABAJOS, t('T32', 'Conseguir un compresor de 3 HP', 'P1', 'esteban-castro')],
+    });
+    const r = interpretarPorHeuristicas('Por favor, actualizar el trabajo T32.', ctx);
+    expect(r.tipo).toBe('no_es_trabajo');
+  });
+
+  it('no inventa una actualización cuando el código explícito no existe', () => {
+    const r = interpretarPorHeuristicas(
+      'Por favor, cambiar la fecha del trabajo T99 al 27 de noviembre de 2026.',
+      ctxDe('jose-alfaro'),
+    );
+    expect(r).toMatchObject({ tipo: 'no_es_trabajo' });
+  });
+
 });

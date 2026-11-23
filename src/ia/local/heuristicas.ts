@@ -23,9 +23,38 @@ const PALABRAS_VACIAS = new Set([
 
 const palabras = (n: string) => n.split(' ').filter(Boolean);
 
+// Frases habituales con las que un empleado solicita información por correo,
+// aunque redacte el mensaje de forma cordial y omita los signos de interrogación.
+const INICIOS_CONSULTA = [
+  'me gustaria saber',
+  'me gustaria conocer',
+  'me gustaria consultar',
+  'me gustaria preguntar',
+  'quisiera saber',
+  'quisiera conocer',
+  'quisiera consultar',
+  'quisiera preguntar',
+  'quiero saber',
+  'quiero conocer',
+  'necesito saber',
+  'necesito conocer',
+  'necesito consultar',
+  'podrias decirme',
+  'puedes decirme',
+  'me podrias indicar',
+  'podrias indicarme',
+  'quisiera informacion sobre',
+  'necesito informacion sobre',
+];
+
 function esPregunta(texto: string, normal: string): boolean {
-  if (!/[¿?]/.test(texto)) return false;
-  return palabras(normal).some((p) => PALABRAS_PREGUNTA.has(p));
+  const contieneInterrogativa = palabras(normal).some((p) => PALABRAS_PREGUNTA.has(p));
+  const solicitaInformacion = INICIOS_CONSULTA.some((inicio) => normal.includes(inicio));
+
+  // Las preguntas explícitas conservan su comportamiento; las fórmulas de
+  // consulta también se reconocen sin ¿ ni ?, como sucede en correos reales.
+  if (solicitaInformacion) return true;
+  return /[¿?]/.test(texto) && contieneInterrogativa;
 }
 
 function esSoloAgradecimiento(normal: string): boolean {
@@ -83,6 +112,139 @@ function titulo(texto: string): string {
   return corto.charAt(0).toUpperCase() + corto.slice(1);
 }
 
+const MESES: Record<string, number> = {
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  setiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+};
+
+/** Interpreta fechas explícitas como «27 de noviembre de 2026 a las 17:00». */
+function plazoExplicito(normal: string, ahora: string): { dia: string; hora?: string } | null {
+  const m = normal.match(
+    /\b(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de\s+(\d{4}))?(?:\s+a\s+las\s+(\d{1,2})(?:(?::|\s+)(\d{2}))?)?\b/,
+  );
+  if (!m) return null;
+
+  const dia = Number(m[1]);
+  const mes = MESES[m[2]!];
+  const anio = Number(m[3] ?? ahora.slice(0, 4));
+  if (!mes || !Number.isInteger(anio) || anio < 2000) return null;
+
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia));
+  if (fecha.getUTCFullYear() !== anio || fecha.getUTCMonth() !== mes - 1 || fecha.getUTCDate() !== dia) return null;
+
+  if (m[4] === undefined) return { dia: `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}` };
+
+  const hora = Number(m[4]);
+  const minuto = Number(m[5] ?? '0');
+  if (hora > 23 || minuto > 59) return null;
+
+  return {
+    dia: `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`,
+    hora: `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`,
+  };
+}
+
+/** Reconoce actualizaciones dirigidas a un código de trabajo explícito. */
+function actualizarTrabajoPorCodigo(normal: string, ctx: ContextoCaptura): Interpretacion | null {
+  const solicitaCambio = /\b(actualizar|actualiza|actualicemos|modificar|modifica|cambiar|cambia|reprogramar|reprograma|mover|mueve)\b/.test(normal);
+  if (!solicitaCambio) return null;
+
+  const codigo = normal.match(/\b(t\d+)\b/)?.[1]?.toUpperCase();
+  if (!codigo) return null;
+
+  const trabajo = ctx.trabajosAbiertos.find((t) => t.id.toUpperCase() === codigo);
+  if (!trabajo) {
+    return { tipo: 'no_es_trabajo', motivo: `No encontré el trabajo ${codigo} entre los trabajos abiertos. No cambié nada.` };
+  }
+
+  const plazo = plazoExplicito(normal, ctx.ahora);
+  if (!plazo) {
+    return { tipo: 'no_es_trabajo', motivo: `Identifiqué el trabajo ${codigo}, pero no pude interpretar la nueva fecha. Indica el día y, si corresponde, la hora. No cambié nada.` };
+  }
+
+  return {
+    tipo: 'actualizacion',
+    trabajoId: trabajo.id,
+    nuevoEstado: null,
+    nota: null,
+    hayProblema: false,
+    reprogramar: [{ trabajoId: trabajo.id, plazo }],
+    notasRelacionadas: [],
+  };
+}
+
+const ALIAS_PROYECTOS: Record<string, string[]> = {
+  P1: ['la colina'],
+  P2: ['trigal'],
+  P3: [],
+  P4: [],
+  OD: [],
+};
+
+/** Identifica proyectos mediante nombres completos o alias explícitos. */
+function proyectoExplicito(
+  normal: string,
+  ctx: ContextoCaptura,
+): string | null {
+  const texto = ` ${normal} `;
+
+  const coincidencias = ctx.proyectos.filter((proyecto) => {
+    const nombre = normalizar(proyecto.nombre);
+    const alias = ALIAS_PROYECTOS[proyecto.id] ?? [];
+
+    return [nombre, ...alias].some((termino) => {
+      const buscado = normalizar(termino);
+      return buscado.length > 0 && texto.includes(` ${buscado} `);
+    });
+  });
+
+  return coincidencias.length === 1
+    ? coincidencias[0]!.id
+    : null;
+}
+
+/** Solo confirma a una persona si el correo expresa una asignación inequívoca. */
+function responsableAsignado(normal: string, ctx: ContextoCaptura): string | null {
+  const marcadores = [
+    'asignarlo a', 'asignarla a', 'asignar a', 'asignado a', 'asignada a',
+    'responsable es', 'responsable sera', 'responsable:', 'encargado a',
+    'encargada a', 'a cargo de', 'que se encargue',
+  ];
+  const posiciones = marcadores.map((m) => normal.lastIndexOf(m)).filter((i) => i >= 0);
+  if (posiciones.length === 0) return null;
+  const posicionMarcador = Math.max(...posiciones);
+  const candidatos = ctx.personas.filter((persona) => {
+    const nombre = normalizar(persona.nombre);
+    const posicionNombre = normal.indexOf(nombre);
+    return posicionNombre > posicionMarcador;
+  });
+  return candidatos.length === 1 ? candidatos[0]!.id : null;
+}
+
+/** Extrae la acción principal para no convertir todo el correo en el título del trabajo. */
+function tituloTrabajo(texto: string): string {
+  // Conservar formulaciones completas ya admitidas por el comportamiento anterior.
+  // La extracción abreviada se reserva para correos con contexto adicional.
+  if (/^\s*hay que\b/i.test(texto)) return titulo(texto);
+
+  const accion = texto.match(
+    /\b((?:conseguir|comprar|adquirir|revisar|instalar|coordinar|cotizar|reemplazar|cambiar|reparar|realizar|preparar|enviar|entregar|recoger|solicitar)\s+[^.!?]+?)(?=\s+(?:para completar|para gestionar|para coordinar|para la instalacion|del proyecto|en el proyecto|y coordinar|y completar)|[.!?]|$)/i,
+  );
+  if (accion?.[1]) return titulo(accion[1].replace(/\s+/g, ' '));
+  return titulo(texto);
+}
+
 export function interpretarPorHeuristicas(texto: string, ctx: ContextoCaptura): Interpretacion {
   const normal = normalizar(texto);
 
@@ -95,6 +257,9 @@ export function interpretarPorHeuristicas(texto: string, ctx: ContextoCaptura): 
   if (esSoloAgradecimiento(normal)) {
     return { tipo: 'no_es_trabajo', motivo: 'Es un agradecimiento; no hay nada que hacer.' };
   }
+
+  const actualizacionExplicita = actualizarTrabajoPorCodigo(normal, ctx);
+  if (actualizacionExplicita) return actualizacionExplicita;
 
   const ps = palabras(normal);
   const termina = INICIOS_TERMINACION.has(ps[0]!) && ps.length <= 12;
@@ -134,12 +299,14 @@ export function interpretarPorHeuristicas(texto: string, ctx: ContextoCaptura): 
   }
 
   const jefeId = ctx.personas.find((p) => p.id === ctx.autor.id)?.jefeId ?? null;
+  const proyectoId = proyectoExplicito(normal, ctx) ?? 'OD';
+  const responsableIdExplicito = responsableAsignado(normal, ctx);
   return {
     tipo: 'trabajo_nuevo',
-    titulo: titulo(texto),
-    proyectoId: 'OD',
-    responsableId: jefeId ?? ctx.autor.id,
-    responsableSeguro: false,
+    titulo: tituloTrabajo(texto),
+    proyectoId,
+    responsableId: responsableIdExplicito ?? jefeId ?? ctx.autor.id,
+    responsableSeguro: responsableIdExplicito !== null,
     plazo: { dia: 'hoy' },
     urgente: /\burgent/.test(normal),
     conCostoProbable: false,

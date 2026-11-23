@@ -270,6 +270,24 @@ export const capturas = pgTable('capturas', {
   resultado: jsonb('resultado').$type<unknown>(),
 });
 
+export const correosEntrantes = pgTable('correos_entrantes', {
+  messageId: text('message_id').primaryKey(),
+  remitente: text('remitente').notNull(),
+  asunto: text('asunto').notNull().default(''),
+  recibidoEn: fecha('recibido_en').notNull(),
+  estado: text('estado').$type<'procesando' | 'procesado' | 'rechazado' | 'error'>().notNull(),
+  capturaId: integer('captura_id'),
+  error: text('error'),
+});
+
+/** Conexión con Google (Gmail): el refresh token va cifrado. No se borra al reiniciar la demo. */
+export const credencialesGoogle = pgTable('credenciales_google', {
+  id: text('id').primaryKey(),
+  correo: text('correo').notNull(),
+  tokenCifrado: text('token_cifrado').notNull(),
+  actualizadoEn: fecha('actualizado_en').notNull(),
+});
+
 export const preguntas = pgTable('preguntas', {
   id: serial('id').primaryKey(),
   personaId: text('persona_id').notNull(),
@@ -365,6 +383,8 @@ export const esquema = {
   decisiones,
   opcionesDecision,
   capturas,
+  correosEntrantes,
+  credencialesGoogle,
   preguntas,
   reloj,
   buzones,
