@@ -103,6 +103,33 @@ describe('otras preguntas', () => {
     expect(uno.texto).toContain('Cámara fría La Colina');
   });
 
+  it('responde por separado dos preguntas independientes en un mismo correo', async () => {
+    demo = await prepararDemo();
+    const texto =
+      'Buenas tardes. Tengo dos consultas: primero, ¿cuál es el estado actual del proyecto Cámara fría La Colina y cuántos trabajos quedan pendientes? Segundo, ¿cuántos trabajos atrasados tenemos actualmente en el proyecto Repuestos críticos? Gracias.';
+    const r = await preguntar(demo.ctx, MARCELA, texto);
+    const respuestas = r.datos.respuestas as { tema: string; texto: string; datos: Record<string, unknown> }[];
+    expect(respuestas).toHaveLength(2);
+    expect(respuestas[0]?.tema).toBe('estado_proyectos');
+    expect(respuestas[0]?.texto).toContain('Cámara fría La Colina');
+    expect(respuestas[1]?.tema).toBe('atrasados');
+    expect(r.texto).toContain('1.');
+    expect(r.texto).toContain('2.');
+    const atrasados = respuestas[1]?.datos.atrasados as { trabajoId: string }[];
+    const idsProyecto = new Set((await listarTrabajos(demo.ctx, { proyectoId: 'P3' })).map((v) => v.id));
+    expect(atrasados.every((x) => idsProyecto.has(x.trabajoId))).toBe(true);
+  });
+
+  it('limita los atrasados al proyecto mencionado', async () => {
+    demo = await prepararDemo();
+    const r = await preguntar(demo.ctx, MARCELA, '¿Cuántos trabajos atrasados tenemos actualmente en el proyecto Repuestos críticos?');
+    expect(r.tema).toBe('atrasados');
+    const ids = ((r.datos.atrasados as { trabajoId: string }[]) ?? []).map((x) => x.trabajoId);
+    const vistas = await listarTrabajos(demo.ctx, { proyectoId: 'P3' });
+    const idsProyecto = new Set(vistas.map((v) => v.id));
+    expect(ids.every((id) => idsProyecto.has(id))).toBe(true);
+  });
+
   it('mis pendientes: solo trabajos no resueltos de la persona', async () => {
     demo = await prepararDemo();
     const r = await preguntar(demo.ctx, 'diego-rojas', '¿Qué tengo pendiente?');

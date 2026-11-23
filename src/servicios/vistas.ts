@@ -109,6 +109,8 @@ export interface RespuestaPregunta {
   tema: TemaPregunta;
   fuentes: { trabajoId: string; etiqueta: string }[];
   datos: Record<string, unknown>;
+  /** Presente cuando una misma entrada contiene varias preguntas independientes. */
+  respuestas?: { tema: TemaPregunta; texto: string; datos: Record<string, unknown>; fuentes: { trabajoId: string; etiqueta: string }[] }[];
   ia: MetaIA;
 }
 

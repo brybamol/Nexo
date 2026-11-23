@@ -166,6 +166,16 @@ CREATE TABLE IF NOT EXISTS capturas (
   resultado jsonb
 );
 
+CREATE TABLE IF NOT EXISTS correos_entrantes (
+  message_id text PRIMARY KEY,
+  remitente text NOT NULL,
+  asunto text NOT NULL DEFAULT '',
+  recibido_en timestamptz NOT NULL,
+  estado text NOT NULL,
+  captura_id integer,
+  error text
+);
+
 CREATE TABLE IF NOT EXISTS preguntas (
   id serial PRIMARY KEY,
   persona_id text NOT NULL,
@@ -188,6 +198,7 @@ CREATE TABLE IF NOT EXISTS reloj (
 export const DDL_BORRAR = `
 DROP TABLE IF EXISTS reloj CASCADE;
 DROP TABLE IF EXISTS preguntas CASCADE;
+DROP TABLE IF EXISTS correos_entrantes CASCADE;
 DROP TABLE IF EXISTS capturas CASCADE;
 DROP TABLE IF EXISTS opciones_decision CASCADE;
 DROP TABLE IF EXISTS decisiones CASCADE;
