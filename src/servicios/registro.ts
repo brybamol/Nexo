@@ -11,7 +11,15 @@ type FilaAccion = typeof acciones.$inferSelect;
 export async function cargarNombrador(db: Db): Promise<Nombrador> {
   const [ps, ts, ds, rs] = await Promise.all([
     db.select({ id: proyectos.id, clave: proyectos.clave }).from(proyectos),
-    db.select({ id: trabajos.id, proyectoId: trabajos.proyectoId, numero: trabajos.numero, titulo: trabajos.titulo }).from(trabajos),
+    db
+      .select({
+        id: trabajos.id,
+        proyectoId: trabajos.proyectoId,
+        numero: trabajos.numero,
+        titulo: trabajos.titulo,
+        confirmacion: trabajos.confirmacion,
+      })
+      .from(trabajos),
     db
       .select({
         id: decisiones.id,

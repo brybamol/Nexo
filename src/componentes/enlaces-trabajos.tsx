@@ -10,6 +10,21 @@ export function Referencia({ valor }: { valor: string }) {
 }
 
 export function EnlaceTrabajo({ trabajo }: { trabajo: TrabajoRef }) {
+  // Un trabajo descartado no tiene detalle (nadie lo ve): se nombra sin enlace, para no llevar a una página vacía.
+  if (trabajo.descartado) {
+    return (
+      <>
+        {trabajo.titulo}
+        {trabajo.referencia && (
+          <>
+            {' '}
+            <Referencia valor={trabajo.referencia} />
+          </>
+        )}{' '}
+        (descartado)
+      </>
+    );
+  }
   return (
     <>
       <Link href={`/trabajos/${trabajo.id}`}>{trabajo.titulo}</Link>

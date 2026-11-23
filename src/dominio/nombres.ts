@@ -14,6 +14,8 @@ export interface TrabajoRef {
   titulo: string;
   /** 'COLINA-4'; cadena vacía si el trabajo no tiene número (datos de prueba incompletos). */
   referencia: string;
+  /** true si su dueño lo descartó (docs/08 regla 16): nadie lo ve, así que se nombra sin enlace. Ausente = vivo. */
+  descartado?: true;
 }
 
 /** 'COLINA' + 4 → 'COLINA-4'. Sin clave o sin número válido → ''. */
@@ -99,7 +101,8 @@ export function idsInternosEn(texto: string): string[] {
 
 export interface FuenteNombres {
   proyectos: readonly { id: string; clave: string }[];
-  trabajos: readonly { id: string; proyectoId: string; numero: number; titulo: string }[];
+  /** `confirmacion` es opcional: sin ella, ningún trabajo se trata como descartado. */
+  trabajos: readonly { id: string; proyectoId: string; numero: number; titulo: string; confirmacion?: string }[];
   decisiones?: readonly { id: string; proyectoId: string; numero: number; repuestoId: string; cantidad: number }[];
   repuestos?: readonly { id: string; nombre: string; unidad: string }[];
 }
@@ -142,7 +145,10 @@ export function crearNombrador(f: FuenteNombres): Nombrador {
   };
   const titulo = (id: string) => trabajos.get(id)?.titulo ?? 'un trabajo';
   const cita = (id: string) => citaConReferencia(titulo(id), referencia(id));
-  const ref = (id: string): TrabajoRef => ({ id, titulo: titulo(id), referencia: referencia(id) });
+  const ref = (id: string): TrabajoRef =>
+    trabajos.get(id)?.confirmacion === 'descartado'
+      ? { id, titulo: titulo(id), referencia: referencia(id), descartado: true }
+      : { id, titulo: titulo(id), referencia: referencia(id) };
 
   const refDecision = (id: string) => {
     const d = decisiones.get(id);
